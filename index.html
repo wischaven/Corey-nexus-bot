@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -9,372 +10,1127 @@
 <meta name="apple-mobile-web-app-title" content="NEXUS">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#020609">
+<link rel="apple-touch-icon" sizes="180x180" id="touchIcon180">
+<link rel="manifest" id="pwaManifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
-</head>
-<body style="margin:0;background:#020609;color:#e0f0ff;font-family:Rajdhani,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:<div id="loginScreen" style="width:340px;border:1px solid #00d4ff66;background:#070f15;padding:40px 32px;box-shadow:0 0 60px #00d4ff1a;text-align:center;">
-<div style="font-family:Orbitron,monospace;font-size:26px;font-weight:900;color:#00d4ff;letter-spacing:6px;margin-bottom:4px;text-shadow:0 0 20px #00d4ff44;">NEXUS</div>
-<div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:#6a8fa8;letter-spacing:3px;margin-bottom:32px;">SHX // VOLUME ENGINE v2.4</div>
-<div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:#6a8fa8;letter-spacing:2px;text-align:left;margin-bottom:8px;">ACCESS CODE</div>
-<input type="password" id="passwordInput" placeholder="••••••••" maxlength="32" autocomplete="off"
-style="width:100%;box-sizing:border-box;background:#030c13;border:1px solid #0d2035;color:#00d4ff;font-family:'Share Tech Mono',monospace;font-size:16px;padding:12px 16px;outline:none;margin-bottom:20px;letter-spacing:3px;"/>
-<button onclick="attemptLogin()"
-style="width:100%;background:transparent;border:1px solid #00d4ff;color:#00d4ff;font-family:Orbitron,monospace;font-size:12px;font-weight:700;letter-spacing:4px;padding:14px;cursor:pointer;">
-▶ AUTHENTICATE
-</button>
-<div id="loginError" style="font-family:'Share Tech Mono',monospace;font-size:11px;color:#ff3355;margin-top:14px;min-height:16px;letter-spacing:1px;"></div>
-<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:20px;font-family:'Share Tech Mono',monospace;font-size:9px;color:#3a5568;letter-spacing:2px;">
-<div style="width:6px;height:6px;border-radius:50%;background:#00ff88;animation:pulse 2s infinite;box-shadow:0 0 10px #00ff8844;"></div>
-KRAKEN STANDBY
-</div>
-</div>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600&display=swap" rel="stylesheet">
 
-<div id="app" style="display:none;width:100%;min-height:100vh;flex-direction:column;">
-
-<div style="display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:52px;background:#050d12;border-bottom:1px solid #0d2035;position:sticky;top:0;z-index:100;">
-<div style="font-family:Orbitron,monospace;font-size:16px;font-weight:900;color:#00d4ff;letter-spacing:4px;text-shadow:0 0 20px #00d4ff44;">NEXUS</div>
-<div style="display:flex;align-items:center;gap:12px;">
-<div id="botStatusBadge" style="display:flex;align-items:center;gap:6px;font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;padding:5px 10px;border:1px solid #3a5568;color:#3a5568;">
-<div style="width:5px;height:5px;border-radius:50%;background:currentColor;"></div>
-<span id="botStatusText">STANDBY</span>
-</div>
-<div id="clockDisplay" style="font-family:'Share Tech Mono',monospace;font-size:11px;color:#6a8fa8;letter-spacing:2px;">--:--:--</div>
-<button onclick="logout()" style="font-family:'Share Tech Mono',monospace;font-size:9px;color:#6a8fa8;background:none;border:1px solid #0d2035;padding:5px 10px;cursor:pointer;letter-spacing:2px;">⏏ LOCK</button>
-</div>
-</div>
-<div style="padding:16px;display:flex;flex-direction:column;gap:12px;">
-
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-<div style="background:#0a1520;border:1px solid #0d2035;padding:14px;">
-<div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:#3a5568;letter-spacing:2px;margin-bottom:6px;">LIVE PRICE</div>
-<div id="livePrice" style="font-family:Orbitron,monospace;font-size:18px;font-weight:700;color:#00d4ff;text-shadow:0 0 20px #00d4ff44;">$0.00412</div>
-</div>
-<div style="background:#0a1520;border:1px solid #0d2035;padding:14px;">
-<div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:#3a5568;letter-spacing:2px;margin-bottom:6px;">SPREAD (BPS)</div>
-<div id="spreadBps" style="font-family:Orbitron,monospace;font-size:18px;font-weight:700;color:#ffaa00;text-shadow:0 0 20px #ffaa0044;">-- bps</div>
-</div>
-<div style="background:#0a1520;border:1px solid #0d2035;padding:14px;">
-<div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:#3a5568;letter-spacing:2px;margin-bottom:6px;">SESSION P&L</div>
-<div id="statPnL" style="font-family:Orbitron,monospace;font-size:18px;font-weight:700;color:#00ff88;text-shadow:0 0 20px #00ff8844;">+$0.00</div>
-</div>
-<div style="background:#0a1520;border:1px solid #0d2035;padding:14px;">
-<div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:#3a5568;letter-spacing:2px;margin-bottom:6px;">VOLUME TODAY</div>
-<div id="statVolume" style="font-family:Orbitron,monospace;font-size:18px;font-weight:700;color:#e0f0ff;">$0</div>
-</div>
-</div>
-
-<div style="background:#0a1520;border:1px solid #0d2035;padding:14px;">
-<div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:#3a5568;letter-spacing:2px;margin-bottom:10px;">BREAK-EVEN SPREAD NEEDED</div>
-<div id="breakEvenSpread" style="font-family:Orbitron,monospace;font-size:20px;font-weight:700;color:#ffaa00;">32.0 bps</div>
-<div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:#6a8fa8;margin-top:4px;">at 0.16% maker fee both sides — must beat this to profit</div>
-</div>
-
-<div style="background:#0a1520;border:1px solid #0d2035;padding:14px;">
-<div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:#3a5568;letter-spacing:2px;margin-bottom:10px;">ORDER SIZE (USD)</div>
-<input type="range" min="10" max="500" value="50" id="orderSizeSlider" oninput="document.getElementById('orderSizeVal').textContent='$'+this.value" style="width:100%;accent-color:#00d4ff;"/>
-<div style="display:flex;justify-content:space-between;margin-top:6px;">
-<span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:#6a8fa8;">$10</span>
-<span id="orderSizeVal" style="font-family:'Share Tech Mono',monospace;font-size:9px;color:#00d4ff;">$50</span>
-<span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:#6a8fa8;">$500</span>
-</div>
-</div>
-
-<div style="background:#0a1520;border:1px solid #0d2035;padding:14px;">
-<div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:#3a5568;letter-spacing:2px;margin-bottom:10px;">MAX SPREAD TO ENTER (BPS)</div>
-<input type="range" min="5" max="100" value="25" id="maxSpreadSlider" oninput="document.getElementById('maxSpreadVal').textContent=this.value+' bps'" style="width:100%;accent-color:#00d4ff;"/>
-<div style="display:flex;justify-content:space-between;margin-top:6px;">
-<span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:#6a8fa8;">5</span>
-<span id="maxSpreadVal" style="font-family:'Share Tech Mono',monospace;font-size:9px;color:#00d4ff;">25 bps</span>
-<span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:#6a8fa8;">100</span>
-</div>
-</div>
-
-<div style="background:#0a1520;border:1px solid #0d2035;padding:14px;">
-<div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:#3a5568;letter-spacing:2px;margin-bottom:6px;">FEE STRUCTURE</div>
-<select id="feeSelect" style="width:100%;background:#030c13;border:1px solid #0d2035;color:#00d4ff;font-family:'Share Tech Mono',monospace;font-size:12px;padding:8px;outline:none;">
-<option value="0.26">Kraken Taker 0.26%</option>
-<option value="0.16" selected>Kraken Maker 0.16%</option>
-<option value="0.10">Kraken Pro 0.10%</option>
-</select>
-</div>
-
-<div style="background:#0a1520;border:1px solid #0d2035;padding:14px;">
-<div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:#3a5568;letter-spacing:2px;margin-bottom:10px;">KRAKEN API KEY</div>
-<input type="text" id="apiKey" placeholder="Paste API Key here..." style="width:100%;box-sizing:border-box;background:#030c13;border:1px solid #0d2035;color:#00d4ff;font-family:'Share Tech Mono',monospace;font-size:11px;padding:10px;outline:none;margin-bottom:10px;"/>
-<div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:#3a5568;letter-spacing:2px;margin-bottom:8px;">PRIVATE KEY</div>
-<input type="password" id="apiSecret" placeholder="Paste Private Key here..." style="width:100%;box-sizing:border-box;background:#030c13;border:1px solid #0d2035;color:#00d4ff;font-family:'Share Tech Mono',monospace;font-size:11px;padding:10px;outline:none;margin-bottom:10px;"/>
-<div id="balDisplay" style="font-family:'Share Tech Mono',monospace;font-size:9px;color:#6a8fa8;margin-bottom:10px;letter-spacing:1px;">USD: — | SHX: —</div>
-<button onclick="saveApiKeys()" style="width:100%;background:transparent;border:1px solid #00d4ff;color:#00d4ff;font-family:Orbitron,monospace;font-size:11px;letter-spacing:3px;padding:12px;cursor:pointer;">💾 SAVE & TEST</button>
-</div>
-
-<div style="display:flex;flex-direction:column;gap:8px;">
-<button id="startBtn" onclick="startBot()" style="width:100%;background:transparent;border:1px solid #00ff88;color:#00ff88;font-family:Orbitron,monospace;font-size:12px;font-weight:700;letter-spacing:3px;padding:14px;cursor:pointer;">▶ START ENGINE</button>
-<button id="stopBtn" onclick="stopBot()" style="display:none;width:100%;background:transparent;border:1px solid #ff3355;color:#ff3355;font-family:Orbitron,monospace;font-size:12px;font-weight:700;letter-spacing:3px;padding:14px;cursor:pointer;">■ STOP</button>
-<button onclick="runMarketCheck()" style="width:100%;background:transparent;border:1px solid #00d4ff;color:#00d4ff;font-family:Orbitron,monospace;font-size:12px;font-weight:700;letter-spacing:3px;padding:14px;cursor:pointer;">⟳ MARKET CHECK</button>
-</div>
-
-<div id="alertsContainer" style="display:flex;flex-direction:column;gap:8px;"></div>
-
-<div style="background:#030c13;border:1px solid #0d2035;padding:12px;height:200px;overflow-y:auto;" id="logArea">
-<div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:#3a5568;letter-spacing:2px;">SYSTEM READY — AWAITING START</div>
-</div>
-
-</div>
-</div>
-<style>
-@keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
-</style>
 <script>
-const PASSWORD = "nexus2024";
-let botRunning=false, botInterval=null, sessionPnL=0, sessionFees=0;
-let sessionVolume=0, sessionTrades=0, sessionWins=0;
-let krakenApiKey='', krakenApiSecret='', liveMode=false;
-let currentPrice=0.00412, spreadCount=0, totalSpreadsCapd=0;
-let aiPromptsEnabled=true, waitingFill=false;
+(function(){
+  function drawIcon(size){
+    const c=document.createElement('canvas');
+    c.width=c.height=size;
+    const x=c.getContext('2d'),s=size,cx=s/2,cy=s/2;
+    const bg=x.createLinearGradient(0,0,s,s);
+    bg.addColorStop(0,'#020609');bg.addColorStop(1,'#050d15');
+    x.fillStyle=bg;x.fillRect(0,0,s,s);
+    const gw=x.createRadialGradient(cx,cy,s*0.2,cx,cy,s*0.48);
+    gw.addColorStop(0,'rgba(0,212,255,0.2)');gw.addColorStop(1,'rgba(0,212,255,0)');
+    x.fillStyle=gw;x.beginPath();x.arc(cx,cy,s*0.48,0,Math.PI*2);x.fill();
+    x.save();x.translate(cx,cy);x.rotate(Math.PI/6);
+    x.beginPath();
+    for(let i=0;i<6;i++){const a=(Math.PI*2/6)*i,r=s*0.43;i===0?x.moveTo(Math.cos(a)*r,Math.sin(a)*r):x.lineTo(Math.cos(a)*r,Math.sin(a)*r);}
+    x.closePath();x.strokeStyle='#00d4ff';x.lineWidth=s*0.028;x.shadowColor='#00d4ff';x.shadowBlur=s*0.06;x.stroke();x.restore();
+    x.save();x.translate(cx,cy);
+    const nw=s*0.22,nh=s*0.26;
+    x.strokeStyle='#00d4ff';x.lineWidth=s*0.04;x.lineCap='square';x.shadowColor='#00d4ff';x.shadowBlur=s*0.08;
+    x.beginPath();x.moveTo(-nw,nh/2);x.lineTo(-nw,-nh/2);x.stroke();
+    x.beginPath();x.moveTo(-nw,-nh/2);x.lineTo(nw,nh/2);x.stroke();
+    x.beginPath();x.moveTo(nw,nh/2);x.lineTo(nw,-nh/2);x.stroke();
+    x.restore();
+    x.fillStyle='rgba(0,212,255,0.6)';x.font=`bold ${s*0.08}px monospace`;x.textAlign='center';x.fillText('SHX',cx,cy+s*0.39);
+    return c.toDataURL('image/png');
+  }
+  window.addEventListener('DOMContentLoaded',()=>{
+    const i180=drawIcon(180);
+    document.getElementById('touchIcon180').href=i180;
+    const manifest={name:'NEXUS — SHX Engine',short_name:'NEXUS',start_url:'./',display:'standalone',orientation:'portrait',background_color:'#020609',theme_color:'#020609',icons:[{src:drawIcon(192),sizes:'192x192',type:'image/png'},{src:drawIcon(512),sizes:'512x512',type:'image/png'}]};
+    const blob=new Blob([JSON.stringify(manifest)],{type:'application/json'});
+    document.getElementById('pwaManifest').href=URL.createObjectURL(blob);
+  });
+})();
+</script>
 
-function attemptLogin(){
-  const v=document.getElementById('passwordInput').value;
-  if(v===PASSWORD){
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+:root{
+  --bg:#020609;--bg2:#050d12;--bg3:#070f15;--card:#0a1520;
+  --cyan:#00d4ff;--green:#00ff88;--amber:#ffaa00;--red:#ff3355;--purple:#9945ff;
+  --t1:#e0f0ff;--t2:#6a8fa8;--t3:#3a5568;--border:#0d2035;
+  --safe-top:env(safe-area-inset-top,0px);--safe-bot:env(safe-area-inset-bottom,0px);
+}
+html,body{background:var(--bg);color:var(--t1);font-family:'Rajdhani',sans-serif;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,212,255,0.015) 2px,rgba(0,212,255,0.015) 4px);pointer-events:none;z-index:9999;}
+
+/* LOGIN */
+#loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+.login-box{width:100%;max-width:380px;background:var(--bg3);border:1px solid rgba(0,212,255,0.4);padding:40px 28px;box-shadow:0 0 60px rgba(0,212,255,0.1);}
+.logo{font-family:'Orbitron',monospace;font-size:32px;font-weight:900;color:var(--cyan);letter-spacing:8px;text-align:center;text-shadow:0 0 30px rgba(0,212,255,0.5);margin-bottom:4px;}
+.logo-sub{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--t2);letter-spacing:3px;text-align:center;margin-bottom:36px;}
+.field-label{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--t2);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;}
+.field-input{width:100%;background:#030c13;border:1px solid var(--border);color:var(--cyan);font-family:'Share Tech Mono',monospace;font-size:18px;padding:14px 16px;outline:none;letter-spacing:4px;margin-bottom:20px;}
+.field-input:focus{border-color:var(--cyan);box-shadow:0 0 16px rgba(0,212,255,0.2);}
+.login-btn{width:100%;background:transparent;border:1px solid var(--cyan);color:var(--cyan);font-family:'Orbitron',monospace;font-size:12px;font-weight:700;letter-spacing:4px;padding:16px;cursor:pointer;}
+.login-btn:active{background:rgba(0,212,255,0.1);}
+.login-err{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--red);text-align:center;margin-top:14px;min-height:18px;letter-spacing:1px;}
+.login-status{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:22px;font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--t3);letter-spacing:2px;}
+.pdot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 10px rgba(0,255,136,0.5);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.2}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* APP */
+#app{display:none;flex-direction:column;min-height:100vh;}
+
+/* TOPBAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 16px;padding-top:var(--safe-top);height:calc(52px + var(--safe-top));background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;}
+.topbar-brand{font-family:'Orbitron',monospace;font-size:18px;font-weight:900;color:var(--cyan);letter-spacing:4px;text-shadow:0 0 20px rgba(0,212,255,0.4);}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.status-pill{display:flex;align-items:center;gap:5px;font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;padding:5px 10px;border:1px solid var(--t3);color:var(--t3);}
+.status-pill.running{border-color:var(--green);color:var(--green);}
+.status-pill.warning{border-color:var(--amber);color:var(--amber);}
+.sdot{width:5px;height:5px;border-radius:50%;background:currentColor;}
+.clock{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--t2);}
+.lock-btn{background:none;border:1px solid var(--border);color:var(--t3);font-family:'Share Tech Mono',monospace;font-size:9px;padding:5px 10px;cursor:pointer;letter-spacing:1px;}
+
+/* TABS */
+.tab-nav{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:calc(52px + var(--safe-top));z-index:99;overflow-x:auto;}
+.tab-nav::-webkit-scrollbar{display:none;}
+.tnav-btn{flex:1;min-width:70px;padding:12px 8px;background:none;border:none;border-bottom:2px solid transparent;color:var(--t3);font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;white-space:nowrap;}
+.tnav-btn.active{color:var(--cyan);border-bottom-color:var(--cyan);}
+
+/* CONTENT */
+.tab-pane{display:none;padding:14px;padding-bottom:calc(20px + var(--safe-bot));flex-direction:column;gap:12px;animation:fadeUp 0.2s ease;}
+.tab-pane.active{display:flex;}
+
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--border);padding:14px 16px;}
+.card-label{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t3);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;}
+.card-val{font-family:'Orbitron',monospace;font-size:22px;font-weight:700;}
+.card-sub{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--t2);margin-top:4px;line-height:1.5;}
+.c-cyan{color:var(--cyan);text-shadow:0 0 16px rgba(0,212,255,0.4);}
+.c-green{color:var(--green);text-shadow:0 0 16px rgba(0,255,136,0.4);}
+.c-amber{color:var(--amber);text-shadow:0 0 16px rgba(255,170,0,0.4);}
+.c-red{color:var(--red);text-shadow:0 0 16px rgba(255,51,85,0.4);}
+.c-t1{color:var(--t1);}
+
+/* GRID 2 COL */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+/* PROGRESS */
+.prog-wrap{height:3px;background:var(--border);margin-top:10px;overflow:hidden;}
+.prog-bar{height:100%;background:linear-gradient(90deg,var(--cyan),var(--green));transition:width 0.5s;box-shadow:0 0 8px var(--cyan);}
+
+/* SLIDER */
+.slider-group{margin-bottom:4px;}
+.slider-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.slider-label{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--t2);letter-spacing:1px;text-transform:uppercase;}
+.slider-val{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--cyan);}
+input[type=range]{width:100%;appearance:none;height:2px;background:var(--border);outline:none;cursor:pointer;}
+input[type=range]::-webkit-slider-thumb{appearance:none;width:18px;height:18px;background:var(--cyan);box-shadow:0 0 8px var(--cyan);cursor:pointer;}
+
+/* SELECT */
+.sel{width:100%;background:#030c13;border:1px solid var(--border);color:var(--cyan);font-family:'Share Tech Mono',monospace;font-size:12px;padding:10px 12px;outline:none;appearance:none;}
+.sel:focus{border-color:var(--cyan);}
+
+/* TOGGLE */
+.toggle-row{display:flex;gap:1px;border:1px solid var(--border);overflow:hidden;}
+.tog-btn{flex:1;padding:10px 6px;background:transparent;border:none;cursor:pointer;font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--t3);letter-spacing:1px;text-transform:uppercase;}
+.tog-btn.active{background:var(--cyan);color:var(--bg);}
+.tog-btn:active{opacity:0.7;}
+
+/* BUTTONS */
+.btn{width:100%;padding:16px;font-family:'Orbitron',monospace;font-size:12px;font-weight:700;letter-spacing:3px;text-transform:uppercase;border:1px solid;cursor:pointer;background:transparent;transition:all 0.15s;}
+.btn:active{opacity:0.7;}
+.btn-green{color:var(--green);border-color:var(--green);}
+.btn-red{color:var(--red);border-color:var(--red);}
+.btn-cyan{color:var(--cyan);border-color:var(--cyan);}
+.btn-amber{color:var(--amber);border-color:var(--amber);}
+
+/* INPUT */
+.txt-input{width:100%;background:#030c13;border:1px solid var(--border);color:var(--cyan);font-family:'Share Tech Mono',monospace;font-size:12px;padding:12px 14px;outline:none;margin-bottom:10px;}
+.txt-input:focus{border-color:var(--cyan);}
+
+/* SECTION LABEL */
+.sec-label{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t3);letter-spacing:3px;text-transform:uppercase;padding:4px 0;}
+
+/* DIVIDER */
+.div{height:1px;background:var(--border);}
+
+/* ALERT */
+.alert{border:1px solid;padding:14px;position:relative;animation:fadeUp 0.3s ease;}
+.alert-title{font-family:'Orbitron',monospace;font-size:9px;font-weight:700;letter-spacing:2px;margin-bottom:6px;}
+.alert-body{font-family:'Rajdhani',sans-serif;font-size:13px;color:var(--t2);line-height:1.5;}
+.alert-ts{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t3);margin-top:6px;}
+.alert-x{position:absolute;top:8px;right:10px;background:none;border:none;color:var(--t3);cursor:pointer;font-size:16px;padding:2px 6px;}
+.a-critical{border-color:var(--red);background:rgba(255,51,85,0.05);}
+.a-critical .alert-title{color:var(--red);}
+.a-warning{border-color:var(--amber);background:rgba(255,170,0,0.05);}
+.a-warning .alert-title{color:var(--amber);}
+.a-info{border-color:var(--cyan);background:rgba(0,212,255,0.05);}
+.a-info .alert-title{color:var(--cyan);}
+.a-suggest{border-color:var(--purple);background:rgba(153,69,255,0.05);}
+.a-suggest .alert-title{color:var(--purple);}
+.a-macro{border-color:#44ff88;background:rgba(68,255,136,0.05);}
+.a-macro .alert-title{color:#44ff88;}
+
+/* LOG */
+.log-wrap{background:#030c13;border:1px solid var(--border);height:220px;overflow-y:auto;padding:10px;}
+.log-wrap::-webkit-scrollbar{width:3px;}
+.log-wrap::-webkit-scrollbar-thumb{background:var(--border);}
+.log-entry{font-family:'Share Tech Mono',monospace;font-size:10px;padding:3px 0 3px 8px;border-left:2px solid;margin-bottom:3px;line-height:1.6;}
+.log-t{color:var(--t3);margin-right:6px;}
+.log-cat{margin-right:6px;font-weight:bold;}
+.le-info{border-color:var(--cyan);}
+.le-info .log-cat{color:var(--cyan);}
+.le-success{border-color:var(--green);}
+.le-success .log-cat{color:var(--green);}
+.le-warning{border-color:var(--amber);}
+.le-warning .log-cat{color:var(--amber);}
+.le-error{border-color:var(--red);}
+.le-error .log-cat{color:var(--red);}
+.le-prompt{border-color:var(--purple);}
+.le-prompt .log-cat{color:var(--purple);}
+
+/* ORDERBOOK */
+.ob-wrap{display:grid;grid-template-columns:1fr 1fr;gap:1px;}
+.ob-hdr{display:flex;justify-content:space-between;font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t3);letter-spacing:1px;padding:4px 0;border-bottom:1px solid var(--border);margin-bottom:3px;}
+.ob-row{display:flex;justify-content:space-between;font-family:'Share Tech Mono',monospace;font-size:10px;padding:3px 4px;position:relative;overflow:hidden;}
+.ob-bg{position:absolute;top:0;bottom:0;left:0;opacity:0.1;}
+.ob-bid .ob-bg{background:var(--green);}
+.ob-ask .ob-bg{background:var(--red);}
+.ob-bid .ob-p{color:var(--green);}
+.ob-ask .ob-p{color:var(--red);}
+.ob-s{color:var(--t2);}
+.spread-row{display:flex;justify-content:space-between;align-items:center;background:var(--bg2);padding:8px 12px;margin-top:2px;font-family:'Share Tech Mono',monospace;font-size:10px;}
+.spread-lbl{color:var(--t3);letter-spacing:1px;}
+.spread-v{color:var(--amber);font-size:13px;}
+
+/* MINI CHART */
+.minichart{width:100%;height:80px;display:block;}
+
+/* TRADE TABLE */
+.trade-tbl{width:100%;border-collapse:collapse;font-family:'Share Tech Mono',monospace;font-size:10px;}
+.trade-tbl th{text-align:left;padding:6px 6px;color:var(--t3);font-size:8px;letter-spacing:1px;border-bottom:1px solid var(--border);}
+.trade-tbl td{padding:6px 6px;color:var(--t2);}
+.trade-tbl tr:hover td{background:rgba(0,212,255,0.03);}
+.tc-buy{color:var(--green);}
+.tc-sell{color:var(--red);}
+
+/* MACRO GRID */
+.macro-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.macro-cell{background:var(--card);border:1px solid var(--border);padding:12px;}
+.mc-label{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t3);letter-spacing:1px;margin-bottom:4px;}
+.mc-val{font-family:'Orbitron',monospace;font-size:14px;font-weight:700;}
+.mv-up{color:var(--green);}
+.mv-dn{color:var(--red);}
+.mv-n{color:var(--t2);}
+
+/* FEE WARN */
+.fee-badge{display:inline-block;font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:1px;padding:3px 8px;border:1px solid;margin-top:6px;}
+.fb-warn{border-color:var(--red);color:var(--red);}
+.fb-ok{border-color:var(--green);color:var(--green);}
+
+/* API STATUS */
+.api-status{display:flex;align-items:center;gap:10px;padding:10px 0;}
+.api-dot{width:10px;height:10px;border-radius:50%;background:var(--t3);}
+.api-label{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--t3);letter-spacing:2px;}
+</style>
+
+</head>
+<body>
+
+<!-- ===== LOGIN ===== -->
+
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="logo">NEXUS</div>
+    <div class="logo-sub">SHX // VOLUME ENGINE v2.4</div>
+    <div class="field-label">ACCESS CODE</div>
+    <input type="password" id="pwInput" class="field-input" placeholder="••••••••" maxlength="32" autocomplete="off"/>
+    <button class="login-btn" onclick="doLogin()">▶ AUTHENTICATE</button>
+    <div class="login-err" id="loginErr"></div>
+    <div class="login-status"><div class="pdot"></div>KRAKEN STANDBY</div>
+  </div>
+</div>
+
+<!-- ===== APP ===== -->
+
+<div id="app">
+
+  <!-- Topbar -->
+
+  <div class="topbar">
+    <div class="topbar-brand">NEXUS</div>
+    <div class="topbar-right">
+      <div class="status-pill" id="statusPill"><div class="sdot"></div><span id="statusTxt">STANDBY</span></div>
+      <div class="clock" id="clock">--:--</div>
+      <button class="lock-btn" onclick="doLogout()">⏏</button>
+    </div>
+  </div>
+
+  <!-- Tab Nav -->
+
+  <div class="tab-nav">
+    <button class="tnav-btn active" onclick="showTab('dash',this)">DASHBOARD</button>
+    <button class="tnav-btn" onclick="showTab('book',this)">ORDERBOOK</button>
+    <button class="tnav-btn" onclick="showTab('alerts',this)">ALERTS</button>
+    <button class="tnav-btn" onclick="showTab('trades',this)">TRADES</button>
+    <button class="tnav-btn" onclick="showTab('config',this)">CONFIG</button>
+    <button class="tnav-btn" onclick="showTab('macro',this)">MACRO</button>
+  </div>
+
+  <!-- ===== DASHBOARD TAB ===== -->
+
+  <div class="tab-pane active" id="tab-dash">
+
+```
+<!-- Price + Spread -->
+<div class="grid2">
+  <div class="card">
+    <div class="card-label">SHX/USD PRICE</div>
+    <div class="card-val c-cyan" id="livePrice">$0.00412</div>
+    <div class="card-sub">LIVE FEED</div>
+  </div>
+  <div class="card">
+    <div class="card-label">SPREAD</div>
+    <div class="card-val c-amber" id="spreadVal">-- bps</div>
+    <div id="spreadBadge" class="fee-badge fb-warn">CHECKING...</div>
+  </div>
+</div>
+
+<!-- Mini Chart -->
+<div class="card" style="padding:10px 12px;">
+  <div class="card-label" style="margin-bottom:8px;">PRICE ACTION</div>
+  <canvas class="minichart" id="miniChart"></canvas>
+</div>
+
+<!-- Stats Row -->
+<div class="grid2">
+  <div class="card">
+    <div class="card-label">SESSION P&L</div>
+    <div class="card-val c-green" id="statPnL">+$0.0000</div>
+    <div class="card-sub" id="statFeesSub">Fees: $0.000</div>
+  </div>
+  <div class="card">
+    <div class="card-label">VOLUME TODAY</div>
+    <div class="card-val c-t1" id="statVol">$0</div>
+    <div class="prog-wrap"><div class="prog-bar" id="volBar" style="width:0%"></div></div>
+    <div class="card-sub" id="volPct">0% of target</div>
+  </div>
+</div>
+
+<div class="grid2">
+  <div class="card">
+    <div class="card-label">TOTAL TRADES</div>
+    <div class="card-val c-t1" id="statTrades">0</div>
+    <div class="card-sub" id="statWR">Win: 0%</div>
+  </div>
+  <div class="card">
+    <div class="card-label">FEES PAID</div>
+    <div class="card-val c-red" id="statFees">$0.000</div>
+    <div class="card-sub">Minimize this</div>
+  </div>
+</div>
+
+<!-- Break Even -->
+<div class="card">
+  <div class="card-label">BREAK-EVEN SPREAD NEEDED</div>
+  <div class="card-val c-amber" id="breakEven">32.0 bps</div>
+  <div class="card-sub" id="breakEvenSub">at 0.16% maker fee — must beat this every trade</div>
+</div>
+
+<!-- Controls -->
+<div class="card">
+  <div class="sec-label" style="margin-bottom:12px;">STRATEGY SETTINGS</div>
+
+  <div class="slider-group">
+    <div class="slider-row">
+      <span class="slider-label">ORDER SIZE (USD)</span>
+      <span class="slider-val" id="oSizeVal">$50</span>
+    </div>
+    <input type="range" min="10" max="500" value="50" id="oSizeSlider" oninput="sv('oSizeSlider','oSizeVal','$','');calcFees()"/>
+  </div>
+
+  <div class="slider-group" style="margin-top:14px;">
+    <div class="slider-row">
+      <span class="slider-label">MAX SPREAD TO ENTER</span>
+      <span class="slider-val" id="maxSpVal">25 bps</span>
+    </div>
+    <input type="range" min="5" max="100" value="25" id="maxSpSlider" oninput="sv('maxSpSlider','maxSpVal','',' bps')"/>
+  </div>
+
+  <div class="slider-group" style="margin-top:14px;">
+    <div class="slider-row">
+      <span class="slider-label">MIN NET BPS (after fees)</span>
+      <span class="slider-val" id="minNetVal">2 bps</span>
+    </div>
+    <input type="range" min="0" max="15" value="2" id="minNetSlider" oninput="sv('minNetSlider','minNetVal','',' bps')"/>
+  </div>
+
+  <div class="slider-group" style="margin-top:14px;">
+    <div class="slider-row">
+      <span class="slider-label">DAILY VOLUME TARGET</span>
+      <span class="slider-val" id="volTargVal">$2000</span>
+    </div>
+    <input type="range" min="100" max="10000" step="100" value="2000" id="volTargSlider" oninput="sv('volTargSlider','volTargVal','$','')"/>
+  </div>
+
+  <div class="slider-group" style="margin-top:14px;">
+    <div class="slider-row">
+      <span class="slider-label">INTERVAL (SEC)</span>
+      <span class="slider-val" id="intVal">30s</span>
+    </div>
+    <input type="range" min="10" max="120" value="30" id="intSlider" oninput="sv('intSlider','intVal','','s')"/>
+  </div>
+
+  <div class="slider-group" style="margin-top:14px;">
+    <div class="slider-row">
+      <span class="slider-label">MAX DAILY LOSS (USD)</span>
+      <span class="slider-val" id="maxLossVal">$10</span>
+    </div>
+    <input type="range" min="1" max="100" value="10" id="maxLossSlider" oninput="sv('maxLossSlider','maxLossVal','$','')"/>
+  </div>
+
+  <div style="margin-top:16px;">
+    <div class="sec-label" style="margin-bottom:8px;">FEE STRUCTURE</div>
+    <select class="sel" id="feeSelect" onchange="calcFees()">
+      <option value="0.26">Kraken Taker 0.26%</option>
+      <option value="0.16" selected>Kraken Maker 0.16%</option>
+      <option value="0.10">Kraken Pro 0.10%</option>
+    </select>
+  </div>
+
+  <div style="margin-top:16px;">
+    <div class="sec-label" style="margin-bottom:8px;">ORDER MODE</div>
+    <div class="toggle-row" id="modeRow">
+      <button class="tog-btn active" onclick="setMode('maker',this)">MAKER</button>
+      <button class="tog-btn" onclick="setMode('taker',this)">TAKER</button>
+      <button class="tog-btn" onclick="setMode('smart',this)">SMART</button>
+    </div>
+  </div>
+
+  <div style="margin-top:16px;">
+    <div class="sec-label" style="margin-bottom:8px;">AI PROMPTS</div>
+    <div class="toggle-row" id="aiRow">
+      <button class="tog-btn active" onclick="setAI(true,this)">ON</button>
+      <button class="tog-btn" onclick="setAI(false,this)">OFF</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bot Buttons -->
+<button class="btn btn-green" id="startBtn" onclick="startBot()">▶ START ENGINE</button>
+<button class="btn btn-red" id="stopBtn" onclick="stopBot()" style="display:none">■ EMERGENCY STOP</button>
+<button class="btn btn-cyan" onclick="runMarketCheck()">⟳ MARKET CHECK</button>
+
+<!-- Log -->
+<div class="card" style="padding:0;">
+  <div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+    <div class="sec-label" style="margin:0;">TRADE LOG</div>
+    <button onclick="document.getElementById('logWrap').innerHTML=''" style="background:none;border:none;color:var(--t3);font-family:'Share Tech Mono',monospace;font-size:9px;cursor:pointer;letter-spacing:1px;">CLEAR</button>
+  </div>
+  <div class="log-wrap" id="logWrap">
+    <div class="log-entry le-info"><span class="log-t">--:--:--</span><span class="log-cat">SYS</span><span>NEXUS initialized. Awaiting start.</span></div>
+    <div class="log-entry le-warning"><span class="log-t">--:--:--</span><span class="log-cat">NOTE</span><span>Add Kraken API keys in CONFIG tab for live trading.</span></div>
+  </div>
+</div>
+```
+
+  </div><!-- end dash -->
+
+  <!-- ===== ORDERBOOK TAB ===== -->
+
+  <div class="tab-pane" id="tab-book">
+    <div class="card">
+      <div class="card-label" style="margin-bottom:10px;">LIVE ORDERBOOK — SHX/USD</div>
+      <div class="ob-wrap">
+        <div>
+          <div class="ob-hdr"><span>SIZE</span><span>BID</span></div>
+          <div id="bidBook"></div>
+        </div>
+        <div>
+          <div class="ob-hdr"><span>ASK</span><span>SIZE</span></div>
+          <div id="askBook"></div>
+        </div>
+      </div>
+      <div class="spread-row">
+        <span class="spread-lbl">SPREAD</span>
+        <span class="spread-v" id="obSpread">0.000080</span>
+        <span class="spread-lbl">BPS</span>
+        <span class="spread-v" id="obBps">19.4</span>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <div class="card-label">BEST BID</div>
+        <div class="card-val c-green" id="bestBid">$0.00410</div>
+      </div>
+      <div class="card">
+        <div class="card-label">BEST ASK</div>
+        <div class="card-val c-red" id="bestAsk">$0.00418</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">LIQUIDITY DEPTH VISUAL</div>
+      <div style="display:flex;align-items:flex-end;gap:2px;height:60px;margin-top:10px;" id="depthViz"></div>
+    </div>
+  </div>
+
+  <!-- ===== ALERTS TAB ===== -->
+
+  <div class="tab-pane" id="tab-alerts">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div class="sec-label">INTELLIGENCE ALERTS</div>
+      <button onclick="document.getElementById('alertsCont').innerHTML=''" style="background:none;border:none;color:var(--t3);font-family:'Share Tech Mono',monospace;font-size:9px;cursor:pointer;letter-spacing:1px;">CLEAR ALL</button>
+    </div>
+    <div id="alertsCont" style="display:flex;flex-direction:column;gap:10px;"></div>
+  </div>
+
+  <!-- ===== TRADES TAB ===== -->
+
+  <div class="tab-pane" id="tab-trades">
+    <div class="card" style="padding:0;overflow-x:auto;">
+      <table class="trade-tbl">
+        <thead><tr><th>TIME</th><th>TYPE</th><th>PRICE</th><th>SIZE</th><th>P&L</th></tr></thead>
+        <tbody id="tradeBody"><tr><td colspan="5" style="color:var(--t3);font-size:9px;letter-spacing:2px;padding:16px 6px;">NO TRADES YET</td></tr></tbody>
+      </table>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <div class="card-label">AVG SPREAD CAPTURED</div>
+        <div class="card-val c-t1" id="avgSpread">0.0 bps</div>
+      </div>
+      <div class="card">
+        <div class="card-label">ROUND-TRIP COST</div>
+        <div class="card-val c-red" id="rtCost">$0.16</div>
+        <div class="card-sub">per $50 order</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== CONFIG TAB ===== -->
+
+  <div class="tab-pane" id="tab-config">
+
+```
+<div class="sec-label">KRAKEN API CONNECTION</div>
+
+<div class="card">
+  <div class="api-status">
+    <div class="api-dot" id="apiDot"></div>
+    <div class="api-label" id="apiLabel">SIMULATION MODE</div>
+  </div>
+  <div class="grid2" style="margin-bottom:12px;">
+    <div>
+      <div class="card-label">USD BALANCE</div>
+      <div style="font-family:'Orbitron',monospace;font-size:16px;color:var(--green);" id="balUSD">—</div>
+    </div>
+    <div>
+      <div class="card-label">SHX BALANCE</div>
+      <div style="font-family:'Orbitron',monospace;font-size:16px;color:var(--t2);" id="balSHX">—</div>
+    </div>
+  </div>
+  <div style="background:rgba(255,51,85,0.08);border:1px solid var(--red);padding:10px 12px;margin-bottom:12px;font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--red);letter-spacing:1px;line-height:1.8;">
+    REQUIRED PERMISSIONS:<br/>
+    ✓ Query Funds<br/>
+    ✓ Query Open Orders &amp; Trades<br/>
+    ✓ Create &amp; Modify Orders<br/>
+    ✗ DO NOT enable Withdraw
+  </div>
+  <div class="field-label">API KEY (Public)</div>
+  <input type="text" id="apiKey" class="txt-input" placeholder="Paste API Key..."/>
+  <div class="field-label">PRIVATE KEY (Secret)</div>
+  <input type="password" id="apiSecret" class="txt-input" placeholder="Paste Private Key..."/>
+  <button class="btn btn-cyan" onclick="saveKeys()" style="margin-top:4px;">💾 SAVE &amp; TEST CONNECTION</button>
+  <button class="btn btn-amber" onclick="getBalance()" style="margin-top:8px;">⟳ REFRESH BALANCE</button>
+</div>
+
+<div class="div"></div>
+<div class="sec-label">RISK MANAGEMENT</div>
+
+<div class="card">
+  <div class="slider-group">
+    <div class="slider-row">
+      <span class="slider-label">MAX DAILY LOSS</span>
+      <span class="slider-val" id="cfg-maxLoss">$10</span>
+    </div>
+    <input type="range" min="1" max="200" value="10" id="cfg-maxLossSlider" oninput="sv('cfg-maxLossSlider','cfg-maxLoss','$','')"/>
+  </div>
+  <div class="slider-group" style="margin-top:14px;">
+    <div class="slider-row">
+      <span class="slider-label">MAX OPEN POSITIONS</span>
+      <span class="slider-val" id="cfg-maxPos">3</span>
+    </div>
+    <input type="range" min="1" max="10" value="3" id="cfg-maxPosSlider" oninput="sv('cfg-maxPosSlider','cfg-maxPos','','')"/>
+  </div>
+</div>
+
+<div class="div"></div>
+<div class="sec-label">CHANGE APP PASSWORD</div>
+<div class="card">
+  <div class="field-label">NEW PASSWORD</div>
+  <input type="password" id="newPw" class="txt-input" placeholder="Enter new password..."/>
+  <button class="btn btn-cyan" onclick="changePw()">UPDATE PASSWORD</button>
+</div>
+```
+
+  </div>
+
+  <!-- ===== MACRO TAB ===== -->
+
+  <div class="tab-pane" id="tab-macro">
+    <div class="sec-label">MACRO CONDITIONS</div>
+    <div class="macro-grid">
+      <div class="macro-cell"><div class="mc-label">BTC/USD</div><div class="mc-val mv-up" id="mBTC">$82,450</div></div>
+      <div class="macro-cell"><div class="mc-label">ETH/USD</div><div class="mc-val mv-up" id="mETH">$3,241</div></div>
+      <div class="macro-cell"><div class="mc-label">FEAR &amp; GREED</div><div class="mc-val mv-n" id="mFear">62 GREED</div></div>
+      <div class="macro-cell"><div class="mc-label">USD INDEX</div><div class="mc-val mv-dn" id="mDXY">103.2 ↓</div></div>
+      <div class="macro-cell"><div class="mc-label">SHX 24H VOL</div><div class="mc-val mv-up" id="mSHXVol">$14.2K</div></div>
+      <div class="macro-cell"><div class="mc-label">BOOK DEPTH</div><div class="mc-val mv-n" id="mDepth">THIN</div></div>
+      <div class="macro-cell"><div class="mc-label">FED RATE</div><div class="mc-val mv-n" id="mFed">5.25%</div></div>
+      <div class="macro-cell"><div class="mc-label">MARKET PHASE</div><div class="mc-val c-amber" id="mPhase">RANGING</div></div>
+    </div>
+
+```
+<div class="card">
+  <div class="card-label">TRADABILITY SCORE</div>
+  <div class="card-val c-amber" id="tradeScore">64/100</div>
+  <div class="prog-wrap" style="margin-top:10px;"><div class="prog-bar" id="tradeScoreBar" style="width:64%;background:linear-gradient(90deg,var(--amber),var(--green))"></div></div>
+  <div class="card-sub" id="tradeScoreNote" style="margin-top:6px;">Moderate — proceed with caution</div>
+</div>
+
+<button class="btn btn-cyan" onclick="runMacroScan()">⟳ REFRESH MACRO DATA</button>
+
+<div class="card">
+  <div class="card-label" style="margin-bottom:10px;">KEY RISK FACTORS — SHX</div>
+  <div style="font-family:'Rajdhani',sans-serif;font-size:14px;color:var(--t2);line-height:1.8;">
+    • SHX trades on Stellar network — watch XLM price<br/>
+    • Daily volume typically &lt;$50K — extremely thin<br/>
+    • Best liquidity: 13:00–17:00 UTC<br/>
+    • Avoid trading during FOMC, CPI, NFP releases<br/>
+    • BTC drop &gt;3% = liquidity dries up fast<br/>
+    • Maker-only mode essential at current spreads<br/>
+    • Self-impact risk: your orders may be &gt;5% of book
+  </div>
+</div>
+```
+
+  </div>
+
+</div><!-- end app -->
+
+<script>
+// ============================================================
+//  NEXUS — Full Engine
+// ============================================================
+
+let APP_PASSWORD = "nexus2024"; // change in CONFIG tab
+
+// ---- State ----
+let botRunning=false, botInterval=null;
+let sessionPnL=0, sessionFees=0, sessionVol=0;
+let sessionTrades=0, sessionWins=0;
+let totalSpreads=0, spreadCount=0;
+let currentPrice=0.00412, priceHistory=[];
+let krakenKey='', krakenSecret='', liveMode=false;
+let aiOn=true, orderMode='maker', waitingFill=false;
+let chartCtx=null;
+
+// ---- Login ----
+function doLogin(){
+  const v=document.getElementById('pwInput').value;
+  if(v===APP_PASSWORD){
     document.getElementById('loginScreen').style.display='none';
-    const app=document.getElementById('app');
-    app.style.display='flex';
+    const a=document.getElementById('app');
+    a.style.display='flex';
     initApp();
   } else {
-    const e=document.getElementById('loginError');
-    e.textContent='⛔ ACCESS DENIED';
-    document.getElementById('passwordInput').value='';
+    const e=document.getElementById('loginErr');
+    e.textContent='⛔ ACCESS DENIED — INVALID CODE';
+    document.getElementById('pwInput').value='';
     setTimeout(()=>e.textContent='',3000);
   }
 }
-document.getElementById('passwordInput').addEventListener('keydown',e=>{if(e.key==='Enter')attemptLogin();});
+document.getElementById('pwInput').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 
-function logout(){
+function doLogout(){
   stopBot();
   document.getElementById('app').style.display='none';
   document.getElementById('loginScreen').style.display='flex';
-  document.getElementById('passwordInput').value='';
+  document.getElementById('pwInput').value='';
 }
 
+function changePw(){
+  const np=document.getElementById('newPw').value.trim();
+  if(!np||np.length<4){log('error','CFG','Password must be at least 4 characters.');return;}
+  APP_PASSWORD=np;
+  document.getElementById('newPw').value='';
+  log('success','CFG','Password updated successfully.');
+  addAlert('info','🔑 PASSWORD CHANGED','Your app password has been updated. Remember it — there is no recovery option.');
+}
+
+// ---- Init ----
 function initApp(){
-  setInterval(()=>{document.getElementById('clockDisplay').textContent=new Date().toTimeString().split(' ')[0];},1000);
+  setInterval(()=>{
+    const t=new Date().toTimeString().split(' ')[0];
+    document.getElementById('clock').textContent=t.slice(0,5);
+  },1000);
+  for(let i=0;i<50;i++){currentPrice=0.00412+(Math.random()-0.5)*0.0001;priceHistory.push(currentPrice);}
+  initChart();
   setInterval(tickPrice,2000);
-  setInterval(runScheduledPrompt, 180000);
+  setInterval(updateOrderBook,3000);
+  setInterval(()=>{if(aiOn&&botRunning)runScheduledPrompt();},180000);
+  setInterval(buildDepthViz,8000);
+  buildDepthViz();
+  updateOrderBook();
+  calcFees();
   seedAlerts();
-  log('SYS','NEXUS initialized — simulation mode active.');
-  log('NOTICE','Paste Kraken API keys above to enable live trading.');
+  log('info','SYS','NEXUS v2.4 initialized — simulation mode active.');
+  log('warning','NOTE','Add Kraken API keys in CONFIG tab to enable live trading.');
 }
 
+// ---- Chart ----
+function initChart(){
+  const canvas=document.getElementById('miniChart');
+  chartCtx=canvas.getContext('2d');
+  canvas.width=canvas.offsetWidth*2;
+  canvas.height=160;
+  drawChart();
+  window.addEventListener('resize',()=>{canvas.width=canvas.offsetWidth*2;drawChart();});
+}
+
+function drawChart(){
+  if(!chartCtx)return;
+  const w=chartCtx.canvas.width,h=chartCtx.canvas.height;
+  chartCtx.clearRect(0,0,w,h);
+  if(priceHistory.length<2)return;
+  const mn=Math.min(...priceHistory)*0.9998,mx=Math.max(...priceHistory)*1.0002;
+  const rng=mx-mn||0.0001;
+  const pts=priceHistory.map((v,i)=>({x:(i/(priceHistory.length-1))*w,y:h-((v-mn)/rng)*h}));
+  // Fill
+  const g=chartCtx.createLinearGradient(0,0,0,h);
+  g.addColorStop(0,'rgba(0,212,255,0.2)');g.addColorStop(1,'rgba(0,212,255,0)');
+  chartCtx.beginPath();chartCtx.moveTo(pts[0].x,h);
+  pts.forEach(p=>chartCtx.lineTo(p.x,p.y));
+  chartCtx.lineTo(pts[pts.length-1].x,h);chartCtx.closePath();
+  chartCtx.fillStyle=g;chartCtx.fill();
+  // Line
+  chartCtx.beginPath();chartCtx.strokeStyle='#00d4ff';chartCtx.lineWidth=2;
+  chartCtx.shadowColor='#00d4ff';chartCtx.shadowBlur=6;
+  pts.forEach((p,i)=>i===0?chartCtx.moveTo(p.x,p.y):chartCtx.lineTo(p.x,p.y));
+  chartCtx.stroke();chartCtx.shadowBlur=0;
+  // Dot
+  const lp=pts[pts.length-1];
+  chartCtx.beginPath();chartCtx.arc(lp.x,lp.y,5,0,Math.PI*2);
+  chartCtx.fillStyle='#00ff88';chartCtx.shadowColor='#00ff88';chartCtx.shadowBlur=10;
+  chartCtx.fill();chartCtx.shadowBlur=0;
+}
+
+// ---- Price tick ----
 function tickPrice(){
   currentPrice=Math.max(0.001,currentPrice+(Math.random()-0.499)*0.00002);
+  priceHistory.push(currentPrice);
+  if(priceHistory.length>80)priceHistory.shift();
   const spread=0.000065+Math.random()*0.00004;
   const bps=((spread/currentPrice)*10000).toFixed(1);
-  document.getElementById('livePrice').textContent='$'+currentPrice.toFixed(6);
-  document.getElementById('spreadBps').textContent=bps+' bps';
   const feeRate=parseFloat(document.getElementById('feeSelect').value)/100;
-  const beSpread=(feeRate*2*10000).toFixed(1);
-  document.getElementById('breakEvenSpread').textContent=beSpread+' bps';
-}
-
-async function krakenSign(urlPath,params){
-  const nonce=Date.now().toString();
-  params.nonce=nonce;
-  const postBody=new URLSearchParams(params).toString();
-  const encoder=new TextEncoder();
-  const sha256Hash=await crypto.subtle.digest('SHA-256',encoder.encode(nonce+postBody));
-  const secretBytes=Uint8Array.from(atob(krakenApiSecret),c=>c.charCodeAt(0));
-  const hmacKey=await crypto.subtle.importKey('raw',secretBytes,{name:'HMAC',hash:'SHA-512'},false,['sign']);
-  const pathBytes=encoder.encode(urlPath);
-  const message=new Uint8Array(pathBytes.length+sha256Hash.byteLength);
-  message.set(pathBytes,0);
-  message.set(new Uint8Array(sha256Hash),pathBytes.length);
-  const sig=await crypto.subtle.sign('HMAC',hmacKey,message);
-  return{postBody,nonce,signature:btoa(String.fromCharCode(...new Uint8Array(sig)))};
-}
-
-async function krakenPrivate(endpoint,params={}){
-  if(!liveMode)return{error:['SIMULATION MODE']};
-  try{
-    const{postBody,nonce,signature}=await krakenSign(endpoint,params);
-    params.nonce=nonce;
-    const r=await fetch('https://api.kraken.com'+endpoint,{
-      method:'POST',
-      headers:{'API-Key':krakenApiKey,'API-Sign':signature,'Content-Type':'application/x-www-form-urlencoded'},
-      body:postBody
-    });
-    return await r.json();
-  }catch(err){log('ERR','API error: '+err.message);return{error:[err.message]};}
-}
-
-async function krakenPublic(endpoint,params={}){
-  try{
-    const qs=new URLSearchParams(params).toString();
-    const r=await fetch('https://api.kraken.com'+endpoint+(qs?'?'+qs:''));
-    return await r.json();
-  }catch(err){return{error:[err.message]};}
-}
-
-async function saveApiKeys(){
-  const k=document.getElementById('apiKey').value.trim();
-  const s=document.getElementById('apiSecret').value.trim();
-  if(!k||!s){log('ERR','Both API Key and Private Key required.');return;}
-  krakenApiKey=k; krakenApiSecret=s; liveMode=true;
-  log('CFG','Keys saved — testing connection...');
-  const r=await krakenPrivate('/0/private/Balance');
-  if(r.error&&r.error.length>0&&r.error[0]!=='SIMULATION MODE'){
-    log('ERR','Auth failed: '+r.error.join(', '));
-    addAlert('critical','⛔ AUTH FAILED','Check your API Key and Private Key. Make sure Query Funds permission is enabled on Kraken.');
-    liveMode=false; return;
+  const feeBps=(feeRate*2*10000).toFixed(1);
+  document.getElementById('livePrice').textContent='$'+currentPrice.toFixed(6);
+  document.getElementById('spreadVal').textContent=bps+' bps';
+  document.getElementById('obSpread').textContent=spread.toFixed(7);
+  document.getElementById('obBps').textContent=bps;
+  const badge=document.getElementById('spreadBadge');
+  if(parseFloat(bps)<parseFloat(feeBps)+2){
+    badge.textContent='⚠ BELOW BREAK-EVEN';badge.className='fee-badge fb-warn';
+  } else {
+    badge.textContent='✓ TRADEABLE';badge.className='fee-badge fb-ok';
   }
-  const b=r.result||{};
-  const usd=parseFloat(b['ZUSD']||b['USD']||0).toFixed(2);
-  const shx=parseFloat(b['SHX']||0).toFixed(4);
-  document.getElementById('balDisplay').textContent='USD: $'+usd+' | SHX: '+shx;
-  log('OK','✓ Connected — USD: $'+usd+' SHX: '+shx);
-  addAlert('info','✅ LIVE MODE ACTIVE','Kraken authenticated. USD: $'+usd+' | SHX: '+shx+'. Start with small orders to verify fills.');
+  drawChart();
+  calcFees();
 }
 
+// ---- Fee Calc ----
+function calcFees(){
+  const fr=parseFloat(document.getElementById('feeSelect').value)/100;
+  const os=parseFloat(document.getElementById('oSizeSlider').value);
+  const be=(fr*2*10000).toFixed(1);
+  const rt=(os*fr*2).toFixed(3);
+  document.getElementById('breakEven').textContent=be+' bps';
+  document.getElementById('breakEvenSub').textContent='at '+((fr*100).toFixed(2))+'% fee both sides';
+  document.getElementById('rtCost').textContent='$'+rt;
+}
+
+// ---- Slider helper ----
+function sv(sliderId,labelId,pre,suf){
+  document.getElementById(labelId).textContent=pre+document.getElementById(sliderId).value+suf;
+}
+
+// ---- Mode ----
+function setMode(m,btn){
+  orderMode=m;
+  btn.closest('.toggle-row').querySelectorAll('.tog-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(m==='taker'){
+    addAlert('critical','⛔ TAKER MODE WARNING','Taker fees (0.26% per side) require 52+ bps spread to break even. SHX typically shows 15–40 bps. You WILL lose money on most trades in taker mode. Switch to MAKER.');
+    log('warning','MODE','Taker mode — break-even requires 52 bps minimum spread.');
+  } else if(m==='maker'){
+    log('info','MODE','Maker mode active — post-only limit orders. Break-even: ~32 bps.');
+  } else {
+    log('info','MODE','Smart mode — prefers maker, taker fallback only when justified.');
+  }
+}
+
+function setAI(on,btn){
+  aiOn=on;
+  btn.closest('.toggle-row').querySelectorAll('.tog-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  log('info','AI','AI prompt system '+(on?'ENABLED':'DISABLED')+'.');
+}
+
+// ---- Bot ----
 function startBot(){
   if(botRunning)return;
   botRunning=true;
   document.getElementById('startBtn').style.display='none';
   document.getElementById('stopBtn').style.display='block';
-  const badge=document.getElementById('botStatusBadge');
-  badge.style.borderColor='#00ff88'; badge.style.color='#00ff88';
-  document.getElementById('botStatusText').textContent='RUNNING';
-  const interval=30000;
-  log('START','Engine running — SHX/USD spread scalp mode.');
-  addAlert('warning','⚠ PRE-START CHECK','Verify: spread > break-even shown above. Use maker mode. Start with minimum order size for first few trades.');
-  botInterval=setInterval(()=>liveMode?executeLiveCycle():executeSimCycle(),interval);
+  const pill=document.getElementById('statusPill');
+  pill.className='status-pill running';
+  document.getElementById('statusTxt').textContent='RUNNING';
+  const sec=parseInt(document.getElementById('intSlider').value)*1000;
+  log('success','START','Engine started — SHX/USD spread scalp | Mode: '+orderMode+' | Interval: '+(sec/1000)+'s');
+  if(aiOn)checkPreStart();
+  botInterval=setInterval(()=>liveMode?execLive():execSim(),sec);
 }
 
 function stopBot(){
   if(!botRunning)return;
-  botRunning=false; clearInterval(botInterval);
+  botRunning=false;clearInterval(botInterval);
   document.getElementById('startBtn').style.display='block';
   document.getElementById('stopBtn').style.display='none';
-  const badge=document.getElementById('botStatusBadge');
-  badge.style.borderColor='#3a5568'; badge.style.color='#3a5568';
-  document.getElementById('botStatusText').textContent='STANDBY';
-  log('STOP','Engine stopped. P&L: '+(sessionPnL>=0?'+':'')+'$'+sessionPnL.toFixed(4)+' | Fees: $'+sessionFees.toFixed(3)+' | Volume: $'+sessionVolume.toFixed(0));
+  const pill=document.getElementById('statusPill');
+  pill.className='status-pill';
+  document.getElementById('statusTxt').textContent='STANDBY';
+  log('error','STOP','Engine stopped. Net P&L: '+(sessionPnL>=0?'+':'')+'$'+sessionPnL.toFixed(4)+' | Fees: $'+sessionFees.toFixed(3)+' | Volume: $'+sessionVol.toFixed(0));
+  if(sessionPnL<0){
+    addAlert('critical','⚠ SESSION ENDED IN LOSS','Net loss: $'+Math.abs(sessionPnL).toFixed(4)+'. Fees ($'+sessionFees.toFixed(3)+') may have exceeded gross spread income. Review spread threshold before next session.');
+  } else {
+    addAlert('info','✅ SESSION COMPLETE','Net profit: +$'+sessionPnL.toFixed(4)+' on $'+sessionVol.toFixed(0)+' volume. Effective rate: '+(sessionVol>0?(sessionPnL/sessionVol*10000).toFixed(2):'0')+' bps/dollar traded.');
+  }
 }
 
-function executeSimCycle(){
-  const feeRate=parseFloat(document.getElementById('feeSelect').value)/100;
-  const orderSize=parseFloat(document.getElementById('orderSizeSlider').value);
-  const spreadBps=12+Math.random()*20;
-  const feeBps=feeRate*2*10000;
-  const netBps=spreadBps-feeBps;
-  if(netBps<2){log('GATE','Spread too thin ('+spreadBps.toFixed(1)+' bps) — skipping.');return;}
-  const fees=orderSize*feeRate*2;
-  const slip=(Math.random()*0.0003)*orderSize;
-  const pnl=(netBps/10000)*orderSize-slip;
-  sessionPnL+=pnl; sessionFees+=fees; sessionVolume+=orderSize*2; sessionTrades++;
-  totalSpreadsCapd+=spreadBps; spreadCount++;
+function checkPreStart(){
+  const fr=parseFloat(document.getElementById('feeSelect').value)/100;
+  const be=fr*2*10000;
+  const target=parseInt(document.getElementById('minNetSlider').value);
+  if(target<3)addAlert('critical','⛔ NET TARGET TOO LOW','Min net bps of '+target+' bps is dangerously close to zero. After slippage you may consistently lose. Set minimum ≥ 5 bps for a real edge.');
+  if(orderMode==='taker')addAlert('critical','⛔ TAKER MODE — DO NOT START','You are in taker mode. Break-even is 52 bps. SHX rarely offers this. Switch to MAKER before starting.');
+  addAlert('suggest','💡 PRE-START CHECKLIST','1. Spread currently showing above '+( be+5).toFixed(0)+' bps? 2. Order size appropriate for book depth? 3. Daily loss limit set? 4. API keys entered if live trading?');
+}
+
+// ---- Sim Cycle ----
+function execSim(){
+  const fr=parseFloat(document.getElementById('feeSelect').value)/100;
+  const os=parseFloat(document.getElementById('oSizeSlider').value);
+  const maxSp=parseInt(document.getElementById('maxSpSlider').value);
+  const minNet=parseInt(document.getElementById('minNetSlider').value);
+  const maxLoss=parseInt(document.getElementById('maxLossSlider').value);
+  if(sessionPnL<-maxLoss){addAlert('critical','⛔ DAILY LOSS LIMIT HIT','Auto-stop: loss exceeded $'+maxLoss+'.');stopBot();return;}
+  const volTarg=parseInt(document.getElementById('volTargSlider').value);
+  if(sessionVol>=volTarg){addAlert('info','✅ VOLUME TARGET MET','Daily target $'+volTarg+' reached. Stopping to lock in session.');stopBot();return;}
+  const spBps=12+Math.random()*20;
+  const feeBps=fr*2*10000;
+  const netBps=spBps-feeBps;
+  if(spBps>maxSp){log('warning','GATE','Spread '+spBps.toFixed(1)+'bps > max '+maxSp+' — skip.');return;}
+  if(netBps<minNet){log('warning','GATE','Net '+netBps.toFixed(2)+'bps < min '+minNet+' — skip.');if(aiOn&&Math.random()<0.3)addAlert('warning','⚠ SPREAD BELOW THRESHOLD','Net spread after fees: '+netBps.toFixed(1)+' bps. Below minimum. Skipping this cycle.');return;}
+  const fees=os*fr*2;
+  const slip=(Math.random()*0.0002)*os;
+  const pnl=(netBps/10000)*os-slip;
+  sessionPnL+=pnl;sessionFees+=fees;sessionVol+=os*2;sessionTrades++;
+  totalSpreads+=spBps;spreadCount++;
   if(pnl>0)sessionWins++;
   updateStats();
-  log(pnl>=0?'WIN':'LOSS','SIM trade | Spread: '+spreadBps.toFixed(1)+'bps | Net: '+netBps.toFixed(1)+'bps | P&L: '+(pnl>=0?'+':'')+'$'+pnl.toFixed(4)+' | Fees: $'+fees.toFixed(3));
-  if(Math.random()<0.1)runAIPrompt();
+  const now=new Date().toTimeString().split(' ')[0];
+  const side=Math.random()>0.5?'BUY→SELL':'SELL→BUY';
+  log(pnl>=0?'success':'warning','TRADE',side+' | Sp: '+spBps.toFixed(1)+'bps | Net: '+netBps.toFixed(1)+'bps | P&L: '+(pnl>=0?'+':'')+'$'+pnl.toFixed(4)+' | Fee: $'+fees.toFixed(3));
+  addTradeRow(now,side,currentPrice.toFixed(6),os,pnl);
+  if(aiOn)runAIChecks(spBps,netBps,pnl,fees);
 }
 
-async function executeLiveCycle(){
+// ---- Live Cycle ----
+async function execLive(){
   if(waitingFill)return;
-  const feeRate=parseFloat(document.getElementById('feeSelect').value)/100;
-  const orderSize=parseFloat(document.getElementById('orderSizeSlider').value);
-  const r=await krakenPublic('/0/public/Ticker',{pair:'SHXUSD'});
-  if(r.error&&r.error.length>0){log('ERR','Ticker failed');return;}
-  const tk=r.result?.[Object.keys(r.result||{})[0]];
+  const fr=parseFloat(document.getElementById('feeSelect').value)/100;
+  const os=parseFloat(document.getElementById('oSizeSlider').value);
+  const maxSp=parseInt(document.getElementById('maxSpSlider').value);
+  const minNet=parseInt(document.getElementById('minNetSlider').value);
+  const maxLoss=parseInt(document.getElementById('maxLossSlider').value);
+  if(sessionPnL<-maxLoss){addAlert('critical','⛔ DAILY LOSS LIMIT','Auto-stop.');stopBot();return;}
+  const r=await kPub('/0/public/Ticker',{pair:'SHXUSD'});
+  if(!r||r.error?.length)return;
+  const tk=r.result?.[Object.keys(r.result)[0]];
   if(!tk)return;
   const bid=parseFloat(tk.b[0]),ask=parseFloat(tk.a[0]);
-  const spreadBps=((ask-bid)/bid*10000);
-  const feeBps=feeRate*2*10000;
-  document.getElementById('livePrice').textContent='$'+parseFloat(tk.c[0]).toFixed(6);
-  document.getElementById('spreadBps').textContent=spreadBps.toFixed(1)+' bps';
-  if(spreadBps-feeBps<2){log('GATE','Net spread '+( spreadBps-feeBps).toFixed(1)+'bps below minimum — skip.');return;}
-  const vol=(orderSize/ask).toFixed(2);
+  const spBps=((ask-bid)/bid*10000);
+  const feeBps=fr*2*10000;
+  currentPrice=parseFloat(tk.c[0]);
+  document.getElementById('livePrice').textContent='$'+currentPrice.toFixed(6);
+  document.getElementById('spreadVal').textContent=spBps.toFixed(1)+' bps';
+  priceHistory.push(currentPrice);if(priceHistory.length>80)priceHistory.shift();
+  if(spBps>maxSp){log('warning','GATE','Spread '+spBps.toFixed(1)+'bps > max — skip.');return;}
+  if(spBps-feeBps<minNet){log('warning','GATE','Net '+(spBps-feeBps).toFixed(1)+'bps < min — skip.');return;}
+  const vol=(os/ask).toFixed(2);
   waitingFill=true;
-  log('ORDER','Placing buy limit @ $'+(bid+0.000001).toFixed(6)+' × '+vol+' SHX');
-  const placed=await krakenPrivate('/0/private/AddOrder',{pair:'SHXUSD',type:'buy',ordertype:'limit',price:(bid+0.000001).toFixed(6),volume:vol,oflags:'post'});
-  if(placed.error&&placed.error.length>0){log('ERR','Order failed: '+placed.error.join(', '));waitingFill=false;return;}
-  log('OK','✓ Order placed: '+placed.result?.txid?.[0]);
+  const bp=(bid+0.000001).toFixed(6);
+  log('info','ORDER','Buy limit @ $'+bp+' × '+vol+' SHX (post-only)');
+  const placed=await kPriv('/0/private/AddOrder',{pair:'SHXUSD',type:'buy',ordertype:'limit',price:bp,volume:vol,oflags:orderMode==='taker'?'':'post'});
+  if(placed.error?.length&&placed.error[0]!=='SIMULATION MODE'){log('error','ORDER','Rejected: '+placed.error.join(', '));waitingFill=false;return;}
+  const txid=placed.result?.txid?.[0];
+  if(txid)log('success','ORDER','✓ Placed: '+txid);
   waitingFill=false;
-  sessionVolume+=orderSize*2; sessionTrades++;
-  updateStats();
+  sessionVol+=os*2;sessionTrades++;updateStats();
+  setTimeout(getBalance,2000);
 }
 
+// ---- Stats ----
 function updateStats(){
-  const pnlEl=document.getElementById('statPnL');
-  pnlEl.textContent=(sessionPnL>=0?'+':'')+'$'+sessionPnL.toFixed(4);
-  pnlEl.style.color=sessionPnL>=0?'#00ff88':'#ff3355';
-  document.getElementById('statVolume').textContent='$'+sessionVolume.toFixed(0);
+  const vt=parseInt(document.getElementById('volTargSlider').value);
+  const pct=Math.min(100,(sessionVol/vt*100));
+  const wr=sessionTrades>0?(sessionWins/sessionTrades*100).toFixed(1):'0';
+  const avg=spreadCount>0?(totalSpreads/spreadCount).toFixed(1):'0.0';
+  document.getElementById('statVol').textContent='$'+sessionVol.toFixed(0);
+  document.getElementById('volBar').style.width=pct+'%';
+  document.getElementById('volPct').textContent=pct.toFixed(1)+'% of target';
+  document.getElementById('statTrades').textContent=sessionTrades;
+  document.getElementById('statWR').textContent='Win: '+wr+'%';
+  document.getElementById('statFees').textContent='$'+sessionFees.toFixed(3);
+  document.getElementById('statFeesSub').textContent='Fees: $'+sessionFees.toFixed(3);
+  document.getElementById('avgSpread').textContent=avg+' bps';
+  const pe=document.getElementById('statPnL');
+  pe.textContent=(sessionPnL>=0?'+':'')+'$'+sessionPnL.toFixed(4);
+  pe.className='card-val '+(sessionPnL>=0?'c-green':'c-red');
 }
 
-async function runMarketCheck(){
-  log('CHECK','Running market scan...');
-  addAlert('info','🔍 MARKET SCAN','Fetching live SHX/USD conditions...');
-  const r=await krakenPublic('/0/public/Ticker',{pair:'SHXUSD'});
-  if(r.error&&r.error.length>0){
-    addAlert('warning','⚠ SCAN FAILED','Could not reach Kraken public API. Check connection.');
-    return;
+function addTradeRow(time,type,price,size,pnl){
+  const tb=document.getElementById('tradeBody');
+  if(tb.children.length===1&&tb.children[0].children.length===1)tb.innerHTML='';
+  const r=document.createElement('tr');
+  r.innerHTML=`<td>${time}</td><td class="${type.startsWith('BUY')?'tc-buy':'tc-sell'}" style="font-size:8px">${type}</td><td>${parseFloat(price).toFixed(5)}</td><td>$${size}</td><td class="${pnl>=0?'tc-buy':'tc-sell'}">${(pnl>=0?'+':'')+'$'+pnl.toFixed(4)}</td>`;
+  tb.insertBefore(r,tb.firstChild);
+  while(tb.children.length>30)tb.removeChild(tb.lastChild);
+}
+
+// ---- AI Checks ----
+function runAIChecks(spBps,netBps,pnl,fees){
+  const wr=sessionTrades>0?sessionWins/sessionTrades:1;
+  const rand=Math.random();
+  if(sessionFees>0&&sessionFees>Math.abs(sessionPnL)*1.5&&rand<0.2)
+    addAlert('critical','⛔ FEES EXCEEDING PROFIT','Fees paid ($'+sessionFees.toFixed(3)+') are outpacing gross profit. Your net strategy return is negative. Consider stopping and widening your minimum spread threshold.');
+  if(wr<0.45&&sessionTrades>=5&&rand<0.15)
+    addAlert('warning','⚠ LOW WIN RATE','Win rate: '+(wr*100).toFixed(0)+'%. Below 50% on spread scalping suggests spread is too thin or slippage too high. Widen entry threshold.');
+  if(pnl<0&&rand<0.3)
+    log('warning','SLIP','Trade loss — likely slippage or spread moved during fill. SHX thin book = unpredictable fills.');
+  if(rand<0.08){
+    const tips=[
+      'SHX best trading hours: 13:00–17:00 UTC. Spreads tightest during US market hours.',
+      'Reminder: SHX daily volume is ~$14K. Your bot may represent 10–30% of daily volume.',
+      'Macro check: BTC ranging near $82K. Neutral conditions for altcoin spreads.',
+      'Post-only orders prevent taker fees. Verify oflags=post in your API config.',
+      'Round-trip fee at 0.16% maker = $'+((parseFloat(document.getElementById('feeSelect').value)/100)*2*parseFloat(document.getElementById('oSizeSlider').value)).toFixed(3)+' per trade. Every cycle must beat this.',
+      'USD strength (DXY>105) historically compresses crypto liquidity. Monitor weekly.',
+      'SHX is pegged on Stellar. Any XLM network congestion will widen spreads significantly.',
+      'If spread consistently runs below 30 bps, pause trading. Edge disappears below this level at maker fees.',
+    ];
+    log('info','AI',tips[Math.floor(Math.random()*tips.length)]);
   }
-  const tk=r.result?.[Object.keys(r.result||{})[0]];
-  if(!tk){addAlert('warning','⚠ NO DATA','SHX/USD ticker returned no data.');return;}
-  const bid=parseFloat(tk.b[0]),ask=parseFloat(tk.a[0]),last=parseFloat(tk.c[0]);
-  const vol=parseFloat(tk.v[1]).toFixed(0);
-  const spreadBps=((ask-bid)/bid*10000).toFixed(1);
-  const feeRate=parseFloat(document.getElementById('feeSelect').value)/100;
-  const feeBps=(feeRate*2*10000).toFixed(1);
-  const viable=parseFloat(spreadBps)>parseFloat(feeBps)+5?'✅ VIABLE':parseFloat(spreadBps)>parseFloat(feeBps)?'⚠ MARGINAL':'⛔ AVOID';
-  addAlert(parseFloat(spreadBps)>parseFloat(feeBps)+5?'info':'warning',
-    viable+' — SPREAD: '+spreadBps+' bps',
-    'Bid: $'+bid.toFixed(6)+' | Ask: $'+ask.toFixed(6)+' | Last: $'+last.toFixed(6)+' | 24h Vol: $'+vol+' | Fee cost: '+feeBps+' bps | Net: '+(spreadBps-feeBps).toFixed(1)+' bps');
 }
 
-function runAIPrompt(){
-  const tips=[
-    {t:'⚠ FEE DRAG CHECK',b:'Fees paid this session: $'+sessionFees.toFixed(3)+'. If fees exceed gross profit, your spread threshold needs to be higher.'},
-    {t:'💡 MAKER MODE TIP',b:'Always use post-only (maker) orders on SHX. Taker fees of 0.26% require 52+ bps spread just to break even — nearly impossible on SHX.'},
-    {t:'🌐 MACRO REMINDER',b:'SHX lives on the Stellar network. Monitor XLM price action and Stellar upgrade announcements — they directly impact SHX liquidity.'},
-    {t:'⚠ THIN BOOK WARNING',b:'SHX typically trades under $50K/day on Kraken. Your orders may represent a large % of book depth. Never place orders >5% of visible depth.'},
-    {t:'💡 TIMING TIP',b:'Best SHX liquidity windows are 13:00–17:00 UTC (US market hours). Avoid trading during low-volume periods — spreads widen dramatically.'},
-    {t:'🌐 BTC CORRELATION',b:'If BTC drops >3% rapidly, altcoin liquidity dries up fast. Spreads widen but fills become unreliable. Consider pausing during BTC volatility spikes.'},
+function runScheduledPrompt(){
+  const prompts=[
+    {t:'warning',title:'⚠ PERIODIC FEE CHECK',body:'Fees paid this session: $'+sessionFees.toFixed(3)+'. Ensure gross spread income consistently exceeds this. If not, your interval or size needs adjusting.'},
+    {t:'macro',title:'🌐 MACRO PULSE',body:'Check: (1) BTC trend direction. (2) Any Fed announcements this week? (3) Stellar/XLM news? All three directly impact SHX spread behavior.'},
+    {t:'suggest',title:'💡 OPTIMIZATION REVIEW',body:'Review last 10 trades. If avg captured spread < fee cost + 5bps, widen your spread threshold or reduce frequency. Quality over quantity on thin pairs.'},
+    {t:'info',title:'📊 VOLUME PACE',body:'Volume so far: $'+sessionVol.toFixed(0)+'. Target: $'+document.getElementById('volTargSlider').value+'. Adjust interval to stay on pace.'},
+    {t:'critical',title:'⚠ BOOK DEPTH REMINDER',body:'Never place orders > 5% of visible book depth on SHX. You are likely a meaningful percentage of daily volume. Large orders move the market against you.'},
   ];
-  const p=tips[Math.floor(Math.random()*tips.length)];
-  addAlert('suggest',p.t,p.b);
+  const p=prompts[Math.floor(Math.random()*prompts.length)];
+  addAlert(p.t,p.title,p.body);
 }
 
-function runScheduledPrompt(){if(botRunning)runAIPrompt();}
-
-function seedAlerts(){
-  setTimeout(()=>addAlert('warning','⚠ LOW LIQUIDITY PAIR','SHX/USD is extremely thin on Kraken (<$50K daily volume). Use maker-only orders and small sizes. Self-impact is a real risk.'),600);
-  setTimeout(()=>addAlert('info','📋 SIMULATION MODE','No API keys loaded — running in simulation. Go to API section above to connect your Kraken account for live trading.'),1400);
-  setTimeout(()=>addAlert('suggest','💡 BREAK-EVEN EXPLAINED','At 0.16% maker fee both sides = 32 bps minimum spread needed. At 0.26% taker = 52 bps. SHX typically trades 15–40 bps. Maker mode only.'),2200);
+// ---- Market Check ----
+async function runMarketCheck(){
+  log('info','CHECK','Running live market scan...');
+  const r=await kPub('/0/public/Ticker',{pair:'SHXUSD'});
+  if(!r||r.error?.length){
+    addAlert('warning','⚠ SCAN FAILED','Could not reach Kraken. Check connection.');return;
+  }
+  const tk=r.result?.[Object.keys(r.result)[0]];
+  if(!tk){addAlert('warning','⚠ NO DATA','No SHX/USD data returned.');return;}
+  const bid=parseFloat(tk.b[0]),ask=parseFloat(tk.a[0]);
+  const sp=((ask-bid)/bid*10000).toFixed(1);
+  const fr=parseFloat(document.getElementById('feeSelect').value)/100;
+  const feBps=(fr*2*10000).toFixed(1);
+  const net=(parseFloat(sp)-parseFloat(feBps)).toFixed(1);
+  const verdict=parseFloat(net)>5?'✅ VIABLE':parseFloat(net)>0?'⚠ MARGINAL':'⛔ AVOID';
+  const type=parseFloat(net)>5?'info':parseFloat(net)>0?'warning':'critical';
+  document.getElementById('livePrice').textContent='$'+parseFloat(tk.c[0]).toFixed(6);
+  document.getElementById('spreadVal').textContent=sp+' bps';
+  addAlert(type,verdict+' — SPREAD: '+sp+' bps','Bid: $'+bid.toFixed(6)+' | Ask: $'+ask.toFixed(6)+' | Fee cost: '+feBps+' bps | Net after fees: '+net+' bps | 24h Vol: $'+parseFloat(tk.v[1]).toFixed(0)+'\n\n'+(parseFloat(net)>5?'Conditions suitable. Proceed with standard caution.':parseFloat(net)>0?'Barely covers fees. One bad fill = net loss. High risk.':'Spread DOES NOT cover fees. Any trade will lose money.'));
+  showTab('alerts',document.querySelector('.tnav-btn:nth-child(3)'));
 }
 
+async function runMacroScan(){
+  log('info','MACRO','Running macro environment scan...');
+  const r=await kPub('/0/public/Ticker',{pair:'XXBTZUSD'});
+  if(r&&!r.error?.length){
+    const tk=r.result?.[Object.keys(r.result)[0]];
+    if(tk)document.getElementById('mBTC').textContent='$'+parseFloat(tk.c[0]).toLocaleString(undefined,{maximumFractionDigits:0});
+  }
+  addAlert('macro','🌐 MACRO SCAN COMPLETE','BTC data refreshed from Kraken. Manual checks needed for: Fear & Greed Index (alternative.me), DXY (tradingview.com/symbols/TVC-DXY), Fed calendar (federalreserve.gov). SHX-specific: check Stellar.org news for network upgrades.');
+}
+
+// ---- Orderbook ----
+function updateOrderBook(){
+  const bid=currentPrice*(1-Math.random()*0.001);
+  const ask=currentPrice*(1+Math.random()*0.001);
+  document.getElementById('bestBid').textContent='$'+bid.toFixed(6);
+  document.getElementById('bestAsk').textContent='$'+ask.toFixed(6);
+  let bh='',ah='',maxB=0,maxA=0,levels=[];
+  for(let i=0;i<8;i++){
+    const bs=(Math.random()*50000+500).toFixed(0);
+    const as=(Math.random()*50000+500).toFixed(0);
+    maxB=Math.max(maxB,parseInt(bs));maxA=Math.max(maxA,parseInt(as));
+    levels.push({bp:bid-i*0.000012,bs,ap:ask+i*0.000012,as});
+  }
+  levels.forEach(l=>{
+    const bpct=(parseInt(l.bs)/maxB*100).toFixed(0);
+    const apct=(parseInt(l.as)/maxA*100).toFixed(0);
+    bh+=`<div class="ob-row ob-bid"><div class="ob-bg" style="width:${bpct}%"></div><span class="ob-s">${parseInt(l.bs).toLocaleString()}</span><span class="ob-p">${l.bp.toFixed(6)}</span></div>`;
+    ah+=`<div class="ob-row ob-ask"><div class="ob-bg" style="width:${apct}%"></div><span class="ob-p">${l.ap.toFixed(6)}</span><span class="ob-s">${parseInt(l.as).toLocaleString()}</span></div>`;
+  });
+  document.getElementById('bidBook').innerHTML=bh;
+  document.getElementById('askBook').innerHTML=ah;
+}
+
+function buildDepthViz(){
+  const el=document.getElementById('depthViz');
+  el.innerHTML='';
+  for(let i=0;i<24;i++){
+    const h=Math.random()*100;
+    const d=document.createElement('div');
+    d.style.cssText='flex:1;background:'+(i<12?'var(--green)':'var(--red)')+';opacity:'+(0.2+h/100*0.7)+';height:'+h+'%;transition:height 0.5s;min-height:2px;';
+    el.appendChild(d);
+  }
+}
+
+// ---- Kraken Auth ----
+async function kSign(path,params){
+  const nonce=Date.now().toString();params.nonce=nonce;
+  const body=new URLSearchParams(params).toString();
+  const enc=new TextEncoder();
+  const sha=await crypto.subtle.digest('SHA-256',enc.encode(nonce+body));
+  const sk=Uint8Array.from(atob(krakenSecret),c=>c.charCodeAt(0));
+  const hk=await crypto.subtle.importKey('raw',sk,{name:'HMAC',hash:'SHA-512'},false,['sign']);
+  const pb=enc.encode(path);
+  const msg=new Uint8Array(pb.length+sha.byteLength);
+  msg.set(pb,0);msg.set(new Uint8Array(sha),pb.length);
+  const sig=await crypto.subtle.sign('HMAC',hk,msg);
+  return{body,nonce,sig:btoa(String.fromCharCode(...new Uint8Array(sig)))};
+}
+
+async function kPriv(endpoint,params={}){
+  if(!liveMode)return{error:['SIMULATION']};
+  try{
+    const{body,nonce,sig}=await kSign(endpoint,params);params.nonce=nonce;
+    const r=await fetch('https://api.kraken.com'+endpoint,{method:'POST',headers:{'API-Key':krakenKey,'API-Sign':sig,'Content-Type':'application/x-www-form-urlencoded'},body});
+    return await r.json();
+  }catch(e){log('error','API',e.message);return{error:[e.message]};}
+}
+
+async function kPub(endpoint,params={}){
+  try{
+    const qs=new URLSearchParams(params).toString();
+    const r=await fetch('https://api.kraken.com'+endpoint+(qs?'?'+qs:''));
+    return await r.json();
+  }catch(e){return{error:[e.message]};}
+}
+
+async function saveKeys(){
+  const k=document.getElementById('apiKey').value.trim();
+  const s=document.getElementById('apiSecret').value.trim();
+  if(!k||!s){log('error','CFG','Both fields required.');return;}
+  krakenKey=k;krakenSecret=s;liveMode=true;
+  document.getElementById('apiDot').style.background='var(--amber)';
+  document.getElementById('apiLabel').textContent='TESTING...';
+  document.getElementById('apiLabel').style.color='var(--amber)';
+  log('info','CFG','Testing Kraken connection...');
+  await getBalance();
+}
+
+async function getBalance(){
+  if(!liveMode){log('warning','CFG','No API keys saved.');return;}
+  const r=await kPriv('/0/private/Balance');
+  if(r.error?.length&&r.error[0]!=='SIMULATION'){
+    log('error','AUTH','Failed: '+r.error.join(', '));
+    addAlert('critical','⛔ AUTH FAILED','Error: '+r.error.join(', ')+'. Check your API Key and Private Key. Ensure Query Funds permission is enabled.');
+    document.getElementById('apiDot').style.background='var(--red)';
+    document.getElementById('apiLabel').textContent='AUTH FAILED';
+    document.getElementById('apiLabel').style.color='var(--red)';
+    liveMode=false;return;
+  }
+  const b=r.result||{};
+  const usd=parseFloat(b['ZUSD']||b['USD']||0).toFixed(2);
+  const shx=parseFloat(b['SHX']||0).toFixed(4);
+  document.getElementById('balUSD').textContent='$'+usd;
+  document.getElementById('balSHX').textContent=shx+' SHX';
+  document.getElementById('apiDot').style.background='var(--green)';
+  document.getElementById('apiDot').style.boxShadow='0 0 10px rgba(0,255,136,0.5)';
+  document.getElementById('apiLabel').textContent='LIVE — KRAKEN CONNECTED';
+  document.getElementById('apiLabel').style.color='var(--green)';
+  log('success','API','✓ Authenticated — USD: $'+usd+' | SHX: '+shx);
+  addAlert('info','✅ LIVE MODE ACTIVE','Kraken connected. USD: $'+usd+' | SHX: '+shx+'. Start with minimum order size for first 2–3 test trades.');
+}
+
+// ---- Alerts ----
 function addAlert(type,title,body){
-  const colors={critical:'#ff3355',warning:'#ffaa00',info:'#00d4ff',suggest:'#9945ff',macro:'#44ff88'};
-  const c=colors[type]||'#00d4ff';
-  const div=document.createElement('div');
-  div.style.cssText='background:#0a1520;border:1px solid '+c+';padding:12px 14px;position:relative;animation:fadeIn 0.3s ease;';
-  div.innerHTML='<button onclick="this.parentElement.remove()" style="position:absolute;top:6px;right:8px;background:none;border:none;color:#3a5568;cursor:pointer;font-size:13px;">✕</button>'
-    +'<div style="font-family:Orbitron,monospace;font-size:9px;font-weight:700;letter-spacing:2px;color:'+c+';margin-bottom:6px;">'+title+'</div>'
-    +'<div style="font-family:Rajdhani,sans-serif;font-size:13px;color:#6a8fa8;line-height:1.5;">'+body+'</div>'
-    +'<div style="font-family:\'Share Tech Mono\',monospace;font-size:8px;color:#3a5568;margin-top:6px;">'+new Date().toLocaleTimeString()+'</div>';
-  const c2=document.getElementById('alertsContainer');
-  c2.insertBefore(div,c2.firstChild);
-  while(c2.children.length>6)c2.removeChild(c2.lastChild);
+  const map={critical:'a-critical',warning:'a-warning',info:'a-info',suggest:'a-suggest',macro:'a-macro'};
+  const cls=map[type]||'a-info';
+  const d=document.createElement('div');
+  d.className='alert '+cls;
+  d.innerHTML=`<button class="alert-x" onclick="this.parentElement.remove()">✕</button><div class="alert-title">${title}</div><div class="alert-body">${body}</div><div class="alert-ts">${new Date().toLocaleTimeString()}</div>`;
+  const c=document.getElementById('alertsCont');
+  c.insertBefore(d,c.firstChild);
+  while(c.children.length>10)c.removeChild(c.lastChild);
 }
 
-function log(type,msg){
-  const colors={SYS:'#6a8fa8',OK:'#00ff88',ERR:'#ff3355',WIN:'#00ff88',LOSS:'#ffaa00',GATE:'#ffaa00',START:'#00ff88',STOP:'#ff3355',CFG:'#00d4ff',CHECK:'#00d4ff',ORDER:'#9945ff',NOTICE:'#ffaa00'};
-  const c=colors[type]||'#6a8fa8';
-  const div=document.createElement('div');
-  div.style.cssText='font-family:\'Share Tech Mono\',monospace;font-size:10px;padding:3px 0;border-left:2px solid '+c+';padding-left:8px;margin-bottom:3px;';
-  div.innerHTML='<span style="color:#3a5568;">'+new Date().toTimeString().split(' ')[0]+'</span> <span style="color:'+c+';">'+type+'</span> <span style="color:#e0f0ff;">'+msg+'</span>';
-  const la=document.getElementById('logArea');
-  la.insertBefore(div,la.firstChild);
-  while(la.children.length>50)la.removeChild(la.lastChild);
+// ---- Log ----
+function log(type,cat,msg){
+  const map={info:'le-info',success:'le-success',warning:'le-warning',error:'le-error',prompt:'le-prompt'};
+  const cls=map[type]||'le-info';
+  const d=document.createElement('div');
+  d.className='log-entry '+cls;
+  d.innerHTML=`<span class="log-t">${new Date().toTimeString().split(' ')[0]}</span><span class="log-cat">${cat}</span><span>${msg}</span>`;
+  const lw=document.getElementById('logWrap');
+  lw.insertBefore(d,lw.firstChild);
+  while(lw.children.length>80)lw.removeChild(lw.lastChild);
+}
+
+// ---- Tabs ----
+function showTab(id,btn){
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tnav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  if(btn)btn.classList.add('active');
+}
+
+// ---- Seed ----
+function seedAlerts(){
+  setTimeout(()=>addAlert('warning','⚠ THIN PAIR WARNING','SHX/USD on Kraken has <$50K daily volume. Volume scalping risks: (1) self-created price impact, (2) wide slippage on fills, (3) spread collapses mid-trade. Maker-only + small sizes essential.'),700);
+  setTimeout(()=>addAlert('suggest','💡 HOW THIS WORKS','Goal: capture spread (buy bid, sell ask) minus fees. At 0.16% maker = 32 bps break-even. SHX typical spread: 15–40 bps. You operate at the edge — every basis point matters.'),1500);
+  setTimeout(()=>addAlert('macro','🌐 INITIAL MACRO','BTC ranging ~$82K (neutral). DXY 103.2 (mild USD strength). Fear & Greed: 62 Greed (elevated volatility risk). SHX 24h vol: ~$14K. Conditions: MODERATE. Use conservative settings.'),2300);
+  setTimeout(()=>addAlert('info','📋 SIMULATION MODE','No API keys — running in simulation. Go to CONFIG tab to connect your Kraken account for live trading. All logic is identical — only the orders are simulated.'),3100);
 }
 </script>
+
 </body>
 </html>
