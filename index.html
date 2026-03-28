@@ -799,7 +799,7 @@ async function fetchFearGreed(){
 async function fetchCG(){
   try{var r=await fetch("https://api.coingecko.com/api/v3/global");var d=await r.json();var dm=+d.data.market_cap_percentage.btc.toFixed(1);macroD.btcDom=dm;setMC("mDom",dm+"%",dm>55?"mdn":"mup");}catch(e){}
 }
-function setMC(id,val,cls){var el=document.getElementById(id);if(el)el.innerHTML="<span class=\""+cls+"\">"+val+"</span>";}
+function setMC(id,val,cls){var el=document.getElementById(id);if(el)el.innerHTML='<span class="'+cls+'">'+val+'</span>';}
 
 async function fetchNews(){
   try{
@@ -817,7 +817,7 @@ function renderNews(){
   newsArr.forEach(function(item){
     var s=qSent(item.title);if(s.c==="npos")pos++;else if(s.c==="nneg")neg++;
     var div=document.createElement("div");div.className="ni";
-    div.innerHTML="<div class=\"ntitle\">"+item.title+"</div><div class=\"nmeta\"><span class=\"nsent "+s.c+"\">"+s.l+"</span>"+item.date+"</div>";
+    div.innerHTML='<div class="ntitle">'+item.title+'</div><div class="nmeta"><span class="nsent '+s.c+'">'+s.l+'</span>'+item.date+'</div>';
     div.onclick=function(){window.open(item.link,"_blank");};el.appendChild(div);
   });
   var ov=pos>neg?{t:"BULLISH",c:"var(--green)"}:neg>pos?{t:"BEARISH",c:"var(--red)"}:{t:"NEUTRAL",c:"var(--t2)"};
@@ -871,7 +871,7 @@ async function runFullAI(silent){
   document.getElementById("tradeScoreNote").textContent=verdict+" - "+score+"/100";
   var h=document.getElementById("aiHist");var e2=document.createElement("div");
   e2.style.cssText="border:1px solid rgba(255,68,170,0.2);padding:7px";
-  e2.innerHTML="<div style=\"font-family:Orbitron,monospace;font-size:8px;color:"+vc+";letter-spacing:2px\">"+verdict+" "+score+"/100</div><div style=\"font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3)\">"+new Date().toLocaleTimeString()+"</div>";
+  e2.innerHTML='<div style="font-family:Orbitron,monospace;font-size:8px;color:'+vc+';letter-spacing:2px">'+verdict+' '+score+'/100</div><div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3)">'+new Date().toLocaleTimeString()+'</div>';
   h.insertBefore(e2,h.firstChild);while(h.children.length>10)h.removeChild(h.lastChild);
   addAlert("aai","AI: "+verdict+" ("+score+"/100)",result.split("\n").find(function(l){return l.includes("TECHNICAL:");}) &&result.split("\n").find(function(l){return l.includes("TECHNICAL:");}).replace("TECHNICAL:","").trim()||result.slice(0,200));
   if(autoPause&&score<40&&botRunning){aiPaused=true;pauseBot("AI AUTO-PAUSE "+score+"/100");addAlert("ac","BOT AUTO-PAUSED","Score: "+score+"/100 - "+verdict+". Review AI Brain tab.");}
@@ -887,7 +887,7 @@ async function sendChat(){
   if(!cKeySet){appendMsg("assistant","No Claude API key set. Add it in the CONFIG tab.");return;}
   inp.value="";appendMsg("user",q);chatHist.push({role:"user",content:q});
   var typEl=document.createElement("div");typEl.className="typing";typEl.id="typInd";
-  typEl.innerHTML="<div class=\"msg-who\" style=\"font-family:Share Tech Mono,monospace;font-size:7px;color:var(--pink);letter-spacing:1px;margin-right:8px\">NEXUS AI</div><div class=\"tydot\"></div><div class=\"tydot\"></div><div class=\"tydot\"></div>";
+  typEl.innerHTML='<div class="msg-who" style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--pink);letter-spacing:1px;margin-right:8px">NEXUS AI</div><div class="tydot"></div><div class="tydot"></div><div class="tydot"></div>';
   document.getElementById("chatBox").appendChild(typEl);scrollChat();
   var sys=buildChatSys();var msgs=chatHist.slice(-20);
   try{
@@ -911,8 +911,7 @@ function buildChatSys(){
 function appendMsg(role,content){
   var cw=document.getElementById("chatBox");var div=document.createElement("div");
   div.className="msg "+(role==="user"?"msg-u":"msg-a");
-  div.innerHTML="<div class=\"msg-who\">"+(role==="user"?"YOU":"NEXUS AI")+"</div><div class=\"msg-body\">"+content.replace(/
-/g,"<br>")+"</div>";
+  div.innerHTML='<div class="msg-who">'+(role==="user"?"YOU":"NEXUS AI")+'</div><div class="msg-body">'+content.replace(/\n/g,'<br>')+'</div>';
   cw.appendChild(div);scrollChat();
 }
 function scrollChat(){var cw=document.getElementById("chatBox");if(cw)cw.scrollTop=cw.scrollHeight;}
@@ -981,7 +980,7 @@ function execSim(){
 
 async function postTradeCoach(){
   var recent=tradeHist.slice(-3);
-  var summary=recent.map(function(t){return t.type+" @ $"+t.price+" Sp:"+t.spread+"bps RSI:"+t.rsi+" BB%B:"+t.bbPct+" P&L:"+(t.pnl>=0?"+":"")+"$"+t.pnl;}).join("\n");
+    var summary=recent.map(function(t){return t.time+' '+t.type+' @ $'+t.price+' Sp:'+t.spread+'bps RSI:'+t.rsi+' BB%B:'+t.bbPct+' P&L:'+(t.pnl>=0?'+':'')+'$'+t.pnl;}).join('\n');
   var result=await callClaude("Trading coach. 2 sentences max. Look for patterns in the data.","Last 3 trades:\n"+summary+"\nCurrent RSI:"+(ind.rsi?ind.rsi.toFixed(1):"?")+" BB%B:"+(ind.bbPct?(ind.bbPct*100).toFixed(0):"?")+"%\nAny pattern? Quick tip?",150);
   if(result){addAlert("acoach","TRADE COACH",result);log("lbl","COACH",result.slice(0,120));chatHist.push({role:"assistant",content:"[Post-trade coaching] "+result});}
 }
@@ -1026,7 +1025,7 @@ function addTradeRow(time,type,p,size,rsi,bbp,tp){
   var tb=document.getElementById("tradeBody");
   if(tb.children.length===1&&tb.children[0].children.length===1)tb.innerHTML="";
   var r=document.createElement("tr");
-  r.innerHTML="<td>"+time+"</td><td class=\""+( type.startsWith("BUY")?"tb2":"ts2")+"\" style=\"font-size:6px\">"+type+"</td><td>"+parseFloat(p).toFixed(5)+"</td><td>$"+size+"</td><td style=\"color:"+(parseFloat(rsi)<30?"var(--green)":parseFloat(rsi)>70?"var(--red)":"var(--t2)")+"\">"+rsi+"</td><td>"+bbp+"</td><td class=\""+( tp>=0?"tb2":"ts2")+"\">"+( tp>=0?"+":"")+"$"+tp.toFixed(4)+"</td>";
+  r.innerHTML='<td>'+time+'</td><td class="'+(type.startsWith('BUY')?'tb2':'ts2')+'" style="font-size:6px">'+type+'</td><td>'+parseFloat(p).toFixed(5)+'</td><td>$'+size+'</td><td style="color:'+(parseFloat(rsi)<30?'var(--green)':parseFloat(rsi)>70?'var(--red)':'var(--t2)')+'">'+rsi+'</td><td>'+bbp+'</td><td class="'+(tp>=0?'tb2':'ts2')+'">'+( tp>=0?'+':'')+'$'+tp.toFixed(4)+'</td>';
   tb.insertBefore(r,tb.firstChild);while(tb.children.length>50)tb.removeChild(tb.lastChild);
 }
 
@@ -1094,13 +1093,13 @@ function showTab(id,btn){document.querySelectorAll(".pane").forEach(function(p){
 function addAlert(type,title,body){
   var map={ac:"ac",aw:"aw",ai2:"ai2",as2:"as2",aai:"aai",acoach:"acoach"};
   var d=document.createElement("div");d.className="alert "+(map[type]||"ai2");
-  d.innerHTML="<button class=\"ax\" onclick=\"this.parentElement.remove()\">x</button><div class=\"atitle\">"+title+"</div><div class=\"abody\">"+body+"</div><div class=\"ats\">"+new Date().toLocaleTimeString()+"</div>";
+  d.innerHTML='<button class="ax" onclick="this.parentElement.remove()">&#x2715;</button><div class="atitle">'+title+'</div><div class="abody">'+body+'</div><div class="ats">'+new Date().toLocaleTimeString()+'</div>';
   var c=document.getElementById("alertsCont");if(c){c.insertBefore(d,c.firstChild);while(c.children.length>15)c.removeChild(c.lastChild);}
 }
 function log(type,cat,msg){
   var map={info:"li",success:"ls",warning:"lw2",error:"ler",lbl:"lbl"};
   var d=document.createElement("div");d.className="le "+(map[type]||"li");
-  d.innerHTML="<span class=\"lt\">"+new Date().toTimeString().split(" ")[0]+"</span><span class=\"lc\">"+cat+"</span><span>"+msg+"</span>";
+  d.innerHTML='<span class="lt">'+new Date().toTimeString().split(' ')[0]+'</span><span class="lc">'+cat+'</span><span>'+msg+'</span>';
   var lw=document.getElementById("logWrap");lw.insertBefore(d,lw.firstChild);while(lw.children.length>100)lw.removeChild(lw.lastChild);
 }
 function seedAlerts(){
