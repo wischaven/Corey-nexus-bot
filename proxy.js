@@ -295,7 +295,8 @@ app.all(/^\/api\/(.*)/, (req, res) => {
 
 // ─── Start ─────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`NEXUS proxy running on http://localhost:${PORT}`);
-  simEngine.start();
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`NEXUS proxy running on port ${PORT}`);
+  // Delay sim engine start so health check passes first
+  setTimeout(() => simEngine.start(), 3000);
 });
