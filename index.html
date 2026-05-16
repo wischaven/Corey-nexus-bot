@@ -1021,13 +1021,138 @@ async function _loadUserPlan(){
   }catch(e){}
 }
 
+// ─── Plan helpers ─────────────────────────────────────────────────────────
+function _isPro(){ return ['pro','elite','owner'].includes(_userPlan); }
+function _isElite(){ return ['elite','owner'].includes(_userPlan); }
+
+// ─── Upgrade modal ────────────────────────────────────────────────────────
+function showUpgradeModal(feature, requiredPlan){
+  var existing = document.getElementById('upgradeModal');
+  if(existing) existing.remove();
+  var price = requiredPlan==='elite' ? '$79/mo' : '$29/mo';
+  var planName = requiredPlan==='elite' ? 'ELITE' : 'PRO';
+  var el = document.createElement('div');
+  el.id = 'upgradeModal';
+  el.style.cssText = 'position:fixed;inset:0;background:rgba(2,6,9,0.92);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
+  el.innerHTML = `
+    <div style="background:var(--bg3);border:1px solid rgba(0,212,255,0.3);padding:32px 28px;max-width:360px;width:100%;text-align:center">
+      <div style="font-family:Orbitron,monospace;font-size:10px;color:var(--cyan);letter-spacing:3px;margin-bottom:6px">UPGRADE REQUIRED</div>
+      <div style="font-family:Orbitron,monospace;font-size:22px;font-weight:900;color:var(--t1);margin-bottom:8px">${feature}</div>
+      <div style="font-family:Share Tech Mono,monospace;font-size:9px;color:var(--t2);margin-bottom:24px;line-height:1.7">This feature requires <span style="color:var(--cyan)">${planName} ${price}</span>.<br>Upgrade to unlock the full NEXUS intelligence engine.</div>
+      <button onclick="startCheckout('${requiredPlan}')" style="width:100%;padding:14px;background:transparent;border:1px solid var(--cyan);color:var(--cyan);font-family:Orbitron,monospace;font-size:11px;font-weight:700;letter-spacing:3px;cursor:pointer;margin-bottom:10px">⚡ UPGRADE TO ${planName}</button>
+      <button onclick="document.getElementById('upgradeModal').remove()" style="width:100%;padding:10px;background:transparent;border:1px solid var(--border);color:var(--t3);font-family:Share Tech Mono,monospace;font-size:9px;cursor:pointer;letter-spacing:2px">MAYBE LATER</button>
+      <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);margin-top:12px">Cancel anytime · Secure payment via Stripe</div>
+    </div>`;
+  document.body.appendChild(el);
+}
+
+// ─── Stripe checkout ──────────────────────────────────────────────────────
+async function startCheckout(plan){
+  try{
+    var r = await fetch('/billing/checkout',{method:'POST',headers:_authHeaders(),body:JSON.stringify({plan})});
+    var d = await r.json();
+    if(d.url) window.location.href = d.url;
+    else log('error','BILLING',d.error||'Checkout failed');
+  }catch(e){ log('error','BILLING','Connection error'); }
+}
+
+async function openBillingPortal(){
+  try{
+    var r = await fetch('/billing/portal',{method:'POST',headers:_authHeaders()});
+    var d = await r.json();
+    if(d.url) window.open(d.url,'_blank');
+  }catch(e){ log('error','BILLING','Connection error'); }
+}
+
+// ─── Plan gate overlay (locks a tab with upgrade prompt) ─────────────────
+function _gateTab(tabId, feature, requiredPlan){
+  var tab = document.getElementById('tab-'+tabId);
+  if(!tab) return;
+  var existing = tab.querySelector('.planGate');
+  if(existing) return;
+  var price = requiredPlan==='elite' ? '$79/mo' : '$29/mo';
+  var planName = requiredPlan==='elite' ? 'ELITE' : 'PRO';
+  var gate = document.createElement('div');
+  gate.className = 'planGate';
+  gate.style.cssText = 'position:absolute;inset:0;background:rgba(2,6,9,0.85);z-index:100;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;padding:20px;text-align:center;backdrop-filter:blur(4px)';
+  gate.innerHTML = `
+    <div style="font-family:Orbitron,monospace;font-size:28px">🔒</div>
+    <div style="font-family:Orbitron,monospace;font-size:10px;color:var(--cyan);letter-spacing:3px">${planName} FEATURE</div>
+    <div style="font-family:Rajdhani,sans-serif;font-size:14px;color:var(--t2);line-height:1.6;max-width:280px">${feature}</div>
+    <button onclick="showUpgradeModal('${feature}','${requiredPlan}')" style="padding:12px 24px;background:transparent;border:1px solid var(--cyan);color:var(--cyan);font-family:Orbitron,monospace;font-size:10px;font-weight:700;letter-spacing:3px;cursor:pointer">⚡ UPGRADE TO ${planName} — ${price}</button>`;
+  tab.style.position = 'relative';
+  tab.appendChild(gate);
+}
+
+function _ungateTab(tabId){
+  var tab = document.getElementById('tab-'+tabId);
+  if(!tab) return;
+  var gate = tab.querySelector('.planGate');
+  if(gate) gate.remove();
+}
+
+// ─── Blurred AI verdict teaser for free users ────────────────────────────
+function _applyAITeaser(){
+  var scoreEl = document.getElementById('aiScore');
+  var verdEl = document.getElementById('aiVerdBig');
+  var outputEl = document.getElementById('aiOutput');
+  var runBtn = document.querySelector('#tab-ai .btn-p');
+  if(!scoreEl) return;
+  if(!_isPro()){
+    // Show fake blurred score to entice upgrade
+    scoreEl.innerHTML = '<span style="filter:blur(6px);user-select:none;color:var(--pink)">72/100</span>';
+    if(verdEl) verdEl.innerHTML = '<span style="filter:blur(5px);user-select:none">BULLISH</span>';
+    if(outputEl) outputEl.innerHTML = '<div style="filter:blur(5px);user-select:none;pointer-events:none;font-family:Rajdhani,sans-serif;font-size:13px;line-height:1.8">Score: 72/100. Current RSI shows oversold conditions with strong OBI signal. MACD histogram turning positive. Recommend entry with 2:1 risk-reward. Confluence score elevated above threshold...</div><div style="margin-top:12px;text-align:center"><button onclick="showUpgradeModal(\'Full AI Analysis\',\'pro\')" style="padding:10px 20px;background:transparent;border:1px solid var(--pink);color:var(--pink);font-family:Orbitron,monospace;font-size:9px;letter-spacing:2px;cursor:pointer">🔒 UPGRADE TO PRO TO UNLOCK</button></div>';
+    if(runBtn) { runBtn.onclick = function(){ showUpgradeModal('Full AI Analysis','pro'); }; }
+  }
+}
+
 function _applyPlanGating(){
-  // Elite features: multi-ticker, Telegram, full sim
-  var isProOrElite=(_userPlan==='pro'||_userPlan==='elite'||_userPlan==='owner');
-  var isElite=(_userPlan==='elite'||_userPlan==='owner');
-  // Show upgrade banner if free
-  if(_userPlan==='free'){
-    log('info','PLAN','Free plan — upgrade to Pro or Elite for full access');
+  var isPro = _isPro();
+  var isElite = _isElite();
+
+  // Gate SIM tab for free users
+  if(!isPro){
+    _gateTab('sim','The self-learning simulation engine requires Pro. Watch the bot learn and adapt in real time.','pro');
+  } else {
+    _ungateTab('sim');
+  }
+
+  // Gate Elite-only features
+  if(!isElite){
+    // Scanner tab will be gated when we build it
+  }
+
+  // Show plan badge in top bar
+  var existing = document.getElementById('planBadge');
+  if(existing) existing.remove();
+  var badge = document.createElement('div');
+  badge.id = 'planBadge';
+  var planColor = isElite ? 'var(--purple)' : isPro ? 'var(--cyan)' : 'var(--t3)';
+  var planLabel = isElite ? 'ELITE' : isPro ? 'PRO' : 'FREE';
+  badge.style.cssText = `font-family:Orbitron,monospace;font-size:7px;font-weight:700;letter-spacing:2px;padding:3px 7px;border:1px solid ${planColor};color:${planColor};cursor:${isPro?'pointer':'pointer'}`;
+  badge.textContent = planLabel;
+  badge.onclick = isPro ? openBillingPortal : function(){ showUpgradeModal('Upgrade NEXUS','pro'); };
+  var tright = document.querySelector('.tright');
+  if(tright) tright.insertBefore(badge, tright.firstChild);
+
+  // Apply AI teaser
+  _applyAITeaser();
+
+  // Show free plan info bar
+  if(!isPro){
+    var existing2 = document.getElementById('freeBanner');
+    if(!existing2){
+      var banner = document.createElement('div');
+      banner.id = 'freeBanner';
+      banner.style.cssText = 'background:rgba(0,212,255,0.05);border-bottom:1px solid rgba(0,212,255,0.15);padding:6px 14px;display:flex;align-items:center;justify-content:space-between';
+      banner.innerHTML = '<span style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t2);letter-spacing:1px">FREE PLAN — 3 tickers · Basic indicators · Upgrade for AI verdicts, sim engine &amp; more</span><button onclick="showUpgradeModal(\'NEXUS Pro\',\'pro\')" style="background:transparent;border:1px solid var(--cyan);color:var(--cyan);font-family:Share Tech Mono,monospace;font-size:7px;padding:3px 8px;cursor:pointer;letter-spacing:1px;white-space:nowrap">⚡ UPGRADE</button>';
+      var tabnav = document.querySelector('.tabnav');
+      if(tabnav) tabnav.parentNode.insertBefore(banner, tabnav);
+    }
+  } else {
+    var b = document.getElementById('freeBanner');
+    if(b) b.remove();
   }
 }
 
