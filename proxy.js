@@ -87,7 +87,8 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ─── Health check (Railway uses this) ─────────────────────────────────────
+// ─── Static files + health check ──────────────────────────────────────────
+app.use(express.static(path.join(__dirname)));
 app.get('/health', (_req, res) => res.json({ ok: true, ts: Date.now() }));
 
 // ─── Auth endpoints ────────────────────────────────────────────────────────
