@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>NEXUS Monitor</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#020609">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#020609;--bg2:#050d12;--card:#0a1520;
+  --cyan:#00d4ff;--green:#00ff88;--amber:#ffaa00;--red:#ff3355;
+  --t1:#e0f0ff;--t2:#6a8fa8;--t3:#3a5568;--border:#0d2035;
+  --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px)
+}
+html,body{background:var(--bg);color:var(--t1);font-family:'Rajdhani',sans-serif;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,212,255,0.007) 2px,rgba(0,212,255,0.007) 4px);pointer-events:none;z-index:9999}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.15}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 14px;padding-top:var(--st);height:calc(48px + var(--st));background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:300}
+.tbrand{font-family:'Orbitron',monospace;font-size:14px;font-weight:900;color:var(--cyan);letter-spacing:4px}
+.tsub{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t3);letter-spacing:1px}
+.stale{color:var(--amber)}
+.wrap{padding:12px;padding-bottom:calc(20px + var(--sb));display:flex;flex-direction:column;gap:10px}
+.card{background:var(--card);border:1px solid var(--border);padding:12px 14px;animation:fadeUp .2s ease}
+.clbl{font-family:'Share Tech Mono',monospace;font-size:7px;color:var(--t3);letter-spacing:2px;text-transform:uppercase;margin-bottom:5px}
+.cval{font-family:'Orbitron',monospace;font-size:22px;font-weight:700}
+.csub{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t2);margin-top:3px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px}
+.cc{color:var(--cyan)}.cg{color:var(--green)}.ca{color:var(--amber)}.cr{color:var(--red)}.ct{color:var(--t1)}
+.badge{display:inline-block;font-family:'Orbitron',monospace;font-size:9px;font-weight:700;padding:4px 10px;border:1px solid;letter-spacing:2px}
+.badge-g{border-color:var(--green);color:var(--green);background:rgba(0,255,136,0.08)}
+.badge-r{border-color:var(--red);color:var(--red);background:rgba(255,51,85,0.08)}
+.badge-a{border-color:var(--amber);color:var(--amber);background:rgba(255,170,0,0.08)}
+.badge-c{border-color:var(--cyan);color:var(--cyan);background:rgba(0,212,255,0.08)}
+.badge-off{border-color:var(--t3);color:var(--t3)}
+.indg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px}
+.ind{background:var(--bg2);border:1px solid var(--border);padding:8px 10px;text-align:center}
+.indL{font-family:'Share Tech Mono',monospace;font-size:6px;color:var(--t3);letter-spacing:1px;margin-bottom:3px}
+.indV{font-family:'Orbitron',monospace;font-size:11px;font-weight:700}
+.pw{height:6px;background:var(--border);margin-top:6px;overflow:hidden;border-radius:3px}
+.pb{height:100%;background:linear-gradient(90deg,var(--cyan),var(--green));transition:width .5s;border-radius:3px}
+.trrow{display:grid;grid-template-columns:60px 60px 1fr 60px;gap:4px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-family:'Share Tech Mono',monospace;font-size:7px;color:var(--t2)}
+.trrow:last-child{border:none}
+.poscard{border-color:rgba(255,170,0,0.4);background:rgba(255,170,0,0.03)}
+.offline{text-align:center;padding:40px 20px;font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--t3);letter-spacing:2px}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div>
+    <div class="tbrand">NEXUS</div>
+    <div class="tsub">READ-ONLY MONITOR</div>
+  </div>
+  <div style="text-align:right">
+    <div id="statusBadge" class="badge badge-off">OFFLINE</div>
+    <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);margin-top:3px" id="lastUpdate">never</div>
+  </div>
+</div>
+<div class="wrap" id="main">
+  <div class="offline" id="offlineMsg">Connecting to NEXUS bot...<br><br>Make sure bot is running on PC</div>
+</div>
+
+<script>
+var lastData=null;
+
+function tc(v,pos,neg,neu){return v>0?pos:v<0?neg:neu||'ct';}
+
+function render(d){
+  var main=document.getElementById('main');
+  var pos=d.mode==='sim'?d.simPos:d.livePos;
+  var wr=d.winRate||'--';
+  var stale=d.updatedAt&&(Date.now()-d.updatedAt)>30000;
+  document.getElementById('lastUpdate').textContent=d.updatedAt?new Date(d.updatedAt).toLocaleTimeString():'--';
+  document.getElementById('lastUpdate').className=stale?'stale':'';
+  var botCls=d.botRunning?'badge-g':'badge-off';
+  var botLbl=d.botRunning?(d.mode==='sim'?'SIM RUNNING':'LIVE RUNNING'):'STOPPED';
+  document.getElementById('statusBadge').className='badge '+botCls;
+  document.getElementById('statusBadge').textContent=botLbl;
+  document.getElementById('offlineMsg').style.display='none';
+
+  var cf=d.confluence||0;
+  var cfColor=cf>=65?'var(--green)':cf>=50?'var(--amber)':'var(--red)';
+  var pnlColor=d.pnl>=0?'var(--green)':'var(--red)';
+  var rsiColor=d.rsi<30?'var(--green)':d.rsi>70?'var(--red)':'var(--t1)';
+  var obiColor=d.obi>0.1?'var(--green)':d.obi<-0.1?'var(--red)':'var(--amber)';
+
+  // Build position card if open
+  var posHtml='';
+  if(pos){
+    var pctChg=((d.price-pos.entryPrice)/pos.entryPrice*100);
+    var holdSecs=Math.floor((Date.now()-pos.entryTime)/1000);
+    var holdStr=holdSecs>=60?Math.floor(holdSecs/60)+'m '+(holdSecs%60)+'s':holdSecs+'s';
+    var pnlEst=pos.orderSize*(pctChg/100)-(pos.orderSize*0.0032);
+    var pclr=pnlEst>=0?'var(--green)':'var(--red)';
+    var tpPrice=pos.entryPrice*1.006,slPrice=pos.entryPrice*0.996;
+    var range=tpPrice-slPrice;
+    var barPct=range>0?Math.max(0,Math.min(100,((d.price-slPrice)/range)*100)):50;
+    posHtml='<div class="card poscard" style="margin-bottom:0">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+      +'<div style="font-family:Orbitron,monospace;font-size:8px;color:var(--amber);letter-spacing:2px">OPEN POSITION</div>'
+      +'<div class="badge badge-a" style="font-size:7px;padding:2px 7px">'+d.mode.toUpperCase()+'</div></div>'
+      +'<div class="g3" style="margin-bottom:6px">'
+      +'<div><div class="clbl">ENTRY</div><div style="font-family:Orbitron,monospace;font-size:11px">$'+pos.entryPrice.toFixed(4)+'</div></div>'
+      +'<div><div class="clbl">NOW</div><div style="font-family:Orbitron,monospace;font-size:11px">$'+(d.price||'--')+'</div></div>'
+      +'<div><div class="clbl">P&L EST</div><div style="font-family:Orbitron,monospace;font-size:11px;color:'+pclr+'">'+(pnlEst>=0?'+':'')+'$'+pnlEst.toFixed(4)+'</div></div>'
+      +'</div>'
+      +'<div class="g2">'
+      +'<div><div class="clbl">SIZE</div><div style="font-family:Share Tech Mono,monospace;font-size:9px;color:var(--t2)">$'+pos.orderSize.toFixed(2)+'</div></div>'
+      +'<div><div class="clbl">HOLD</div><div style="font-family:Share Tech Mono,monospace;font-size:9px;color:var(--t2)">'+holdStr+'</div></div>'
+      +'</div>'
+      +'<div class="pw" style="margin-top:8px"><div class="pb" style="width:'+barPct+'%;background:'+(pctChg>=0?'var(--green)':'var(--red)')+'"></div></div>'
+      +'<div style="display:flex;justify-content:space-between;font-family:Share Tech Mono,monospace;font-size:6px;color:var(--t3);margin-top:2px"><span>SL $'+slPrice.toFixed(4)+'</span><span>TP $'+tpPrice.toFixed(4)+'</span></div>'
+      +'</div>';
+  }
+
+  // Trade history
+  var histHtml='';
+  if(d.tradeHist&&d.tradeHist.length){
+    histHtml='<div class="card"><div class="clbl" style="margin-bottom:6px">LAST TRADES</div>';
+    d.tradeHist.slice(-6).reverse().forEach(function(t){
+      var pc=t.pnl>=0?'var(--green)':'var(--red)';
+      histHtml+='<div class="trrow"><span style="color:var(--t3)">'+t.time+'</span><span style="color:'+(t.type.includes('BUY')?'var(--green)':'var(--red)')+'">'+t.type+'</span><span>$'+parseFloat(t.price).toFixed(4)+'</span><span style="color:'+pc+'">'+(t.pnl>=0?'+':'')+'$'+parseFloat(t.pnl).toFixed(4)+'</span></div>';
+    });
+    histHtml+='</div>';
+  }
+
+  main.innerHTML=
+    posHtml+
+    // Price + status
+    '<div class="card">'
+      +'<div class="g2" style="align-items:center">'
+      +'<div><div class="clbl">XRP/USD</div><div class="cval cc">$'+(d.price||'--')+'</div></div>'
+      +'<div style="text-align:right"><div class="clbl">AI SCORE</div><div style="font-family:Orbitron,monospace;font-size:20px;font-weight:700;color:var(--purple)">'+(d.aiScore||'--')+'/100</div></div>'
+      +'</div>'
+    +'</div>'+
+    // P&L stats
+    '<div class="g4">'
+      +'<div class="card"><div class="clbl">P&L</div><div style="font-family:Orbitron,monospace;font-size:14px;font-weight:700;color:'+pnlColor+'">'+(d.pnl>=0?'+':'')+'$'+parseFloat(d.pnl||0).toFixed(4)+'</div></div>'
+      +'<div class="card"><div class="clbl">TRADES</div><div style="font-family:Orbitron,monospace;font-size:14px;font-weight:700;color:var(--cyan)">'+(d.trades||0)+'</div></div>'
+      +'<div class="card"><div class="clbl">WIN RATE</div><div style="font-family:Orbitron,monospace;font-size:14px;font-weight:700;color:var(--t1)">'+wr+'</div></div>'
+      +'<div class="card"><div class="clbl">FEES</div><div style="font-family:Orbitron,monospace;font-size:14px;font-weight:700;color:var(--red)">$'+parseFloat(d.fees||0).toFixed(3)+'</div></div>'
+    +'</div>'+
+    // Confluence
+    '<div class="card">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">'
+      +'<div class="clbl" style="margin:0">CONFLUENCE</div>'
+      +'<div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3)">threshold: 65</div>'
+      +'</div>'
+      +'<div class="pw"><div class="pb" style="width:'+cf+'%;background:'+cfColor+'"></div></div>'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px">'
+      +'<div style="font-family:Orbitron,monospace;font-size:20px;font-weight:700;color:'+cfColor+'">'+(cf||'--')+'</div>'
+      +'<div style="font-family:Share Tech Mono,monospace;font-size:8px;color:'+cfColor+'">'+(d.verdict||'--')+'</div>'
+      +'</div>'
+    +'</div>'+
+    // Key indicators
+    '<div class="indg">'
+      +'<div class="ind"><div class="indL">RSI(14)</div><div class="indV" style="color:'+rsiColor+'">'+(d.rsi||'--')+'</div></div>'
+      +'<div class="ind"><div class="indL">OBI</div><div class="indV" style="color:'+obiColor+'">'+(d.obi!==null&&d.obi!==undefined?parseFloat(d.obi).toFixed(3):'--')+'</div></div>'
+      +'<div class="ind"><div class="indL">MTF BONUS</div><div class="indV" style="color:'+(d.mtfBonus>0?'var(--green)':d.mtfBonus<0?'var(--red)':'var(--t3)')+'">'+(d.mtfBonus!==undefined?(d.mtfBonus>0?'+':'')+d.mtfBonus:'--')+'</div></div>'
+      +'<div class="ind"><div class="indL">BB %B</div><div class="indV" style="color:'+(d.bbPct>0.85?'var(--red)':d.bbPct<0.15?'var(--green)':'var(--t1)')+'">'+(d.bbPct!==undefined?(d.bbPct*100).toFixed(0)+'%':'--')+'</div></div>'
+      +'<div class="ind"><div class="indL">MACD HIST</div><div class="indV" style="color:'+(d.macdHist>0?'var(--green)':d.macdHist<0?'var(--red)':'var(--t3)')+'">'+(d.macdHist!==undefined?(d.macdHist>0?'+':'')+parseFloat(d.macdHist).toFixed(5):'--')+'</div></div>'
+      +'<div class="ind"><div class="indL">VOL RATIO</div><div class="indV" style="color:'+(d.volR>1.5?'var(--green)':d.volR<0.5?'var(--red)':'var(--t3)')+'">'+(d.volR!==undefined?parseFloat(d.volR).toFixed(2)+'x':'--')+'</div></div>'
+    +'</div>'+
+    // Confluence breakdown
+    '<div class="card"><div class="clbl" style="margin-bottom:6px">CONFLUENCE BREAKDOWN</div>'
+      +'<div style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t2);line-height:2">'
+      +(d.rsiRaw!==null&&d.rsiRaw!==undefined?'<span style="color:var(--t3)">RSI('+parseFloat(d.rsiRaw).toFixed(0)+'): </span><span style="color:'+(d.rsiRaw>70?'var(--red)':d.rsiRaw<35?'var(--green)':'var(--amber)') +'">'+(d.rsiRaw>72?'-18':d.rsiRaw>65?'-10':d.rsiRaw>58?'-4':d.rsiRaw<25?'+18':d.rsiRaw<35?'+13':d.rsiRaw<45?'+7':'+3')+'pts</span><br>':'')
+      +(d.bbPct!==null&&d.bbPct!==undefined?'<span style="color:var(--t3)">BB%B('+( d.bbPct*100).toFixed(0)+'%): </span><span style="color:'+(d.bbPct>0.85?'var(--red)':d.bbPct<0.25?'var(--green)':'var(--amber)')+'">'+(d.bbPct>0.85?'-18':d.bbPct>0.7?'-10':d.bbPct>0.55?'-4':d.bbPct<0.1?'+18':d.bbPct<0.25?'+12':'+6')+'pts</span><br>':'')
+      +(d.obi!==null&&d.obi!==undefined?'<span style="color:var(--t3)">OBI('+parseFloat(d.obi).toFixed(3)+'): </span><span style="color:'+(d.obi>0.2?'var(--green)':d.obi<-0.2?'var(--red)':'var(--amber)')+'">'+(d.obi>0.4?'+25':d.obi>0.2?'+18':d.obi>0.05?'+10':d.obi<-0.4?'-20':d.obi<-0.2?'-12':d.obi<-0.05?'-5':'+5')+'pts</span><br>':'')
+      +(d.macdHist!==null&&d.macdHist!==undefined?'<span style="color:var(--t3)">MACD: </span><span style="color:'+(d.macdHist>0?'var(--green)':'var(--red)')+'">'+(d.macdHist>0?'+10':'-8')+'pts</span><br>':'')
+      +'<span style="color:var(--t3)">MTF Bonus: </span><span style="color:'+(d.mtfBonus>0?'var(--green)':d.mtfBonus<0?'var(--red)':'var(--t3)')+'">'+(d.mtfBonus>0?'+':'')+d.mtfBonus+'pts</span>'
+      +'</div></div>'+
+    // Pending limit
+    (d.pendingLimit?'<div class="card" style="border-color:var(--amber)"><div class="clbl">PENDING LIMIT ORDER</div><div style="font-family:Orbitron,monospace;font-size:14px;color:var(--amber)">$'+d.pendingLimit.limitPrice.toFixed(4)+'</div><div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);margin-top:3px">placed '+Math.round((Date.now()-d.pendingLimit.placedAt)/1000)+'s ago</div></div>':'')+
+    // Auto S/R levels
+    ((d.autoSupport&&d.autoSupport.length)||(d.autoResist&&d.autoResist.length)?
+      '<div class="card"><div class="clbl" style="margin-bottom:6px">AUTO S/R LEVELS</div>'
+      +(d.autoResist&&d.autoResist.length?'<div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--red);margin-bottom:4px">RES: '+d.autoResist.slice(0,4).map(function(r){return'$'+r.price.toFixed(4)+'(q:'+r.quality+')'}).join(' · ')+'</div>':'')
+      +(d.autoSupport&&d.autoSupport.length?'<div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--green)">SUP: '+d.autoSupport.slice(0,4).map(function(s){return'$'+s.price.toFixed(4)+'(q:'+s.quality+')'}).join(' · ')+'</div>':'')
+      +'</div>':'')+
+    // MTF summary
+    (d.mtfSummary?'<div class="card"><div class="clbl" style="margin-bottom:4px">MULTI-TIMEFRAME</div><div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t2);line-height:1.8">'+d.mtfSummary+'</div></div>':'')+
+    // Recent log
+    (d.recentLog&&d.recentLog.length?'<div class="card"><div class="clbl" style="margin-bottom:6px">RECENT LOG</div><div style="font-family:Share Tech Mono,monospace;font-size:6.5px;color:var(--t3);line-height:1.9;max-height:180px;overflow-y:auto">'+d.recentLog.slice().reverse().map(function(l){return'<div>'+l+'</div>';}).join('')+'</div></div>':'')+
+    histHtml+
+    '<div style="text-align:center;font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);padding:8px">READ-ONLY · REFRESHES EVERY 2S · '+(stale?'<span style="color:var(--amber)">DATA STALE — ARM BOT ON PC</span>':'<span style="color:var(--green)">LIVE</span>')+'</div>';
+}
+
+var PROXY='http://'+window.location.hostname+':3000';
+
+async function poll(){
+  try{
+    var r=await fetch(PROXY+'/bot/status');
+    var d=await r.json();
+    lastData=d;
+    render(d);
+  }catch(e){
+    document.getElementById('offlineMsg').style.display='block';
+    document.getElementById('offlineMsg').textContent='Cannot reach NEXUS bot.\nMake sure proxy is running on PC at port 3000.';
+    document.getElementById('statusBadge').className='badge badge-off';
+    document.getElementById('statusBadge').textContent='OFFLINE';
+  }
+}
+
+poll();
+setInterval(poll,2000);
+
+// Re-poll immediately when tab becomes visible again (mobile browsers pause timers in background)
+document.addEventListener('visibilitychange',function(){
+  if(!document.hidden) poll();
+});
+</script>
+</body>
+</html>

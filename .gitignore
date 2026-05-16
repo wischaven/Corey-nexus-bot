@@ -1,0 +1,6 @@
+node_modules/
+.env
+trading_engine/bot_state.json
+trading_engine/trade_log.json
+sim_data.json
+*.log
