@@ -255,6 +255,7 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
     <button class="tnav" onclick="showTab('trades',this)">TRADES</button>
     <button class="tnav" onclick="showTab('sim',this)">SIM LEARN</button>
     <button class="tnav" onclick="showTab('brain',this)">🧠 BRAIN</button>
+    <button class="tnav" onclick="showTab('scanner',this)">🔭 SCANNER</button>
     <button class="tnav" onclick="showTab('telegram',this)">TELEGRAM</button>
     <button class="tnav" onclick="showTab('notifications',this)">🔔 ALERTS</button>
     <button class="tnav" onclick="showTab('plans',this)">⚡ PLANS</button>
@@ -893,6 +894,42 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
   </div>
 
   <!-- CONFIG -->
+  <!-- SCANNER -->
+  <div class="pane" id="tab-scanner">
+    <div class="card" style="border-color:rgba(139,92,246,0.3);background:rgba(139,92,246,0.02)">
+      <div class="clbl" style="color:var(--purple);margin-bottom:6px">🔭 MULTI-PAIR SCANNER — ELITE</div>
+      <div style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--muted);margin-bottom:10px">Scans 30 liquid pairs every 60s · Ranked by confluence score · ATH signals surface first</div>
+
+      <!-- Gate: non-elite users see upgrade prompt -->
+      <div id="scannerGate" style="display:none;text-align:center;padding:20px 0">
+        <div style="font-family:Orbitron,monospace;font-size:10px;color:var(--amber);margin-bottom:8px">⚡ ELITE FEATURE</div>
+        <div style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--muted);margin-bottom:14px">The multi-pair scanner is available on the Elite plan.<br>Upgrade to scan all 30 pairs simultaneously.</div>
+        <button onclick="showTab('plans',document.querySelector('.tnav'))" style="background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:#000;font-family:Orbitron,monospace;font-size:8px;padding:8px 18px;cursor:pointer;border-radius:2px">VIEW PLANS</button>
+      </div>
+
+      <!-- Scanner content for Elite -->
+      <div id="scannerContent">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div id="scannerStatus" style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--muted)">Loading...</div>
+          <button onclick="_runScanner(true)" style="background:rgba(139,92,246,0.15);border:1px solid var(--purple);color:var(--purple);font-family:Orbitron,monospace;font-size:7px;padding:4px 10px;cursor:pointer">⟳ REFRESH</button>
+        </div>
+
+        <!-- Top 3 highlight cards -->
+        <div style="margin-bottom:12px">
+          <div style="font-family:Orbitron,monospace;font-size:8px;color:var(--cyan);margin-bottom:6px;letter-spacing:1px">TOP SIGNALS NOW</div>
+          <div id="scannerTop3" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px"></div>
+        </div>
+
+        <!-- Full ranked table -->
+        <div style="font-family:Orbitron,monospace;font-size:8px;color:var(--cyan);margin-bottom:6px;letter-spacing:1px">ALL PAIRS</div>
+        <div style="display:grid;grid-template-columns:28px 1fr 36px 52px 52px 44px;gap:0;font-family:Share Tech Mono,monospace;font-size:7px;color:var(--muted);padding:0 4px 4px 4px;border-bottom:1px solid rgba(255,255,255,0.05)">
+          <span>#</span><span>PAIR</span><span style="text-align:right">SCORE</span><span style="text-align:right">PRICE</span><span style="text-align:right">24H</span><span style="text-align:right">REGIME</span>
+        </div>
+        <div id="scannerTable"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- TELEGRAM -->
   <div class="pane" id="tab-telegram">
     <div class="card" style="border-color:rgba(0,212,255,0.3);background:rgba(0,212,255,0.02)">
@@ -3603,6 +3640,7 @@ function showTab(id,btn){
   if(id==='notifications') _renderNotificationsPage();
   if(id==='config') renderTickerList();
   if(id==='brain') renderBrainTab();
+  if(id==='scanner') { _runScanner(false); clearInterval(_scannerTimer); _scannerTimer=setInterval(function(){ _runScanner(true); },60000); }
 }
 
 // ─── Plans page ────────────────────────────────────────────────────────────
@@ -4152,6 +4190,81 @@ function saveBrainNotes() {
   var s = document.getElementById('brainNoteStatus');
   if (s) { s.textContent = '✓ Saved — Claude AI will use these observations in every analysis'; s.style.color = 'var(--green)'; setTimeout(function(){ s.textContent=''; }, 3000); }
   log('info','BRAIN','User notes saved to NEXUS memory');
+}
+
+// ============================================================
+// SCANNER — multi-pair confluence scanner (Elite)
+// ============================================================
+var _scannerData = null;
+var _scannerTimer = null;
+
+async function _runScanner(force) {
+  var statusEl  = document.getElementById('scannerStatus');
+  var top3El    = document.getElementById('scannerTop3');
+  var tableEl   = document.getElementById('scannerTable');
+  if (!statusEl) return;
+  if (!force && _scannerData) { _renderScannerResults(_scannerData); return; }
+  statusEl.textContent = 'Scanning 30 pairs…';
+  try {
+    var res = await fetch('/scanner/results', { headers: _authToken ? { 'Authorization': 'Bearer ' + _authToken } : {} });
+    if (res.status === 403) {
+      document.getElementById('scannerGate').style.display = 'block';
+      document.getElementById('scannerContent').style.display = 'none';
+      return;
+    }
+    var data = await res.json();
+    if (data.scanning) { statusEl.textContent = 'First scan in progress…'; return; }
+    _scannerData = data;
+    _renderScannerResults(data);
+  } catch(e) {
+    statusEl.textContent = 'Error: ' + e.message;
+  }
+}
+
+function _renderScannerResults(data) {
+  var statusEl = document.getElementById('scannerStatus');
+  var top3El   = document.getElementById('scannerTop3');
+  var tableEl  = document.getElementById('scannerTable');
+  if (!statusEl || !top3El || !tableEl) return;
+
+  var ago = data.scannedAt ? Math.round((Date.now() - data.scannedAt) / 1000) : 0;
+  statusEl.textContent = data.count + ' pairs scanned · ' + (ago < 5 ? 'just now' : ago + 's ago') + ' · refreshes every 60s';
+
+  // ── Top 3 cards ────────────────────────────────────────────────────────
+  var scoreColor = function(s) { return s >= 70 ? 'var(--green)' : s >= 55 ? 'var(--cyan)' : s >= 45 ? 'var(--muted)' : 'var(--red)'; };
+  var regimeIcon = function(r) { return r === 'TRENDING_UP' ? '↑' : r === 'TRENDING_DOWN' ? '↓' : r === 'VOLATILE' ? '⚡' : '→'; };
+  var verdictColor = function(v) { return v === 'BULLISH' ? 'var(--green)' : v === 'BEARISH' ? 'var(--red)' : 'var(--muted)'; };
+  var fmtChange = function(c) { if (c === null) return '—'; return (c >= 0 ? '+' : '') + c.toFixed(2) + '%'; };
+  var changeColor = function(c) { return c === null ? 'var(--muted)' : c >= 0 ? 'var(--green)' : 'var(--red)'; };
+
+  top3El.innerHTML = (data.top3 || []).map(function(r, i) {
+    var medals = ['🥇', '🥈', '🥉'];
+    return '<div style="background:rgba(0,0,0,0.3);border:1px solid rgba(139,92,246,0.3);padding:10px;cursor:pointer" onclick="setActiveTicker(\''+r.pair+'\',\''+r.label+'\')">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
+        '<span style="font-family:Orbitron,monospace;font-size:9px;color:var(--purple)">' + medals[i] + ' ' + r.label + '</span>' +
+        '<span style="font-family:Orbitron,monospace;font-size:12px;color:' + scoreColor(r.score) + '">' + r.score + '</span>' +
+      '</div>' +
+      '<div style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t2);margin-bottom:3px">$' + r.price.toFixed(r.price > 100 ? 2 : 4) + ' <span style="color:' + changeColor(r.change24h) + '">' + fmtChange(r.change24h) + '</span></div>' +
+      '<div style="display:flex;justify-content:space-between">' +
+        '<span style="font-family:Share Tech Mono,monospace;font-size:7px;color:' + verdictColor(r.verdict) + '">' + r.verdict + '</span>' +
+        '<span style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--muted)">' + regimeIcon(r.regime) + ' ' + (r.regime||'').replace('_',' ') + '</span>' +
+      '</div>' +
+      '<div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);margin-top:3px">RSI ' + r.rsi + ' · Vol ' + r.volRatio + 'x · click to switch</div>' +
+    '</div>';
+  }).join('');
+
+  // ── Full ranked table ──────────────────────────────────────────────────
+  tableEl.innerHTML = (data.results || []).map(function(r, i) {
+    var bg = i % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent';
+    return '<div style="display:grid;grid-template-columns:28px 1fr 36px 52px 52px 44px;gap:0;padding:5px 4px;background:' + bg + ';border-bottom:1px solid rgba(255,255,255,0.03);cursor:pointer" onclick="setActiveTicker(\''+r.pair+'\',\''+r.label+'\')">' +
+      '<span style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3)">' + (i+1) + '</span>' +
+      '<span style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t1)">' + r.label + '</span>' +
+      '<span style="font-family:Orbitron,monospace;font-size:8px;color:' + scoreColor(r.score) + ';text-align:right">' + r.score + '</span>' +
+      '<span style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t2);text-align:right">$' + (r.price > 100 ? r.price.toFixed(2) : r.price.toFixed(4)) + '</span>' +
+      '<span style="font-family:Share Tech Mono,monospace;font-size:7px;color:' + changeColor(r.change24h) + ';text-align:right">' + fmtChange(r.change24h) + '</span>' +
+      '<span style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--muted);text-align:right">' + regimeIcon(r.regime) + '</span>' +
+    '</div>';
+  }).join('');
 }
 
 // ============================================================

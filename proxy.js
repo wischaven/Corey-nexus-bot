@@ -17,6 +17,7 @@ const OrderTypes  = require('./trading_engine/order_types');
 const MarketData  = require('./trading_engine/market_data');
 const SimEngine   = require('./trading_engine/sim_engine');
 const { isValidPair } = require('./trading_engine/tickers');
+const { runScan, startBackgroundRefresh } = require('./trading_engine/scanner');
 
 const simEngine = new SimEngine();
 
@@ -312,6 +313,20 @@ app.post('/push/test', requireAuth, async (req, res) => {
   res.json({ ok: true });
 });
 
+// ─── Multi-ticker scanner (Elite) ────────────────────────────────────────
+app.get('/scanner/results', requireAuth, async (req, res) => {
+  const settings = await getUserPlan(req.user.id);
+  const plan = isOwner(req.user) ? 'elite' : settings.plan;
+  if (plan !== 'elite') return res.status(403).json({ error: 'Elite plan required', upgrade: true });
+  try {
+    const data = await runScan();
+    if (!data) return res.json({ scanning: true, results: [], top3: [] });
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ─── Tickers list (public) ────────────────────────────────────────────────
 app.get('/tickers', (_req, res) => {
   const { TICKERS, ALL_PAIRS } = require('./trading_engine/tickers');
@@ -343,4 +358,5 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`NEXUS proxy running on port ${PORT}`);
   // Delay sim engine start so health check passes first
   setTimeout(() => simEngine.start(), 3000);
+  startBackgroundRefresh();
 });
