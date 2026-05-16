@@ -193,7 +193,7 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
 .obs{color:var(--t2)}
 .sprow{display:flex;justify-content:space-between;background:var(--bg2);padding:6px 10px;margin-top:2px;font-family:'Share Tech Mono',monospace;font-size:9px}
 </style>
-  <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+  <script src="https://s3.tradingview.com/tv.js"></script>
 </head>
 <body>
 <div id="loginScreen">
@@ -450,39 +450,17 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
   </div>
   <!-- CHARTS TAB -->
   <div class="pane" id="tab-chart">
-    <div class="card" style="padding:10px 0 0">
-      <div style="padding:0 12px 7px;display:flex;justify-content:space-between;align-items:center">
-        <div class="clbl" style="margin:0" id="chartTickerLabel">XRP/USD + BOLLINGER BANDS (20,2)</div>
-        <button onclick="fetchOHLC()" style="background:none;border:1px solid var(--border);color:var(--cyan);font-family:Share Tech Mono,monospace;font-size:7px;padding:3px 8px;cursor:pointer">&#x27F3;</button>
-      </div>
-      <!-- TradingView Lightweight Charts — replaces canvas charts -->
-      <div id="tvMain"   style="width:100%;height:280px;position:relative"></div>
-      <div id="tvVolume" style="width:100%;height:56px;position:relative;border-top:1px solid #1a1a2e"></div>
-      <div id="tvRSI"    style="width:100%;height:80px;position:relative;border-top:1px solid #1a1a2e"></div>
-      <div id="tvMACD"   style="width:100%;height:80px;position:relative;border-top:1px solid #1a1a2e"></div>
-      <!-- Indicator toggle bar -->
-      <div style="display:flex;gap:6px;flex-wrap:wrap;padding:6px 12px;border-top:1px solid #1a1a2e">
-        <button class="tvToggle active" data-ind="bb"   onclick="_tvToggle(this,'bb')">BB</button>
-        <button class="tvToggle active" data-ind="ema"  onclick="_tvToggle(this,'ema')">EMA 9/21</button>
-        <button class="tvToggle active" data-ind="vwap" onclick="_tvToggle(this,'vwap')">VWAP</button>
-        <button class="tvToggle active" data-ind="vol"  onclick="_tvToggle(this,'vol')">VOL</button>
-        <button class="tvToggle active" data-ind="rsi"  onclick="_tvToggle(this,'rsi')">RSI</button>
-        <button class="tvToggle active" data-ind="macd" onclick="_tvToggle(this,'macd')">MACD</button>
-        <button class="tvToggle active" data-ind="div"  onclick="_tvToggle(this,'div')">DIV</button>
+    <!-- TradingView full widget — same chart as CMC / CoinGecko / Kraken -->
+    <div style="border-radius:4px;overflow:hidden;margin-bottom:8px">
+      <div id="tvWidgetContainer" style="height:520px;width:100%">
+        <div class="tradingview-widget-container" style="height:100%;width:100%">
+          <div id="tradingview_nexus" style="height:100%;width:100%"></div>
+        </div>
       </div>
     </div>
     <div class="card">
-      <div class="slbl" style="margin-bottom:6px">CANDLE INTERVAL (CHART VIEW)</div>
-      <div class="trow">
-        <button class="tbtn active" onclick="setCI(1,this)">1M</button>
-        <button class="tbtn" onclick="setCI(5,this)">5M</button>
-        <button class="tbtn" onclick="setCI(15,this)">15M</button>
-        <button class="tbtn" onclick="setCI(60,this)">1H</button>
-        <button class="tbtn" onclick="setCI(240,this)">4H</button>
-        <button class="tbtn" onclick="setCI(1440,this)">1D</button>
-        <button class="tbtn" onclick="setCI(10080,this)">1W</button>
-      </div>
-    </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div class="clbl" style="margin:0">MULTI-TIMEFRAME TREND ALIGNMENT</div>
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
         <div class="clbl" style="margin:0">MULTI-TIMEFRAME TREND ALIGNMENT</div>
@@ -2383,7 +2361,7 @@ function initCharts(){
   window.addEventListener("resize",function(){setTimeout(resize,100);});
   setTimeout(resize,400);
 }
-function drawAllCharts(){if(candles.length<2)return;drawPriceChart("dashChart",80);_updateTVCharts(candles);}
+function drawAllCharts(){if(candles.length<2)return;drawPriceChart("dashChart",80);}
 
 function drawPriceChart(id,hpx){
   var cv=document.getElementById(id);if(!cv)return;
@@ -2460,7 +2438,55 @@ function drawMACD(){
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// TRADINGVIEW LIGHTWEIGHT CHARTS — professional candlestick chart engine
+// TRADINGVIEW WIDGET — full TV chart (same as CMC / CoinGecko / Kraken)
+// ═══════════════════════════════════════════════════════════════════════════
+var _tvWidget = null;
+var _tvWidgetPair = null;
+
+var _TV_INTERVAL_MAP = { 1:'1', 5:'5', 15:'15', 60:'60', 240:'240', 1440:'1D', 10080:'1W' };
+
+function _tvKrakenSymbol(pair) {
+  // TradingView uses KRAKEN: prefix. BTC is XBT on Kraken.
+  return 'KRAKEN:' + pair;
+}
+
+function _initTVWidget(pair) {
+  if (typeof TradingView === 'undefined') return;
+  var container = document.getElementById('tradingview_nexus');
+  if (!container) return;
+  // Same pair already loaded — no need to reinit
+  if (_tvWidgetPair === pair && _tvWidget) return;
+  // Wipe old widget
+  container.innerHTML = '';
+  _tvWidget = null;
+  _tvWidgetPair = pair;
+  var interval = _TV_INTERVAL_MAP[candleInt] || '1';
+  _tvWidget = new TradingView.widget({
+    container_id:       'tradingview_nexus',
+    width:              '100%',
+    height:             520,
+    symbol:             _tvKrakenSymbol(pair),
+    interval:           interval,
+    timezone:           'Etc/UTC',
+    theme:              'dark',
+    style:              '1',
+    locale:             'en',
+    toolbar_bg:         '#0a0a0f',
+    enable_publishing:  false,
+    withdateranges:     true,
+    hide_side_toolbar:  false,
+    allow_symbol_change:false,
+    save_image:         false,
+    hide_legend:        false,
+    studies:            ['RSI@tv-basicstudies','MACD@tv-basicstudies','BB@tv-basicstudies','Volume@tv-basicstudies'],
+    show_popup_button:  true,
+    popup_width:        '1000',
+    popup_height:       '650',
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TRADINGVIEW LIGHTWEIGHT CHARTS — kept for mini dashboard sparkline only
 // Main pane: Candlesticks + BB + EMA 9/21 + VWAP
 // Sub-panes: Volume · RSI(14) · MACD(12,26,9) · Divergence markers
 // ═══════════════════════════════════════════════════════════════════════════
@@ -3929,7 +3955,7 @@ function showTab(id,btn){
   document.querySelectorAll(".tnav").forEach(function(b){b.classList.remove("active");});
   document.getElementById("tab-"+id).classList.add("active");
   if(btn)btn.classList.add("active");
-  if(id==='chart'){ initTVChart(); if(candles.length>1) _updateTVCharts(candles); }
+  if(id==='chart'){ _initTVWidget(_activeTicker); }
   if(id==='plans') _renderPlansPage();
   if(id==='telegram') _renderTelegramPage();
   if(id==='notifications') _renderNotificationsPage();
@@ -4072,6 +4098,12 @@ async function setActiveTicker(pair, label){
   // Save to server
   if(_authToken&&!_demoMode){
     fetch('/auth/ticker',{method:'POST',headers:_authHeaders(),body:JSON.stringify({ticker:pair})}).catch(function(){});
+  }
+
+  // Update TradingView widget to new pair
+  _tvWidgetPair = null; // force reinit
+  if(document.getElementById('tab-chart') && document.getElementById('tab-chart').classList.contains('active')){
+    _initTVWidget(pair);
   }
 
   // Reload market data for new pair
