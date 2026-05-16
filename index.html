@@ -212,7 +212,9 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
       <button class="lbtn" onclick="doSignup()">&#x25BA; CREATE ACCOUNT</button>
     </div>
     <div class="lerr" id="loginErr"></div>
-    <div class="lstatus"><div class="pdot"></div>RSI &#xB7; BB &#xB7; MACD &#xB7; CLAUDE AI MEMORY</div>
+    <div style="margin:16px 0;display:flex;align-items:center;gap:8px"><div style="flex:1;height:1px;background:var(--border)"></div><span style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);letter-spacing:2px">OR</span><div style="flex:1;height:1px;background:var(--border)"></div></div>
+    <button class="lbtn" onclick="startDemo()" style="border-color:var(--t3);color:var(--t2);font-size:9px">&#x25B6; EXPLORE DEMO — NO ACCOUNT NEEDED</button>
+    <div class="lstatus" style="margin-top:16px"><div class="pdot"></div>RSI &#xB7; BB &#xB7; MACD &#xB7; CLAUDE AI MEMORY</div>
   </div>
 </div>
 <div id="app">
@@ -847,6 +849,39 @@ function _authHeaders(){
   return h;
 }
 
+// ─── Demo mode ────────────────────────────────────────────────────────────
+var _demoMode = false;
+
+function startDemo(){
+  _demoMode = true;
+  _userPlan = 'free';
+  _authToken = null;
+  _authUser = { email: 'demo@nexus.app' };
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+
+  // Inject demo banner
+  var banner = document.createElement('div');
+  banner.id = 'demoBanner';
+  banner.style.cssText = 'background:rgba(255,170,0,0.08);border-bottom:1px solid rgba(255,170,0,0.3);padding:8px 14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px';
+  banner.innerHTML = '<span style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--amber);letter-spacing:1px">⚡ DEMO MODE — Live data, limited features. Create a free account to save your settings.</span><div style="display:flex;gap:8px"><button onclick="exitDemo(\'login\')" style="background:transparent;border:1px solid var(--cyan);color:var(--cyan);font-family:Share Tech Mono,monospace;font-size:7px;padding:4px 10px;cursor:pointer;letter-spacing:1px">SIGN IN</button><button onclick="exitDemo(\'signup\')" style="background:transparent;border:1px solid var(--green);color:var(--green);font-family:Share Tech Mono,monospace;font-size:7px;padding:4px 10px;cursor:pointer;letter-spacing:1px">CREATE FREE ACCOUNT</button></div>';
+  var topbar = document.querySelector('.topbar');
+  if(topbar) topbar.after(banner);
+
+  init();
+  _applyPlanGating();
+  log('info','DEMO','Exploring NEXUS in demo mode — create a free account to save your progress');
+}
+
+function exitDemo(tab){
+  _demoMode = false;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  var b = document.getElementById('demoBanner');
+  if(b) b.remove();
+  if(tab) switchAuthTab(tab);
+}
+
 function switchAuthTab(tab){
   document.getElementById('authLogin').style.display=tab==='login'?'block':'none';
   document.getElementById('authSignup').style.display=tab==='signup'?'block':'none';
@@ -949,6 +984,7 @@ function addTradeRow(time,type,p,size,rsi,bbp,tp,spread,feesBps) {
 
 // ─── Server-side trade persistence ───────────────────────────────────────
 function _saveTradeToServer(trade) {
+  if(_demoMode || !_authToken) return;
   fetch('/bot/trade', {
     method:'POST',
     headers:_authHeaders(),
@@ -2943,6 +2979,7 @@ function updateStats(){
 
 // ─── PUSH BOT STATE TO PROXY (for remote viewing on any device) ──────────
 function _pushBotState(){
+  if(_demoMode || !_authToken) return;
   try{
     var pos=live?livePos:simPos;
     var mtfEl=document.getElementById('mtfSummary');
