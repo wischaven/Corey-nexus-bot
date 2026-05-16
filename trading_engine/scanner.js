@@ -4,7 +4,7 @@ const https = require('https');
 const {
   calcRSI, calcBB, calcMACD, calcATR, calcVWAP,
   calcStochRSI, calcEMACross, calcVolumeRatio,
-  detectRegime, getVerdict, calcConfluenceScore,
+  detectRegime, getVerdict, calcConfluenceScore, detectDivergence,
 } = require('./indicators');
 
 // ─── Pairs to scan (most liquid USD pairs on Kraken) ──────────────────────
@@ -89,8 +89,9 @@ function scorePair(pair, candles, tickerInfo) {
   const stochRsi = calcStochRSI(closes);
   const emaCross = calcEMACross(closes);
   const volRatio = calcVolumeRatio(volumes);
-  const regime   = detectRegime(candles, emaCross, atr, bb);
-  const verdict  = getVerdict(rsi, bb, macd);
+  const divergence = detectDivergence(closes, 14, 30);
+  const regime     = detectRegime(candles, emaCross, atr, bb);
+  const verdict    = getVerdict(rsi, bb, macd);
 
   // OBI from ticker (ask vs bid volume at top of book)
   let obi = null;
@@ -101,7 +102,7 @@ function scorePair(pair, candles, tickerInfo) {
     if (total > 0) obi = (bid - ask) / total;
   }
 
-  const score = calcConfluenceScore({ rsi, bb, macd, obi, stochRsi, vwap, emaCross, volRatio, price });
+  const score = calcConfluenceScore({ rsi, bb, macd, obi, stochRsi, vwap, emaCross, volRatio, price, divergence });
 
   // 24h change
   let change24h = null;
@@ -133,6 +134,7 @@ function scorePair(pair, candles, tickerInfo) {
     volRatio:  +volRatio.toFixed(2),
     obi:       obi !== null ? +obi.toFixed(3) : null,
     atr:       atr ? +atr.value.toFixed(6) : null,
+    divergence: divergence || null,
   };
 }
 

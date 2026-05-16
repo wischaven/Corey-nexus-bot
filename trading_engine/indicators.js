@@ -150,6 +150,93 @@ function calcEMACross(closes, fast = 9, slow = 21) {
   };
 }
 
+// ─── RSI Divergence ───────────────────────────────────────────────────────
+// Compares price swing highs/lows vs RSI swing highs/lows over a lookback window.
+// Regular bullish: price lower low + RSI higher low → reversal signal
+// Regular bearish: price higher high + RSI lower high → reversal signal
+// Hidden bullish: price higher low + RSI lower low → trend continuation up
+// Hidden bearish: price lower high + RSI higher high → trend continuation down
+
+function detectDivergence(closes, period = 14, lookback = 30) {
+  const needed = period + lookback + 5;
+  if (closes.length < needed) return null;
+
+  // Build rolling RSI array for the lookback window
+  const buf   = period + 5;
+  const slice = closes.slice(-(lookback + buf));
+  const rsiArr = [];
+  for (let i = period; i < slice.length; i++) {
+    rsiArr.push(calcRSI(slice.slice(0, i + 1), period));
+  }
+
+  // Align: priceWindow[i] ↔ rsiArr[i]
+  const priceWindow = slice.slice(period);
+  const n = Math.min(lookback, priceWindow.length);
+  const prices = priceWindow.slice(-n);
+  const rsis   = rsiArr.slice(-n);
+
+  // Find local minima / maxima with a minimum separation distance
+  function findSwings(arr, type, minDist = 3) {
+    const swings = [];
+    for (let i = 1; i < arr.length - 1; i++) {
+      const isLow  = type === 'low'  && arr[i] <= arr[i-1] && arr[i] <= arr[i+1];
+      const isHigh = type === 'high' && arr[i] >= arr[i-1] && arr[i] >= arr[i+1];
+      if (!isLow && !isHigh) continue;
+      if (swings.length && i - swings[swings.length - 1].i < minDist) {
+        // Replace if this extreme is more extreme than the last within the min distance
+        const last = swings[swings.length - 1];
+        if ((type === 'low' && arr[i] < last.val) || (type === 'high' && arr[i] > last.val)) {
+          swings[swings.length - 1] = { i, val: arr[i] };
+        }
+      } else {
+        swings.push({ i, val: arr[i] });
+      }
+    }
+    return swings;
+  }
+
+  const priceLows  = findSwings(prices, 'low');
+  const priceHighs = findSwings(prices, 'high');
+
+  let bullish = false, bearish = false, hiddenBullish = false, hiddenBearish = false;
+  let strengthScore = 0; // 0–2: 0=weak, 1=moderate, 2=strong
+
+  if (priceLows.length >= 2) {
+    const prev = priceLows[priceLows.length - 2];
+    const curr = priceLows[priceLows.length - 1];
+    // Regular bullish: price lower low + RSI higher low
+    if (curr.val < prev.val && rsis[curr.i] > rsis[prev.i]) {
+      bullish = true;
+      const pDiff  = (prev.val - curr.val) / prev.val * 100;
+      const rDiff  = rsis[curr.i] - rsis[prev.i];
+      strengthScore = pDiff > 1 && rDiff > 5 ? 2 : rDiff > 2 ? 1 : 0;
+    }
+    // Hidden bullish: price higher low + RSI lower low
+    if (!bullish && curr.val > prev.val && rsis[curr.i] < rsis[prev.i]) {
+      hiddenBullish = true;
+    }
+  }
+
+  if (priceHighs.length >= 2) {
+    const prev = priceHighs[priceHighs.length - 2];
+    const curr = priceHighs[priceHighs.length - 1];
+    // Regular bearish: price higher high + RSI lower high
+    if (curr.val > prev.val && rsis[curr.i] < rsis[prev.i]) {
+      bearish = true;
+      const pDiff  = (curr.val - prev.val) / prev.val * 100;
+      const rDiff  = rsis[prev.i] - rsis[curr.i];
+      if (!bullish) strengthScore = pDiff > 1 && rDiff > 5 ? 2 : rDiff > 2 ? 1 : 0;
+    }
+    // Hidden bearish: price lower high + RSI higher high
+    if (!bearish && curr.val < prev.val && rsis[curr.i] > rsis[prev.i]) {
+      hiddenBearish = true;
+    }
+  }
+
+  const strength = strengthScore === 2 ? 'strong' : strengthScore === 1 ? 'moderate' : 'weak';
+  return { bullish, bearish, hiddenBullish, hiddenBearish, strength };
+}
+
 // ─── Rate of Change / Momentum ────────────────────────────────────────────
 // Price velocity. Positive = upward momentum.
 
@@ -235,7 +322,7 @@ function calcKelly(winRate, avgWinBps, avgLossBps) {
 function calcConfluenceScore(opts) {
   const {
     rsi, bb, macd, obi, stochRsi, vwap, emaCross,
-    volRatio, price,
+    volRatio, price, divergence,
   } = opts;
 
   let score = 0;
@@ -315,6 +402,16 @@ function calcConfluenceScore(opts) {
     else if (volRatio < 0.5) score -= 2;
   }
 
+  // RSI Divergence (bonus/penalty up to ±12) ────────────────────
+  // Applied after base scoring — divergence confirms or contradicts other signals
+  if (divergence) {
+    const pts = divergence.strength === 'strong' ? 12 : divergence.strength === 'moderate' ? 8 : 5;
+    if (divergence.bullish)      score += pts;
+    if (divergence.bearish)      score -= pts;
+    if (divergence.hiddenBullish) score += 4;
+    if (divergence.hiddenBearish) score -= 4;
+  }
+
   // Clamp to 0–100
   return Math.max(0, Math.min(100, score + 50));
   // +50 shifts baseline: a "zero signal" market starts at 50/100
@@ -335,4 +432,5 @@ module.exports = {
   getVerdict,
   calcKelly,
   calcConfluenceScore,
+  detectDivergence,
 };

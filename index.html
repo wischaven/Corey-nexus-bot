@@ -369,6 +369,7 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
       <div class="ind"><div class="indL">VOL RATIO</div><div class="indV ct" id="iVOL">--</div><div class="indS ct" id="iVOLs">--</div></div>
       <div class="ind"><div class="indL">BB WIDTH</div><div class="indV ct" id="iBBW">--</div><div class="indS ct" id="iBBWs">--</div></div>
       <div class="ind"><div class="indL">VERDICT</div><div class="indV ca" id="iVerd">--</div><div class="indS ca" id="iVerds">--</div></div>
+      <div class="ind"><div class="indL">DIVERGENCE</div><div class="indV ca" id="iDiv">--</div><div class="indS ca" id="iDivs">rsi signal</div></div>
     </div>
     <div class="card"><div class="clbl">BREAK-EVEN SPREAD</div><div class="cval ca" id="breakEven">32 bps</div><div class="csub" id="beSub">at 0.16% maker fee</div></div>
     <div class="card">
@@ -766,6 +767,7 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
         <div class="ind"><div class="indL">EMA 9/21</div><div class="indV ct" id="sim_EMA">--</div><div class="indS ct" id="sim_EMAs">--</div></div>
         <div class="ind"><div class="indL">ROC(10)</div><div class="indV ct" id="sim_ROC">--</div><div class="indS ct" id="sim_ROCs">momentum</div></div>
         <div class="ind"><div class="indL">VOL RATIO</div><div class="indV ct" id="sim_VOL">--</div><div class="indS ct" id="sim_VOLs">--</div></div>
+        <div class="ind"><div class="indL">DIVERGENCE</div><div class="indV ca" id="sim_DIV">--</div><div class="indS ca" id="sim_DIVs">rsi signal</div></div>
       </div>
     </div>
 
@@ -1844,6 +1846,8 @@ function calcAllInd(){
   var ema=calcEMACross(cl,9,21);
   ind.emaDiff=ema?ema.diff:null;ind.emaBull=ema?ema.bullish:null;ind.emaCrossUp=ema?ema.crossedUp:false;
   ind.roc=calcROC(cl,10);
+  var _divResult=calcDivergence(cl,14,30);
+  ind.divergence=_divResult;
   // Weighted multi-timeframe confluence — each TF runs the full formula
   // 1H=25% (primary trend), 15M=20% (direction), 5M=15%, 4H=15%, 1M=10%, 1D=10%, 1W=5%
   var _tfW=[{v:60,w:0.25},{v:15,w:0.20},{v:5,w:0.15},{v:240,w:0.15},{v:candleInt,w:0.10},{v:1440,w:0.10},{v:10080,w:0.05}];
@@ -1943,6 +1947,68 @@ function calcROC(cl,p){
   if(cl.length<p+1)return 0;
   var cur=cl[cl.length-1],past=cl[cl.length-1-p];
   return past===0?0:((cur-past)/past)*100;
+}
+
+function calcDivergence(closes,period,lookback){
+  period=period||14; lookback=lookback||30;
+  if(closes.length<period+lookback+5)return null;
+  var buf=period+5;
+  var slice=closes.slice(-(lookback+buf));
+  // Build rolling RSI array
+  var rsiArr=[];
+  for(var i=period;i<slice.length;i++){
+    rsiArr.push(calcRSI(slice.slice(0,i+1),period));
+  }
+  var priceWindow=slice.slice(period);
+  var n=Math.min(lookback,priceWindow.length);
+  var prices=priceWindow.slice(-n);
+  var rsis=rsiArr.slice(-n);
+
+  function findSwings(arr,type,minDist){
+    minDist=minDist||3;
+    var swings=[];
+    for(var i=1;i<arr.length-1;i++){
+      var isLow=type==='low'&&arr[i]<=arr[i-1]&&arr[i]<=arr[i+1];
+      var isHigh=type==='high'&&arr[i]>=arr[i-1]&&arr[i]>=arr[i+1];
+      if(!isLow&&!isHigh)continue;
+      if(swings.length&&i-swings[swings.length-1].i<minDist){
+        var last=swings[swings.length-1];
+        if((type==='low'&&arr[i]<last.val)||(type==='high'&&arr[i]>last.val))
+          swings[swings.length-1]={i:i,val:arr[i]};
+      } else {
+        swings.push({i:i,val:arr[i]});
+      }
+    }
+    return swings;
+  }
+
+  var priceLows=findSwings(prices,'low');
+  var priceHighs=findSwings(prices,'high');
+  var bullish=false,bearish=false,hiddenBullish=false,hiddenBearish=false,strength='weak';
+
+  if(priceLows.length>=2){
+    var prev=priceLows[priceLows.length-2];
+    var curr=priceLows[priceLows.length-1];
+    if(curr.val<prev.val&&rsis[curr.i]>rsis[prev.i]){
+      bullish=true;
+      var pDiff=(prev.val-curr.val)/prev.val*100;
+      var rDiff=rsis[curr.i]-rsis[prev.i];
+      strength=pDiff>1&&rDiff>5?'strong':rDiff>2?'moderate':'weak';
+    }
+    if(!bullish&&curr.val>prev.val&&rsis[curr.i]<rsis[prev.i])hiddenBullish=true;
+  }
+  if(priceHighs.length>=2){
+    var prev2=priceHighs[priceHighs.length-2];
+    var curr2=priceHighs[priceHighs.length-1];
+    if(curr2.val>prev2.val&&rsis[curr2.i]<rsis[prev2.i]){
+      bearish=true;
+      var pDiff2=(curr2.val-prev2.val)/prev2.val*100;
+      var rDiff2=rsis[prev2.i]-rsis[curr2.i];
+      if(!bullish)strength=pDiff2>1&&rDiff2>5?'strong':rDiff2>2?'moderate':'weak';
+    }
+    if(!bearish&&curr2.val<prev2.val&&rsis[curr2.i]>rsis[prev2.i])hiddenBearish=true;
+  }
+  return{bullish:bullish,bearish:bearish,hiddenBullish:hiddenBullish,hiddenBearish:hiddenBearish,strength:strength};
 }
 
 // Runs full confluence formula on any TF's candles — used for weighted MTF confluence
@@ -2236,6 +2302,25 @@ function updateIndUI(){
     var ro=ind.roc,roc=ro>0?"var(--green)":ro<0?"var(--red)":"var(--t1)";
     var ros=ro>1?"STRONG UP":ro>0?"RISING":ro<-1?"STRONG DOWN":"FALLING";
     upd("iROC",(ro>=0?"+":"")+ro.toFixed(3)+"%",roc);upd("iROCs",ros,roc);
+  }
+  // Divergence
+  if(ind.divergence!==null&&ind.divergence!==undefined){
+    var dv=ind.divergence;
+    var dvLabel='NONE', dvSub='no signal', dvColor='var(--t3)';
+    if(dv.bullish){
+      dvLabel='BULL DIV'; dvColor='var(--green)';
+      dvSub=dv.strength+' — price lower low, RSI higher low';
+    } else if(dv.bearish){
+      dvLabel='BEAR DIV'; dvColor='var(--red)';
+      dvSub=dv.strength+' — price higher high, RSI lower high';
+    } else if(dv.hiddenBullish){
+      dvLabel='HIDDEN↑'; dvColor='#8fbc8f';
+      dvSub='trend continuation bullish';
+    } else if(dv.hiddenBearish){
+      dvLabel='HIDDEN↓'; dvColor='#bc8f8f';
+      dvSub='trend continuation bearish';
+    }
+    upd('iDiv',dvLabel,dvColor); upd('iDivs',dvSub,dvColor);
   }
   // OBI (live from order book)
   if(_liveOBI!==null&&_liveOBI!==undefined){
@@ -4249,7 +4334,7 @@ function _renderScannerResults(data) {
         '<span style="font-family:Share Tech Mono,monospace;font-size:7px;color:' + verdictColor(r.verdict) + '">' + r.verdict + '</span>' +
         '<span style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--muted)">' + regimeIcon(r.regime) + ' ' + (r.regime||'').replace('_',' ') + '</span>' +
       '</div>' +
-      '<div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);margin-top:3px">RSI ' + r.rsi + ' · Vol ' + r.volRatio + 'x · click to switch</div>' +
+      '<div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);margin-top:3px">RSI ' + r.rsi + ' · Vol ' + r.volRatio + 'x' + (r.divergence&&(r.divergence.bullish||r.divergence.bearish)?(' · <span style="color:'+(r.divergence.bullish?'var(--green)':'var(--red)')+'">'+( r.divergence.bullish?'BULL DIV':'BEAR DIV')+'</span>'):'') + ' · click to switch</div>' +
     '</div>';
   }).join('');
 
@@ -4395,6 +4480,13 @@ function renderSimDash(d) {
     setInd('sim_VOL', ind.volRatio.toFixed(2) + 'x',
       ind.volRatio > 1.5 ? 'var(--green)' : ind.volRatio < 0.7 ? 'var(--red)' : 'var(--cyan)',
       ind.volRatio > 1.5 ? 'HIGH VOLUME' : ind.volRatio < 0.7 ? 'LOW VOLUME' : 'NORMAL');
+  }
+  if (ind.divergence) {
+    var dv = ind.divergence;
+    var dvL = dv.bullish ? 'BULL DIV' : dv.bearish ? 'BEAR DIV' : dv.hiddenBullish ? 'HIDDEN ↑' : dv.hiddenBearish ? 'HIDDEN ↓' : 'NONE';
+    var dvC = dv.bullish ? 'var(--green)' : dv.bearish ? 'var(--red)' : (dv.hiddenBullish || dv.hiddenBearish) ? 'var(--amber)' : 'var(--t3)';
+    var dvS = dv.bullish ? dv.strength + ' · price LL, RSI HL' : dv.bearish ? dv.strength + ' · price HH, RSI LH' : dv.hiddenBullish ? 'continuation up' : dv.hiddenBearish ? 'continuation down' : 'no divergence';
+    setInd('sim_DIV', dvL, dvC, dvS);
   }
 
   // ── Feature importance grid ─────────────────────────────────

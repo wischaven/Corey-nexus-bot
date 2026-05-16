@@ -28,6 +28,7 @@ const {
   calcRSI, calcBB, calcMACD, calcATR, calcVWAP,
   calcStochRSI, calcEMACross, calcROC, calcVolumeRatio,
   detectRegime, getVerdict, calcKelly, calcConfluenceScore,
+  detectDivergence,
 } = require('./indicators');
 
 const { fetchOrderBook, summarizeBook } = require('./order_book');
@@ -211,9 +212,10 @@ class SimEngine {
     const vwap     = calcVWAP(this.candles);
     const stochRsi = calcStochRSI(closes, 14, 14);
     const emaCross = calcEMACross(closes, 9, 21);
-    const roc      = calcROC(closes, 10);
-    const volRatio = calcVolumeRatio(volumes, 20);
-    const verdict  = getVerdict(rsi, bb, macd);
+    const roc        = calcROC(closes, 10);
+    const volRatio   = calcVolumeRatio(volumes, 20);
+    const divergence = detectDivergence(closes, 14, 30);
+    const verdict    = getVerdict(rsi, bb, macd);
 
     // Order book (may be null if fetch failed)
     const bookSummary = this.orderBook
@@ -225,7 +227,7 @@ class SimEngine {
     this.regime = regime;
 
     const confluenceScore = calcConfluenceScore({
-      rsi, bb, macd, obi, stochRsi, vwap, emaCross, volRatio, price: last,
+      rsi, bb, macd, obi, stochRsi, vwap, emaCross, volRatio, price: last, divergence,
     });
 
     // Kelly from rolling trade stats
@@ -242,6 +244,7 @@ class SimEngine {
     this.indicators = {
       rsi, bb, macd, atr, vwap, stochRsi, emaCross, roc,
       volRatio, verdict, obi, bookSummary, regime, confluenceScore,
+      divergence,
       kellyFrac: this.kellyFrac,
       price: last,
     };
