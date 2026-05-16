@@ -374,8 +374,7 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
       <div class="slbl">STRATEGY PARAMETERS</div>
       <div class="sr"><span class="sl">MAX RISK PER TRADE</span><span class="sv2" id="maxRiskV">10%</span></div>
       <input type="range" min="5" max="50" value="10" step="1" id="maxRiskPct" oninput="updateRiskDial()">
-      <div id="riskPreview" style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--cyan);margin-bottom:4px;letter-spacing:.5px">At $0 balance → $0 per trade</div>
-      <div id="riskWarning" style="display:none;font-family:Share Tech Mono,monospace;font-size:7px;padding:5px 8px;margin-bottom:8px;letter-spacing:.5px"></div>
+      <div id="riskPreview" style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--cyan);margin-bottom:8px;letter-spacing:.5px">At $0 balance → $0 per trade</div>
       <div class="sr"><span class="sl">FALLBACK ORDER SIZE (no balance)</span><span class="sv2" id="oSzV">$50</span></div>
       <input type="range" min="10" max="500" value="50" id="oSz" oninput="sv('oSz','oSzV','$','');calcFees()">
       <div class="sr"><span class="sl">MIN XRP PER ORDER</span><span class="sv2" id="minShxV">10</span></div>
@@ -3589,19 +3588,6 @@ function updateRiskDial(){
     preview.style.color=maxLossPctBal&&maxLossPctBal>3?'var(--amber)':'var(--cyan)';
   }
 
-  if(warning){
-    // Warn based on actual stop-loss loss % of balance, not raw position size
-    var lossRisk=maxLossPctBal||pct*stopPct*100||pct*0.02*100;
-    if(lossRisk>4){
-      warning.style.cssText='display:block;font-family:Share Tech Mono,monospace;font-size:7px;padding:6px 9px;margin-bottom:8px;letter-spacing:.5px;border:1px solid var(--red);color:var(--red);background:rgba(255,51,85,0.06)';
-      warning.textContent='🚨 Each stop-out risks ~$'+(maxLoss||'?')+' ('+(lossRisk.toFixed(1))+'% of balance). A 5-loss streak = ~'+(lossRisk*5).toFixed(0)+'% drawdown. Consider lowering your cap.';
-    } else if(lossRisk>2){
-      warning.style.cssText='display:block;font-family:Share Tech Mono,monospace;font-size:7px;padding:6px 9px;margin-bottom:8px;letter-spacing:.5px;border:1px solid var(--amber);color:var(--amber);background:rgba(255,170,0,0.06)';
-      warning.textContent='⚠️ Each stop-out risks ~$'+(maxLoss||'?')+' ('+(lossRisk.toFixed(1))+'% of balance). Normal — bot stops losses before they grow.';
-    } else {
-      warning.style.display='none';
-    }
-  }
 }
 function setMode(m,btn){mode=m;btn.closest(".trow").querySelectorAll(".tbtn").forEach(function(b){b.classList.remove("active");});btn.classList.add("active");if(m==="taker")addAlert("ac","TAKER MODE","52bps break-even. XRP can support this on volatile moves. Use MAKER for safety.");}
 function setTech(on,btn){useTech=on;btn.closest(".trow").querySelectorAll(".tbtn").forEach(function(b){b.classList.remove("active");});btn.classList.add("active");log("info","TECH","Tech signal gate "+(on?"ON - RSI/BB/MACD will block bad entries":"OFF"));}
