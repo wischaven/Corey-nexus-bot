@@ -226,6 +226,7 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
     <div class="tbrand">NEXUS <span style="font-size:9px;color:var(--t3);letter-spacing:2px">v4</span></div>
     <div class="tright">
       <div class="spill" id="statusPill"><div class="sdot"></div><span id="statusTxt">STANDBY</span></div>
+      <button id="tickerChip" onclick="showTab('config',document.querySelector('.tnav:last-child'));setTimeout(function(){document.getElementById('tickerPickerSection').scrollIntoView({behavior:'smooth'});},200)" style="background:none;border:1px solid var(--purple);color:var(--purple);font-family:Orbitron,monospace;font-size:7px;font-weight:700;letter-spacing:1px;padding:3px 7px;cursor:pointer" title="Change ticker">XRP/USD ▾</button>
       <div class="clk" id="clock">--:--</div>
       <button class="lkbtn" onclick="doLogout()">&#x23CF;</button>
     </div>
@@ -261,7 +262,7 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
   <!-- DASHBOARD -->
   <div class="pane active" id="tab-dash">
     <div class="g2">
-      <div class="card"><div class="clbl">XRP/USD</div><div class="cval cc" id="livePrice">---</div><div class="csub" id="priceSrc">loading...</div></div>
+      <div class="card"><div class="clbl" id="dashTickerLabel">XRP/USD</div><div class="cval cc" id="livePrice">---</div><div class="csub" id="priceSrc">loading...</div></div>
       <div class="card"><div class="clbl">SPREAD</div><div class="cval ca" id="spreadVal">-- bps</div><div class="fbadge fw" id="spreadBadge">CHECKING</div></div>
     </div>
     <div class="g3">
@@ -442,7 +443,7 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
   <div class="pane" id="tab-chart">
     <div class="card" style="padding:10px 0 0">
       <div style="padding:0 12px 7px;display:flex;justify-content:space-between;align-items:center">
-        <div class="clbl" style="margin:0">XRP/USD + BOLLINGER BANDS (20,2)</div>
+        <div class="clbl" style="margin:0" id="chartTickerLabel">XRP/USD + BOLLINGER BANDS (20,2)</div>
         <button onclick="fetchOHLC()" style="background:none;border:1px solid var(--border);color:var(--cyan);font-family:Share Tech Mono,monospace;font-size:7px;padding:3px 8px;cursor:pointer">&#x27F3;</button>
       </div>
       <div class="chartWrap">
@@ -589,7 +590,7 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
       <div class="mc"><div class="mcl">BTC/USD</div><div class="mcv mn" id="mBTC"><div class="loading"><div class="lspin"></div></div></div></div>
       <div class="mc"><div class="mcl">ETH/USD</div><div class="mcv mn" id="mETH"><div class="loading"><div class="lspin"></div></div></div></div>
       <div class="mc"><div class="mcl">XLM/USD</div><div class="mcv mn" id="mXLM"><div class="loading"><div class="lspin"></div></div></div></div>
-      <div class="mc"><div class="mcl">XRP/USD</div><div class="mcv mn" id="mSHX"><div class="loading"><div class="lspin"></div></div></div></div>
+      <div class="mc"><div class="mcl" id="mSHXLabel">XRP/USD</div><div class="mcv mn" id="mSHX"><div class="loading"><div class="lspin"></div></div></div></div>
       <div class="mc"><div class="mcl">FEAR &amp; GREED</div><div class="mcv mn" id="mFG"><div class="loading"><div class="lspin"></div></div></div></div>
       <div class="mc"><div class="mcl">BTC DOMINANCE</div><div class="mcv mn" id="mDom"><div class="loading"><div class="lspin"></div></div></div></div>
       <div class="mc"><div class="mcl">XRP 24H VOL</div><div class="mcv mn" id="mVol"><div class="loading"><div class="lspin"></div></div></div></div>
@@ -1073,6 +1074,36 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
   </div>
 
   <div class="pane" id="tab-config">
+    <div id="tickerPickerSection">
+      <div class="slbl">ACTIVE TRADING PAIR</div>
+      <div class="card" style="border-color:rgba(153,69,255,0.4);background:rgba(153,69,255,0.03)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div>
+            <div style="font-family:Orbitron,monospace;font-size:14px;font-weight:700;color:var(--purple)" id="selectedTickerDisplay">XRP/USD</div>
+            <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);letter-spacing:1px;margin-top:2px" id="selectedTickerPair">XRPUSD</div>
+          </div>
+          <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--purple);letter-spacing:1px;border:1px solid var(--purple);padding:3px 8px">ACTIVE</div>
+        </div>
+        <div class="fl" style="margin-bottom:6px">CHOOSE YOUR PAIR</div>
+        <select id="tickerGroupSel" class="sel" onchange="renderTickerList()" style="margin-bottom:6px">
+          <option value="MAJOR — BTC">MAJOR — BTC</option>
+          <option value="MAJOR — ETH">MAJOR — ETH</option>
+          <option value="LAYER 1" selected>LAYER 1</option>
+          <option value="LAYER 2 / SCALING">LAYER 2 / SCALING</option>
+          <option value="DeFi">DeFi</option>
+          <option value="AI / DATA">AI / DATA</option>
+          <option value="MEME">MEME</option>
+          <option value="EXCHANGE TOKENS">EXCHANGE TOKENS</option>
+          <option value="GAMING / METAVERSE">GAMING / METAVERSE</option>
+          <option value="INFRASTRUCTURE">INFRASTRUCTURE</option>
+          <option value="PRIVACY">PRIVACY</option>
+          <option value="STABLECOINS / PAIRS">STABLECOINS / PAIRS</option>
+        </select>
+        <div id="tickerList" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px"></div>
+        <div id="tickerSwitchStatus" style="font-family:Share Tech Mono,monospace;font-size:8px;min-height:14px"></div>
+      </div>
+    </div>
+    <div class="divider"></div>
     <div class="slbl">KRAKEN API</div>
     <div class="card">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
@@ -1113,6 +1144,8 @@ var SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 var _authToken=localStorage.getItem('nexus_token')||null;
 var _authUser=null;
 var _userPlan='free';
+var _activeTicker=localStorage.getItem('nexus_ticker')||'XRPUSD';
+var _activeTickerLabel=localStorage.getItem('nexus_ticker_label')||'XRP/USD';
 
 function _authHeaders(){
   var h={'Content-Type':'application/json'};
@@ -1623,6 +1656,7 @@ function _restoreAll(){
 
 function init(){
   setInterval(function(){document.getElementById("clock").textContent=new Date().toTimeString().slice(0,5);},1000);
+  _syncTickerLabels(); // apply saved ticker to all labels
   // Restore everything before fetching data
   _restoreAll();
   _loadHistoryFromServer(); // merge with server trade log (longer history)
@@ -1648,7 +1682,7 @@ function init(){
 async function fetchOHLC(){
   log("info","OHLC","Fetching "+candleInt+"m candles from Kraken...");
   try{
-    var r=await fetch("https://api.kraken.com/0/public/OHLC?pair=XRPUSD&interval="+candleInt);
+    var r=await fetch("https://api.kraken.com/0/public/OHLC?pair="+_activeTicker+"&interval="+candleInt);
     var d=await r.json();
     if(d.error&&d.error.length)throw new Error(d.error[0]);
     var key=Object.keys(d.result).find(function(k){return k!=="last";});
@@ -1873,7 +1907,7 @@ async function fetchAllTF(){
   // Fetch all timeframes except the current active one (already in candles[])
   await Promise.all(MTF_INTERVALS.filter(function(tf){return tf.v!==candleInt;}).map(async function(tf){
     try{
-      var r=await fetch("https://api.kraken.com/0/public/OHLC?pair=XRPUSD&interval="+tf.v);
+      var r=await fetch("https://api.kraken.com/0/public/OHLC?pair="+_activeTicker+"&interval="+tf.v);
       var d=await r.json();
       if(d.error&&d.error.length)return;
       var key=Object.keys(d.result).find(function(k){return k!=="last";});
@@ -1911,7 +1945,7 @@ function calcConfluenceScore(rsi,bb,macd,obi,stochRsi,vwap,emaCross,volR,price){
 var _liveOBI=null;
 async function fetchRawOB(){
   try{
-    var r=await fetch('/api/0/public/Depth?pair=XRPUSD&count=20');
+    var r=await fetch('/api/0/public/Depth?pair="+_activeTicker+"&count=20');
     if(!r.ok)return;
     var d=await r.json();
     if(d.error&&d.error.length)return;
@@ -2200,22 +2234,28 @@ async function fetchAllMacro(){
 }
 async function fetchKrakenTickers(){
   try{
-    var r=await fetch("https://api.kraken.com/0/public/Ticker?pair=XXBTZUSD,XETHZUSD,XXLMZUSD,XRPUSD");
+    var pairs="XXBTZUSD,XETHZUSD,XXLMZUSD,"+_activeTicker;
+    var r=await fetch("https://api.kraken.com/0/public/Ticker?pair="+pairs);
     var d=await r.json();if(d.error&&d.error.length)return;
     var res=d.result,keys=Object.keys(res);
     var bk=keys.find(function(k){return k.includes("XBT")||k.includes("BTC");});
     var ek=keys.find(function(k){return k.includes("ETH");});
     var xk=keys.find(function(k){return k.includes("XLM");});
-    var sk=keys.find(function(k){return k.includes("XRP");});
+    // Match active ticker — strip USD/USDT suffix for search
+    var baseSearch=_activeTicker.replace(/USDT?|EUR|GBP|BTC$/,'').replace(/^X/,'');
+    var sk=keys.find(function(k){return k.toUpperCase().includes(baseSearch.toUpperCase());});
     if(bk){var p=+res[bk].c[0];macroD.btc=p;setMC("mBTC","$"+p.toLocaleString(undefined,{maximumFractionDigits:0}),p>80000?"mup":p<50000?"mdn":"mn");}
     if(ek){var pe=+res[ek].c[0];macroD.eth=pe;setMC("mETH","$"+pe.toLocaleString(undefined,{maximumFractionDigits:0}),pe>2500?"mup":pe<1000?"mdn":"mn");}
     if(xk){var px=+res[xk].c[0];macroD.xlm=px;setMC("mXLM","$"+px.toFixed(4),"mn");}
     if(sk){
       var ps=+res[sk].c[0],vs=+res[sk].v[1],ch=((ps-+res[sk].o)/+res[sk].o*100);
       macroD.xrp=ps;macroD.xrpVol=vs*ps;macroD.xrpCh=ch;
-      setMC("mSHX","$"+ps.toFixed(4),ch>0?"mup":ch<-1?"mdn":"mn");
+      var dp=ps>=1000?0:ps>=1?2:4;
+      setMC("mSHX","$"+ps.toFixed(dp),ch>0?"mup":ch<-1?"mdn":"mn");
       setMC("mVol","$"+(vs*ps).toLocaleString(undefined,{maximumFractionDigits:0}),"mn");
       setMC("mChg",(ch>=0?"+":"")+ch.toFixed(2)+"%",ch>0?"mup":ch<0?"mdn":"mn");
+      // Update macro panel label
+      var lbl=document.getElementById("mSHXLabel");if(lbl)lbl.textContent=_activeTickerLabel;
     }
   }catch(e){}
 }
@@ -2828,7 +2868,7 @@ async function execSim(){
 
   // ── Manage open sim position — identical exit logic to live ──────────────
   if(simPos){
-    var rt=await kPub("/0/public/Ticker",{pair:"XRPUSD"});
+    var rt=await kPub("/0/public/Ticker",{pair:_activeTicker});
     if(!rt||rt.error&&rt.error.length)return;
     var rtkKey=Object.keys(rt.result||{}).find(function(k){return k.includes("XRP");})||Object.keys(rt.result||{})[0];
     var rtk=rt.result&&rt.result[rtkKey];if(!rtk)return;
@@ -2881,7 +2921,7 @@ async function execSim(){
   var _simCoolMs=3*60*1000;
   if(_lastTradeAt&&(Date.now()-_lastTradeAt)<_simCoolMs){return;}
 
-  var r=await kPub("/0/public/Ticker",{pair:"XRPUSD"});
+  var r=await kPub("/0/public/Ticker",{pair:_activeTicker});
   if(!r||r.error&&r.error.length)return;
   var tkKey2=Object.keys(r.result||{}).find(function(k){return k.includes("XRP");});
   if(!tkKey2)tkKey2=Object.keys(r.result||{})[0];
@@ -2954,7 +2994,7 @@ async function execLive(){
         log("success","SMART","Filled @ $"+fp.toFixed(4)+" | placing TP sell @ $"+_pendingLimit.tpPrice.toFixed(4));
         livePos={entryPrice:fp,volume:_pendingLimit.volume,orderSize:_pendingLimit.orderSize,entryTime:Date.now(),txid:_pendingLimit.txid,rsiAtEntry:ind.rsi,macdShrinkCount:0,prevMacdHist:ind.hist,tpPrice:_pendingLimit.tpPrice,tpTxid:null};
         // Place TP sell limit at resistance level
-        var tpR=await kPriv("/0/private/AddOrder",{pair:"XRPUSD",type:"sell",ordertype:"limit",price:_pendingLimit.tpPrice,volume:_pendingLimit.volume,oflags:"post"});
+        var tpR=await kPriv("/0/private/AddOrder",{pair:_activeTicker,type:"sell",ordertype:"limit",price:_pendingLimit.tpPrice,volume:_pendingLimit.volume,oflags:"post"});
         if(tpR&&tpR.result&&tpR.result.txid)livePos.tpTxid=tpR.result.txid[0];
         updatePosWidget();vol+=_pendingLimit.orderSize;updateStats();
         addTradeRow(new Date().toLocaleTimeString(),"BUY",fp,_pendingLimit.orderSize,ind.rsi?ind.rsi.toFixed(1):"--",ind.bbPct?(ind.bbPct*100).toFixed(1)+"%":"--",0);
@@ -2963,7 +3003,7 @@ async function execLive(){
       if(pord&&(pord.status==="canceled"||pord.status==="expired")){log("warning","SMART","Limit cancelled externally");_pendingLimit=null;return;}
     }
     // Check if live price is within 0.1% of limit — cancel and market buy instead
-    var curTk=await kPub("/0/public/Ticker",{pair:"XRPUSD"});
+    var curTk=await kPub("/0/public/Ticker",{pair:_activeTicker});
     if(curTk&&curTk.result){
       var _tkKey=Object.keys(curTk.result).find(function(k){return k.includes("XRP");})||Object.keys(curTk.result)[0];
       var _tk=curTk.result&&curTk.result[_tkKey];
@@ -2973,7 +3013,7 @@ async function execLive(){
         if(_distToLimit>=0&&_distToLimit<=0.1){
           log("info","SMART","Price $"+_curAsk.toFixed(4)+" within 0.1% of limit $"+_pendingLimit.limitPrice.toFixed(4)+" — switching to market buy");
           await kPriv("/0/private/CancelOrder",{txid:_pendingLimit.txid});
-          var mkt=await kPriv("/0/private/AddOrder",{pair:"XRPUSD",type:"buy",ordertype:"market",volume:_pendingLimit.volume});
+          var mkt=await kPriv("/0/private/AddOrder",{pair:_activeTicker,type:"buy",ordertype:"market",volume:_pendingLimit.volume});
           if(mkt&&mkt.error&&mkt.error.length&&mkt.error[0]!=="SIMULATION"){log("error","SMART","Market buy failed: "+mkt.error.join(", "));_pendingLimit=null;return;}
           var mktTxid=mkt&&mkt.result&&mkt.result.txid&&mkt.result.txid[0]||"sim";
           log("success","SMART","Market buy placed: "+mktTxid+" @ ~$"+_curAsk.toFixed(4));
@@ -2990,7 +3030,7 @@ async function execLive(){
 
   // ── PHASE 1: Manage open position (exit logic) ────────────────────────────
   if(livePos){
-    var rt=await kPub("/0/public/Ticker",{pair:"XRPUSD"});
+    var rt=await kPub("/0/public/Ticker",{pair:_activeTicker});
     if(!rt||rt.error&&rt.error.length)return;
     var rtkKey=Object.keys(rt.result||{}).find(function(k){return k.includes("XRP");})||Object.keys(rt.result||{})[0];var rtk=rt.result&&rt.result[rtkKey];if(!rtk)return;
     var curBid=+rtk.b[0],curAsk=+rtk.a[0];
@@ -3069,7 +3109,7 @@ async function execLive(){
         livePos.tpTxid=null;
         await new Promise(function(r){setTimeout(r,1200);}); // wait for cancel to settle
       }
-      var sellPlaced=await kPriv("/0/private/AddOrder",{pair:"XRPUSD",type:"sell",ordertype:"market",volume:livePos.volume});
+      var sellPlaced=await kPriv("/0/private/AddOrder",{pair:_activeTicker,type:"sell",ordertype:"market",volume:livePos.volume});
       if(sellPlaced.error&&sellPlaced.error.length&&sellPlaced.error[0]!=="SIMULATION"){
         log("error","EXIT",sellPlaced.error.join(", "));_exitInProgress=false;return;
       }
@@ -3133,7 +3173,7 @@ async function execLive(){
     log("info","GATE","Cooldown: "+_coolLeft+"s remaining after last trade");return;
   }
 
-  var r=await kPub("/0/public/Ticker",{pair:"XRPUSD"});
+  var r=await kPub("/0/public/Ticker",{pair:_activeTicker});
   if(!r||r.error&&r.error.length)return;
   var tkKey=Object.keys(r.result||{}).find(function(k){return k.includes("XRP");});
   if(!tkKey)tkKey=Object.keys(r.result||{})[0];
@@ -3190,7 +3230,7 @@ async function execLive(){
     var limitP=+(rangeInfo.sup.price+0.0001).toFixed(4);
     var tpP=+(rangeInfo.res.price*0.998).toFixed(4); // 0.2% below resistance
     log("info","RANGE","Range trade: buy near support $"+rangeInfo.sup.price.toFixed(4)+" → target resistance $"+rangeInfo.res.price.toFixed(4)+" ("+rangeInfo.rangePct.toFixed(1)+"% range, "+rangeInfo.crosses+"x crosses) | RSI:"+( ind.rsi?ind.rsi.toFixed(1):"?")+" OBI:"+(obiStr));
-    var placed=await kPriv("/0/private/AddOrder",{pair:"XRPUSD",type:"buy",ordertype:"limit",price:limitP,volume:v,oflags:"post"});
+    var placed=await kPriv("/0/private/AddOrder",{pair:_activeTicker,type:"buy",ordertype:"limit",price:limitP,volume:v,oflags:"post"});
     if(placed.error&&placed.error.length&&placed.error[0]!=="SIMULATION"){log("error","ORDER",placed.error.join(", "));return;}
     var txid=placed.result&&placed.result.txid&&placed.result.txid[0]||"sim";
     _pendingLimit={txid:txid,limitPrice:limitP,tpPrice:tpP,placedAt:Date.now(),volume:+v,orderSize:os};
@@ -3210,7 +3250,7 @@ async function execLive(){
     var limitP=+(sup.price+0.0001).toFixed(4);
     var tpP=res?+(res.price-0.0001).toFixed(4):+(ask*1.025).toFixed(4); // just below resistance or 2.5% backstop
     log("info","SMART","Support $"+sup.price.toFixed(4)+" ("+sup.touches+"t, "+distToSup.toFixed(2)+"% below) → limit @ $"+limitP+" | TP target $"+tpP);
-    var placed=await kPriv("/0/private/AddOrder",{pair:"XRPUSD",type:"buy",ordertype:"limit",price:limitP,volume:v,oflags:"post"});
+    var placed=await kPriv("/0/private/AddOrder",{pair:_activeTicker,type:"buy",ordertype:"limit",price:limitP,volume:v,oflags:"post"});
     if(placed.error&&placed.error.length&&placed.error[0]!=="SIMULATION"){log("error","ORDER",placed.error.join(", "));return;}
     var txid=placed.result&&placed.result.txid&&placed.result.txid[0]||"sim";
     _pendingLimit={txid:txid,limitPrice:limitP,tpPrice:tpP,placedAt:Date.now(),volume:+v,orderSize:os};
@@ -3223,7 +3263,7 @@ async function execLive(){
 
   // ── Regular entry (trending, confluence met) ───────────────────────────────
   log("info","ENTRY","Buy @ $"+ask.toFixed(4)+" x "+v+" XRP | conf:"+cfStr+" OBI:"+obiStr+" RSI:"+(ind.rsi?ind.rsi.toFixed(1):"?")+" ("+mode+")");
-  var placed=await kPriv("/0/private/AddOrder",{pair:"XRPUSD",type:"buy",ordertype:mode==="taker"?"market":"limit",price:ask,volume:v,oflags:mode==="taker"?"":"post"});
+  var placed=await kPriv("/0/private/AddOrder",{pair:_activeTicker,type:"buy",ordertype:mode==="taker"?"market":"limit",price:ask,volume:v,oflags:mode==="taker"?"":"post"});
   if(placed.error&&placed.error.length&&placed.error[0]!=="SIMULATION"){log("error","ORDER",placed.error.join(", "));return;}
   var txid=placed.result&&placed.result.txid&&placed.result.txid[0]||"sim";
   log("success","ORDER","Entered: "+txid);
@@ -3440,6 +3480,7 @@ function showTab(id,btn){
   if(id==='plans') _renderPlansPage();
   if(id==='telegram') _renderTelegramPage();
   if(id==='notifications') _renderNotificationsPage();
+  if(id==='config') renderTickerList();
 }
 
 // ─── Plans page ────────────────────────────────────────────────────────────
@@ -3509,6 +3550,79 @@ function saveTelegram(){
       if(d.ok){stat.textContent='✓ CONNECTED — Test message sent!';stat.style.color='var(--green)';}
       else{stat.textContent='Error: '+d.description;stat.style.color='var(--red)';}
     }).catch(()=>{stat.textContent='Connection error — check your token';stat.style.color='var(--red)';});
+}
+
+// ─── Ticker Selector ───────────────────────────────────────────────────────
+var _allTickers = null; // loaded from /tickers on first use
+
+async function _loadTickers(){
+  if(_allTickers) return _allTickers;
+  try{
+    var r=await fetch('/tickers');
+    var d=await r.json();
+    _allTickers=d.groups;
+  }catch(e){
+    // fallback — common pairs
+    _allTickers={'LAYER 1':[{pair:'XRPUSD',label:'XRP/USD'},{pair:'SOLUSD',label:'SOL/USD'},{pair:'ADAUSD',label:'ADA/USD'},{pair:'AVAXUSD',label:'AVAX/USD'}],'MAJOR — BTC':[{pair:'XBTUSD',label:'BTC/USD'}],'MAJOR — ETH':[{pair:'ETHUSD',label:'ETH/USD'}],'MEME':[{pair:'DOGEUSD',label:'DOGE/USD'},{pair:'SHIBUSD',label:'SHIB/USD'}]};
+  }
+  return _allTickers;
+}
+
+async function renderTickerList(){
+  var grp=document.getElementById('tickerGroupSel').value;
+  var list=document.getElementById('tickerList');
+  if(!list)return;
+  var tickers=await _loadTickers();
+  var pairs=tickers[grp]||[];
+  list.innerHTML=pairs.map(function(t){
+    var active=t.pair===_activeTicker;
+    return '<button onclick="setActiveTicker(\''+t.pair+'\',\''+t.label+'\')" style="padding:5px 9px;font-family:Share Tech Mono,monospace;font-size:7px;letter-spacing:1px;cursor:pointer;background:'+(active?'var(--purple)':'transparent')+';border:1px solid '+(active?'var(--purple)':'var(--border)')+';color:'+(active?'var(--bg)':'var(--t2)')+'">'+t.label+'</button>';
+  }).join('');
+}
+
+async function setActiveTicker(pair, label){
+  _activeTicker=pair;
+  _activeTickerLabel=label;
+  localStorage.setItem('nexus_ticker',pair);
+  localStorage.setItem('nexus_ticker_label',label);
+
+  // Update all labels
+  var els=['dashTickerLabel','mSHXLabel'];
+  els.forEach(function(id){var e=document.getElementById(id);if(e)e.textContent=label;});
+  var chl=document.getElementById('chartTickerLabel');
+  if(chl)chl.textContent=label+' + BOLLINGER BANDS (20,2)';
+  var chip=document.getElementById('tickerChip');
+  if(chip)chip.textContent=label+' ▾';
+  var disp=document.getElementById('selectedTickerDisplay');if(disp)disp.textContent=label;
+  var pairEl=document.getElementById('selectedTickerPair');if(pairEl)pairEl.textContent=pair;
+
+  // Refresh the button highlights
+  renderTickerList();
+
+  // Save to server
+  if(_authToken&&!_demoMode){
+    fetch('/auth/ticker',{method:'POST',headers:_authHeaders(),body:JSON.stringify({ticker:pair})}).catch(function(){});
+  }
+
+  // Reload market data for new pair
+  var stat=document.getElementById('tickerSwitchStatus');
+  if(stat){stat.textContent='↻ Switching to '+label+'...';stat.style.color='var(--cyan)';}
+  fetchOHLC();
+  fetchRawOB();
+  setTimeout(function(){
+    if(stat){stat.textContent='✓ Now watching '+label;stat.style.color='var(--green)';setTimeout(function(){stat.textContent='';},3000);}
+  },1500);
+  log('info','TICKER','Switched to '+label+' ('+pair+')');
+}
+
+function _syncTickerLabels(){
+  var label=_activeTickerLabel;
+  var e=document.getElementById('dashTickerLabel');if(e)e.textContent=label;
+  var c=document.getElementById('chartTickerLabel');if(c)c.textContent=label+' + BOLLINGER BANDS (20,2)';
+  var m=document.getElementById('mSHXLabel');if(m)m.textContent=label;
+  var chip=document.getElementById('tickerChip');if(chip)chip.textContent=label+' ▾';
+  var disp=document.getElementById('selectedTickerDisplay');if(disp)disp.textContent=label;
+  var pairEl=document.getElementById('selectedTickerPair');if(pairEl)pairEl.textContent=_activeTicker;
 }
 
 function clearTelegram(){
