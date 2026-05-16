@@ -3562,29 +3562,42 @@ function sv(sid,lid,pre,suf){document.getElementById(lid).textContent=pre+docume
 function updateRiskDial(){
   var pct=+document.getElementById('maxRiskPct').value||10;
   document.getElementById('maxRiskV').textContent=pct+'%';
-  // Live dollar preview
-  var bal=typeof _liveUSDBalance==='number'&&_liveUSDBalance>10?_liveUSDBalance:null;
   var preview=document.getElementById('riskPreview');
   var warning=document.getElementById('riskWarning');
+
+  // Pull ATR stop data from sim if available
+  var atrVal=(_simData&&_simData.indicators&&_simData.indicators.atr)?_simData.indicators.atr.value:null;
+  var simPrice=(_simData&&_simData.indicators)?_simData.indicators.price:null;
+  var stopMult=(_simData&&_simData.currentParams)?_simData.currentParams.atrStopMult:1.5;
+  var stopPct=(atrVal&&simPrice)?(stopMult*atrVal/simPrice):null; // fraction of position at risk
+
+  var bal=typeof _liveUSDBalance==='number'&&_liveUSDBalance>10?_liveUSDBalance:null;
+  var kelly=(_simData&&_simData.kellyFrac)?_simData.kellyFrac:0.05;
+  var eff=Math.min(kelly,pct/100);
+  var refBal=bal||1000;
+  var posDollars=Math.floor(refBal*eff);
+  var maxLoss=stopPct?+(posDollars*stopPct).toFixed(2):null;
+  var maxLossPctBal=maxLoss?(maxLoss/refBal*100):null;
+
   if(preview){
-    if(bal){
-      var kelly=(_simData&&_simData.kellyFrac)?_simData.kellyFrac:0.05;
-      var eff=Math.min(kelly,pct/100);
-      var dollars=Math.floor(bal*eff);
-      preview.textContent='Kelly: '+(kelly*100).toFixed(1)+'% · Your cap: '+pct+'% · Max per trade: $'+dollars+' of $'+bal.toFixed(0);
-    } else {
-      var est=Math.floor(1000*(pct/100)); // illustrative at $1000
-      preview.textContent='At $1,000 balance → $'+est+' per trade · (connect Kraken for live estimate)';
-    }
+    var balStr=bal?'$'+bal.toFixed(0)+' balance':'$1,000 (estimated)';
+    var posStr='$'+posDollars+' position';
+    var lossStr=maxLoss
+      ?'max stop-out loss: ~$'+maxLoss+' ('+(maxLossPctBal.toFixed(1))+'% of balance)'
+      :'stop loss protects most of position';
+    preview.textContent=balStr+' → '+posStr+' · '+lossStr;
+    preview.style.color=maxLossPctBal&&maxLossPctBal>3?'var(--amber)':'var(--cyan)';
   }
+
   if(warning){
-    if(pct>35){
-      warning.style.display='block';
+    // Warn based on actual stop-loss loss % of balance, not raw position size
+    var lossRisk=maxLossPctBal||pct*stopPct*100||pct*0.02*100;
+    if(lossRisk>4){
       warning.style.cssText='display:block;font-family:Share Tech Mono,monospace;font-size:7px;padding:6px 9px;margin-bottom:8px;letter-spacing:.5px;border:1px solid var(--red);color:var(--red);background:rgba(255,51,85,0.06)';
-      warning.textContent='🚨 VERY AGGRESSIVE ('+pct+'%) — multi-loss streaks can cut your balance sharply. Half-Kelly (10–15%) is the professional standard.';
-    } else if(pct>20){
+      warning.textContent='🚨 Each stop-out risks ~$'+(maxLoss||'?')+' ('+(lossRisk.toFixed(1))+'% of balance). A 5-loss streak = ~'+(lossRisk*5).toFixed(0)+'% drawdown. Consider lowering your cap.';
+    } else if(lossRisk>2){
       warning.style.cssText='display:block;font-family:Share Tech Mono,monospace;font-size:7px;padding:6px 9px;margin-bottom:8px;letter-spacing:.5px;border:1px solid var(--amber);color:var(--amber);background:rgba(255,170,0,0.06)';
-      warning.textContent='⚠️ ABOVE HALF-KELLY ('+pct+'%) — mathematically increases long-term growth but drawdowns get larger. Reduce if you feel uncomfortable with losses.';
+      warning.textContent='⚠️ Each stop-out risks ~$'+(maxLoss||'?')+' ('+(lossRisk.toFixed(1))+'% of balance). Normal — bot stops losses before they grow.';
     } else {
       warning.style.display='none';
     }
