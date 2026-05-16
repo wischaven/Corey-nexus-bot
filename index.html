@@ -254,6 +254,7 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
     <button class="tnav" onclick="showTab('alerts',this)">ALERTS</button>
     <button class="tnav" onclick="showTab('trades',this)">TRADES</button>
     <button class="tnav" onclick="showTab('sim',this)">SIM LEARN</button>
+    <button class="tnav" onclick="showTab('brain',this)">🧠 BRAIN</button>
     <button class="tnav" onclick="showTab('telegram',this)">TELEGRAM</button>
     <button class="tnav" onclick="showTab('notifications',this)">🔔 ALERTS</button>
     <button class="tnav" onclick="showTab('plans',this)">⚡ PLANS</button>
@@ -806,6 +807,86 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
         </table>
       </div>
     </div>
+  </div>
+
+  <!-- BRAIN TAB -->
+  <div class="pane" id="tab-brain">
+
+    <!-- Learning headline -->
+    <div class="card" style="border-color:rgba(153,69,255,0.5);background:rgba(153,69,255,0.04);text-align:center;padding:16px">
+      <div style="font-family:Orbitron,monospace;font-size:11px;font-weight:700;color:var(--purple);letter-spacing:3px;margin-bottom:6px">🧠 NEXUS SELF-LEARNING ENGINE</div>
+      <div id="brainHeadline" style="font-family:Rajdhani,sans-serif;font-size:15px;color:var(--t1);line-height:1.6">Connecting to learning engine...</div>
+      <div id="brainSubline" style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t3);letter-spacing:1px;margin-top:5px"></div>
+    </div>
+
+    <!-- What NEXUS currently believes -->
+    <div class="card">
+      <div class="clbl" style="margin-bottom:8px;color:var(--purple)">CURRENT BELIEFS</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="border:1px solid var(--border);padding:10px">
+          <div class="clbl">MARKET REGIME</div>
+          <div style="font-family:Orbitron,monospace;font-size:13px;font-weight:700" id="brainRegime">--</div>
+          <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);margin-top:3px" id="brainRegimeDesc">--</div>
+        </div>
+        <div style="border:1px solid var(--border);padding:10px">
+          <div class="clbl">POSITION SIZING</div>
+          <div style="font-family:Orbitron,monospace;font-size:13px;font-weight:700;color:var(--cyan)" id="brainKelly">--%</div>
+          <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);margin-top:3px">Kelly fraction of base size</div>
+        </div>
+        <div style="border:1px solid var(--border);padding:10px">
+          <div class="clbl">ENTRY CONFIDENCE BAR</div>
+          <div style="font-family:Orbitron,monospace;font-size:13px;font-weight:700;color:var(--pink)" id="brainThresh">--</div>
+          <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);margin-top:3px">min score to take a trade</div>
+        </div>
+        <div style="border:1px solid var(--border);padding:10px">
+          <div class="clbl">PROFIT FACTOR</div>
+          <div style="font-family:Orbitron,monospace;font-size:13px;font-weight:700;color:var(--green)" id="brainPF">--</div>
+          <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);margin-top:3px">gross wins ÷ gross losses</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Signal trust scores -->
+    <div class="card">
+      <div class="clbl" style="margin-bottom:10px;color:var(--purple)">WHICH SIGNALS NEXUS TRUSTS MOST</div>
+      <div id="brainSignalBars" style="display:flex;flex-direction:column;gap:8px">
+        <div style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t3)">Loading signal data...</div>
+      </div>
+    </div>
+
+    <!-- Parameter evolution vs defaults -->
+    <div class="card">
+      <div class="clbl" style="margin-bottom:10px;color:var(--purple)">HOW NEXUS TUNED ITS PARAMETERS</div>
+      <div id="brainParamDiff" style="display:flex;flex-direction:column;gap:7px">
+        <div style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t3)">Loading parameters...</div>
+      </div>
+    </div>
+
+    <!-- Regime performance breakdown -->
+    <div class="card">
+      <div class="clbl" style="margin-bottom:10px;color:var(--purple)">STRATEGY BY REGIME</div>
+      <div id="brainRegimeParams" style="display:flex;flex-direction:column;gap:6px">
+        <div style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t3)">Loading regime data...</div>
+      </div>
+    </div>
+
+    <!-- Plain-English learning timeline -->
+    <div class="card">
+      <div class="clbl" style="margin-bottom:8px;color:var(--purple)">RECENT LESSONS LEARNED</div>
+      <div id="brainTimeline" style="display:flex;flex-direction:column;gap:6px">
+        <div style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t3)">No adjustments yet — adapts after every trade</div>
+      </div>
+    </div>
+
+    <!-- User notes / feed knowledge -->
+    <div class="card">
+      <div class="clbl" style="margin-bottom:6px;color:var(--purple)">FEED NEXUS YOUR OBSERVATIONS</div>
+      <div style="font-family:Rajdhani,sans-serif;font-size:12px;color:var(--t2);line-height:1.6;margin-bottom:8px">Type anything you've noticed about the market — patterns, news events, or trading rules. Claude AI will factor these into every analysis.</div>
+      <textarea id="brainNotes" style="width:100%;background:#030c13;border:1px solid var(--border);color:var(--t1);font-family:Rajdhani,sans-serif;font-size:13px;padding:10px 12px;outline:none;resize:none;height:90px;margin-bottom:6px" placeholder="e.g. XRP tends to spike before SEC news. Volume above 2x average usually precedes a breakout. BTC dominance above 55% is bad for alts..."></textarea>
+      <button onclick="saveBrainNotes()" class="btn btn-p" style="font-size:8px;padding:10px">🧠 SAVE TO NEXUS MEMORY</button>
+      <div id="brainNoteStatus" style="font-family:Share Tech Mono,monospace;font-size:8px;margin-top:6px;min-height:14px"></div>
+    </div>
+
   </div>
 
   <!-- CONFIG -->
@@ -2333,6 +2414,9 @@ async function runFullAI(silent){
   var _confBreakdown="OBI:"+(_obiPts>0?"+":"")+_obiPts+" RSI:"+(_rsiPts>0?"+":"")+_rsiPts+"("+( ind.rsi?ind.rsi.toFixed(0):"?")+")"+" BB:"+(_bbPts>0?"+":"")+_bbPts+" MACD:"+(_macdPts>0?"+":"")+_macdPts+" MTF:"+(ind.mtfBonus>0?"+":"")+ind.mtfBonus+" = "+ind.confluence.toFixed(0)+"/100";
   var _recentLog=_logBuf.slice(-20).join("\n");
   var usr2="LIVE TECHNICAL (Kraken "+candleInt+"m candles):\nXRP/USD: $"+(macroD.xrp||price||"?")+" | 24h Vol: $"+(macroD.xrpVol?macroD.xrpVol.toFixed(0):"?")+" | 24h: "+(macroD.xrpCh?macroD.xrpCh.toFixed(2)+"%":"?")+"\nRSI(14): "+(ind.rsi?ind.rsi.toFixed(2):"N/A")+" -> "+(ind.rsi?ind.rsi<30?"OVERSOLD":ind.rsi>70?"OVERBOUGHT":ind.rsi<45?"WEAK":"NEUTRAL":"N/A")+"\nBB Upper: $"+(ind.bbU?ind.bbU.toFixed(6):"N/A")+" | Mid: $"+(ind.bbM?ind.bbM.toFixed(6):"N/A")+" | Lower: $"+(ind.bbL?ind.bbL.toFixed(6):"N/A")+"\nBB %B: "+(ind.bbPct?(ind.bbPct*100).toFixed(1)+"%":"N/A")+" | BB Width: "+(ind.bbW?(ind.bbW*100).toFixed(3)+"%":"N/A")+(ind.bbW&&ind.bbW<0.008?" [SQUEEZE]":"")+"\nMACD: "+(ind.macd?ind.macd.toFixed(6):"N/A")+" | Signal: "+(ind.sig?ind.sig.toFixed(6):"N/A")+" | Histogram: "+(ind.hist?((ind.hist>0?"+":"")+ind.hist.toFixed(6)):"N/A")+"\nVolume Ratio: "+(ind.volR?ind.volR.toFixed(2)+"x avg":"N/A")+" | Technical Verdict: "+ind.verdict+"\n\nMULTI-TIMEFRAME:\n"+_mtfStr()+"\n\nCONFLUENCE BREAKDOWN:\n"+_confBreakdown+"\n\nAUTO S/R LEVELS:\nSupport: "+(_autoSupStr||"none detected")+"\nResistance: "+(_autoResStr||"none detected")+"\nRange Mode: "+_rangeStr+"\n\nBOT STATE:\nPosition: "+_posStr+"\nPending Limit: "+_pendStr+"\nBot Running: "+botRunning+" | AI Paused: "+aiPaused+" | MTF Bonus: "+(ind.mtfBonus>0?"+":"")+ind.mtfBonus+"\n\nRECENT LOG (last 20 entries):\n"+_recentLog+"\n\nMACRO:\nBTC: $"+(macroD.btc||"?")+" | ETH: $"+(macroD.eth||"?")+" | XLM: $"+(macroD.xlm||"?")+"\nBTC Dom: "+(macroD.btcDom||"?")+"% | Fear&Greed: "+(macroD.fg||"?")+" ("+(macroD.fgLbl||"?")+")"+"\nFed: "+document.getElementById("fedStance").value+" | JPY: "+document.getElementById("jpyTrend").value+"\nPPI/CPI: "+document.getElementById("inflData").value+" | Phase: "+document.getElementById("mktPhase").value+"\n\nTRADE MATH: "+(fR*100).toFixed(2)+"% per side | BE: "+(fR*2*10000).toFixed(0)+"bps | Size: $"+oSz+" | Mode: "+mode+"\n\nSESSION MEMORY (last 10 trades):\n"+rt+"\n\nSTATS: P&L:"+(pnl>=0?"+":"")+"$"+pnl.toFixed(4)+" | Trades:"+trades+" | WR:"+(trades>0?(wins/trades*100).toFixed(0)+"%":"N/A")+" | Fees:$"+fees.toFixed(3)+"\n\nNEWS TOP 3: "+newsArr.slice(0,3).map(function(n){return n.title;}).join(" | ");
+  // Inject user brain notes if saved
+  var _notes = window._brainNotes || localStorage.getItem('nexus_brain_notes') || '';
+  if (_notes) usr2 += '\n\nUSER OBSERVATIONS (factor these in):\n' + _notes;
   var result=await callClaude(sys,usr2,800);
   document.getElementById("aiSpin").style.display="none";
   if(!result){document.getElementById("aiBannerTxt").textContent="AI failed - check Claude API key in CONFIG";return;}
@@ -3483,6 +3567,7 @@ function showTab(id,btn){
   if(id==='telegram') _renderTelegramPage();
   if(id==='notifications') _renderNotificationsPage();
   if(id==='config') renderTickerList();
+  if(id==='brain') renderBrainTab();
 }
 
 // ─── Plans page ────────────────────────────────────────────────────────────
@@ -3834,6 +3919,206 @@ function seedAlerts(){
   setTimeout(function(){addAlert("acoach","POST-TRADE COACHING ACTIVE","Claude analyzes every 3 trades and gives specific feedback on your RSI and Bollinger Band entries. Enable in DASH settings.");},1600);
 }
 
+// ─── Brain Tab ────────────────────────────────────────────────────────────
+
+var _BRAIN_DEFAULTS = {
+  confluenceThreshold: 50, rsiThreshold: 72, maxSpreadBps: 200,
+  minNetBps: 5, atrStopMult: 1.5, atrTpMult: 2.5
+};
+
+var _REGIME_DESCRIPTIONS = {
+  TRENDING_UP:   'Strong upward momentum — NEXUS is more aggressive on entries',
+  TRENDING_DOWN: 'Downtrend detected — NEXUS is cautious, requires higher confidence',
+  RANGING:       'Price bouncing in a channel — NEXUS targets support/resistance edges',
+  VOLATILE:      'Erratic price action — NEXUS uses tight stops and smaller positions',
+};
+
+var _SIGNAL_LABELS = {
+  obi: 'Order Book Imbalance', rsi: 'RSI (14)',
+  bb: 'Bollinger Band %B', stochRsi: 'Stochastic RSI',
+  macd: 'MACD Histogram', vwap: 'VWAP Deviation',
+  emaCross: 'EMA 9/21 Cross', volume: 'Volume Ratio'
+};
+
+function renderBrainTab() {
+  var d = _simData;
+
+  // Pull latest if we don't have it yet
+  if (!d) { fetchSimData().then(function(){ if(_simData) renderBrainTab(); }); return; }
+
+  var trades = d.totalTrades || 0;
+  var wr = d.winRate || 0;
+  var pf = d.profitFactor || 0;
+  var p = d.globalParams || {};
+  var rp = d.regimeParams || {};
+  var fi = d.featureImportance || {};
+  var log = d.recentParamLog || [];
+  var kelly = d.kellyFrac || 0.05;
+  var regime = d.regime || 'RANGING';
+
+  // ── Headline ──────────────────────────────────────────────────────────────
+  var headline = document.getElementById('brainHeadline');
+  var subline  = document.getElementById('brainSubline');
+  if (headline) {
+    if (trades === 0) {
+      headline.textContent = 'NEXUS is warming up — waiting for first sim trades to begin learning.';
+    } else if (trades < 10) {
+      headline.textContent = 'NEXUS has analyzed ' + trades + ' trade' + (trades===1?'':'s') + ' and is starting to form patterns. Learning accelerates after 10 trades.';
+    } else {
+      var conf = wr >= 0.6 ? 'performing well' : wr >= 0.5 ? 'finding its edge' : 'adapting aggressively';
+      headline.textContent = 'NEXUS has analyzed ' + trades + ' trades with a ' + (wr*100).toFixed(0) + '% win rate and is ' + conf + '. Parameters auto-update after every trade.';
+    }
+  }
+  if (subline) subline.textContent = 'Last update: ' + new Date().toLocaleTimeString() + ' · Adapts every 30s · ' + log.length + ' param adjustments recorded';
+
+  // ── Current beliefs ───────────────────────────────────────────────────────
+  var regimeColors = { TRENDING_UP:'var(--green)', TRENDING_DOWN:'var(--red)', RANGING:'var(--amber)', VOLATILE:'var(--purple)' };
+  var regimeEl = document.getElementById('brainRegime');
+  if (regimeEl) { regimeEl.textContent = regime.replace('_',' '); regimeEl.style.color = regimeColors[regime]||'var(--t2)'; }
+  var regimeDescEl = document.getElementById('brainRegimeDesc');
+  if (regimeDescEl) regimeDescEl.textContent = _REGIME_DESCRIPTIONS[regime] || '';
+  var kellyEl = document.getElementById('brainKelly');
+  if (kellyEl) { kellyEl.textContent = (kelly * 100).toFixed(1) + '%'; kellyEl.style.color = kelly > 0.07 ? 'var(--green)' : kelly < 0.03 ? 'var(--red)' : 'var(--cyan)'; }
+  var threshEl = document.getElementById('brainThresh');
+  if (threshEl) threshEl.textContent = (p.confluenceThreshold||50).toFixed(1) + ' / 100';
+  var pfEl = document.getElementById('brainPF');
+  if (pfEl) { pfEl.textContent = pf.toFixed(2) + 'x'; pfEl.style.color = pf >= 1.5 ? 'var(--green)' : pf >= 1 ? 'var(--amber)' : 'var(--red)'; }
+
+  // ── Signal trust bars ─────────────────────────────────────────────────────
+  var barsEl = document.getElementById('brainSignalBars');
+  if (barsEl) {
+    var sorted = Object.keys(_SIGNAL_LABELS).map(function(k) {
+      var v = fi[k] || { weight: 0.5, correct: 0, total: 0 };
+      return { key: k, label: _SIGNAL_LABELS[k], acc: v.total > 0 ? v.correct / v.total : 0.5, total: v.total };
+    }).sort(function(a,b){ return b.acc - a.acc; });
+
+    barsEl.innerHTML = sorted.map(function(s) {
+      var pct = (s.acc * 100).toFixed(0);
+      var col = s.acc >= 0.65 ? 'var(--green)' : s.acc >= 0.55 ? 'var(--cyan)' : s.acc >= 0.45 ? 'var(--amber)' : 'var(--red)';
+      var trust = s.acc >= 0.65 ? 'HIGH TRUST' : s.acc >= 0.55 ? 'RELIABLE' : s.acc >= 0.45 ? 'NEUTRAL' : 'WEAK';
+      var sampleNote = s.total > 0 ? s.total + ' samples' : 'no data yet';
+      return '<div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">' +
+          '<span style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t2)">' + s.label + '</span>' +
+          '<span style="font-family:Orbitron,monospace;font-size:9px;font-weight:700;color:' + col + '">' + pct + '%</span>' +
+        '</div>' +
+        '<div style="height:6px;background:var(--border);position:relative;overflow:hidden">' +
+          '<div style="height:100%;width:' + pct + '%;background:' + col + ';transition:width 0.6s"></div>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;margin-top:2px">' +
+          '<span style="font-family:Share Tech Mono,monospace;font-size:6px;color:var(--t3)">' + sampleNote + '</span>' +
+          '<span style="font-family:Share Tech Mono,monospace;font-size:6px;color:' + col + ';letter-spacing:1px">' + trust + '</span>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  // ── Parameter evolution vs defaults ───────────────────────────────────────
+  var paramDiffEl = document.getElementById('brainParamDiff');
+  if (paramDiffEl && p.confluenceThreshold !== undefined) {
+    var paramDefs = [
+      { key:'confluenceThreshold', label:'Entry Confidence Bar', unit:'/ 100', fmt:function(v){return v.toFixed(1);},
+        desc: function(cur,def){ return cur > def ? 'Raised — NEXUS is pickier after losses' : cur < def ? 'Lowered — good signals are working' : 'At default'; } },
+      { key:'rsiThreshold', label:'RSI Rejection Ceiling', unit:'', fmt:function(v){return v.toFixed(1);},
+        desc: function(cur,def){ return cur < def ? 'Lowered — avoiding overbought entries' : 'Relaxed — catching more momentum'; } },
+      { key:'atrStopMult', label:'Stop Loss Width (ATR×)', unit:'', fmt:function(v){return v.toFixed(2);},
+        desc: function(cur,def){ return cur > def ? 'Widened — reducing stop-outs' : 'Tightened — confident in entries'; } },
+      { key:'atrTpMult', label:'Take Profit Target (ATR×)', unit:'', fmt:function(v){return v.toFixed(2);},
+        desc: function(cur,def){ return cur > def ? 'Extended — riding winners longer' : 'Shortened — securing profits sooner'; } },
+      { key:'maxSpreadBps', label:'Max Allowed Spread', unit:' bps', fmt:function(v){return v.toFixed(1);},
+        desc: function(cur,def){ return cur < def ? 'Tightened — avoiding thin markets' : 'Widened — comfortable with spread'; } },
+      { key:'minNetBps', label:'Min Net Profit Required', unit:' bps', fmt:function(v){return v.toFixed(2);},
+        desc: function(cur,def){ return cur > def ? 'Raised — demanding better risk/reward' : 'Lowered — accepting smaller edges'; } },
+    ];
+    paramDiffEl.innerHTML = paramDefs.map(function(pd) {
+      var cur = p[pd.key];
+      var def = _BRAIN_DEFAULTS[pd.key];
+      if (cur === undefined) return '';
+      var diff = cur - def;
+      var arrow = Math.abs(diff) < 0.05 ? '─' : diff > 0 ? '▲' : '▼';
+      var col   = Math.abs(diff) < 0.05 ? 'var(--t3)' : diff > 0 ? 'var(--amber)' : 'var(--cyan)';
+      return '<div style="border:1px solid var(--border);padding:8px 10px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center">' +
+          '<span style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t2)">' + pd.label + '</span>' +
+          '<div style="display:flex;align-items:center;gap:6px">' +
+            '<span style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3)">default: ' + pd.fmt(def) + '</span>' +
+            '<span style="font-family:Orbitron,monospace;font-size:11px;font-weight:700;color:' + col + '">' + arrow + ' ' + pd.fmt(cur) + pd.unit + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div style="font-family:Rajdhani,sans-serif;font-size:11px;color:var(--t3);margin-top:3px">' + pd.desc(cur, def) + '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  // ── Regime parameter cards ────────────────────────────────────────────────
+  var regimeParamsEl = document.getElementById('brainRegimeParams');
+  if (regimeParamsEl && Object.keys(rp).length) {
+    regimeParamsEl.innerHTML = Object.keys(rp).map(function(r) {
+      var rdata = rp[r];
+      var isActive = r === regime;
+      var col = regimeColors[r] || 'var(--t2)';
+      return '<div style="border:1px solid ' + (isActive ? col : 'var(--border)') + ';padding:8px 10px;background:' + (isActive ? 'rgba(0,0,0,0.15)' : 'transparent') + '">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">' +
+          '<span style="font-family:Orbitron,monospace;font-size:8px;font-weight:700;color:' + col + '">' + r.replace('_',' ') + (isActive ? ' ← ACTIVE' : '') + '</span>' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px">' +
+          '<div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3)">CONF ≥ <span style="color:var(--t1)">' + (rdata.confluenceThreshold||0).toFixed(1) + '</span></div>' +
+          '<div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3)">SL ×<span style="color:var(--t1)">' + (rdata.atrStopMult||0).toFixed(2) + '</span></div>' +
+          '<div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3)">TP ×<span style="color:var(--t1)">' + (rdata.atrTpMult||0).toFixed(2) + '</span></div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  // ── Plain-English learning timeline ───────────────────────────────────────
+  var timelineEl = document.getElementById('brainTimeline');
+  if (timelineEl) {
+    if (!log.length) {
+      timelineEl.innerHTML = '<div style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t3)">No adjustments yet — engine adapts after every completed trade</div>';
+    } else {
+      var _adjNames = { confluenceThreshold:'entry bar', rsiThreshold:'RSI ceiling', maxSpreadBps:'max spread', minNetBps:'min profit', atrStopMult:'stop width', atrTpMult:'TP target' };
+      timelineEl.innerHTML = log.slice().reverse().slice(0,10).map(function(entry) {
+        var adjs = entry.adjustments || {};
+        var adjKeys = Object.keys(adjs);
+        if (!adjKeys.length) return '';
+        var parts = adjKeys.map(function(k) {
+          var v = adjs[k];
+          return (v > 0 ? '↑ ' : '↓ ') + (_adjNames[k] || k);
+        });
+        var outcome = entry.won ? '✅ Won' : '❌ Lost';
+        var regimeStr = (entry.regime||'').replace('_',' ');
+        var scoreStr = entry.score ? ' · score ' + entry.score.toFixed(0) : '';
+        var pnlStr   = entry.pnlBps ? ' · ' + (entry.pnlBps > 0 ? '+' : '') + entry.pnlBps.toFixed(1) + ' bps' : '';
+        var timeStr  = entry.time ? new Date(entry.time).toLocaleTimeString() : '';
+        return '<div style="border-left:2px solid ' + (entry.won ? 'var(--green)' : 'var(--red)') + ';padding:6px 10px;background:rgba(0,0,0,0.1)">' +
+          '<div style="display:flex;justify-content:space-between;margin-bottom:3px">' +
+            '<span style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t2)">' + outcome + ' in ' + regimeStr + scoreStr + pnlStr + '</span>' +
+            '<span style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3)">' + timeStr + '</span>' +
+          '</div>' +
+          '<div style="font-family:Rajdhani,sans-serif;font-size:12px;color:var(--t1)">Adjusted: ' + parts.join(', ') + '</div>' +
+        '</div>';
+      }).join('');
+    }
+  }
+
+  // ── Restore saved notes ───────────────────────────────────────────────────
+  var notesEl = document.getElementById('brainNotes');
+  if (notesEl && !notesEl._loaded) {
+    notesEl.value = localStorage.getItem('nexus_brain_notes') || '';
+    notesEl._loaded = true;
+  }
+}
+
+function saveBrainNotes() {
+  var val = (document.getElementById('brainNotes')||{}).value || '';
+  localStorage.setItem('nexus_brain_notes', val);
+  // Also inject into Claude context so AI uses it
+  window._brainNotes = val;
+  var s = document.getElementById('brainNoteStatus');
+  if (s) { s.textContent = '✓ Saved — Claude AI will use these observations in every analysis'; s.style.color = 'var(--green)'; setTimeout(function(){ s.textContent=''; }, 3000); }
+  log('info','BRAIN','User notes saved to NEXUS memory');
+}
+
 // ============================================================
 // SIM LEARN v2 — full 9-signal dashboard + online learning UI
 // ============================================================
@@ -3845,6 +4130,10 @@ async function fetchSimData() {
     if (!r.ok) { document.getElementById('simStatus').textContent = 'proxy offline'; return; }
     _simData = await r.json();
     renderSimDash(_simData);
+    // Update Brain tab if it's currently visible
+    if (document.getElementById('tab-brain') && document.getElementById('tab-brain').classList.contains('active')) {
+      renderBrainTab();
+    }
   } catch(e) {
     document.getElementById('simStatus').textContent = 'proxy offline';
   }
