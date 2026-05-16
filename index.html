@@ -372,7 +372,11 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
     <div class="card"><div class="clbl">BREAK-EVEN SPREAD</div><div class="cval ca" id="breakEven">32 bps</div><div class="csub" id="beSub">at 0.16% maker fee</div></div>
     <div class="card">
       <div class="slbl">STRATEGY PARAMETERS</div>
-      <div class="sr"><span class="sl">ORDER SIZE</span><span class="sv2" id="oSzV">$50</span></div>
+      <div class="sr"><span class="sl">MAX RISK PER TRADE</span><span class="sv2" id="maxRiskV">10%</span></div>
+      <input type="range" min="5" max="50" value="10" step="1" id="maxRiskPct" oninput="updateRiskDial()">
+      <div id="riskPreview" style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--cyan);margin-bottom:4px;letter-spacing:.5px">At $0 balance → $0 per trade</div>
+      <div id="riskWarning" style="display:none;font-family:Share Tech Mono,monospace;font-size:7px;padding:5px 8px;margin-bottom:8px;letter-spacing:.5px"></div>
+      <div class="sr"><span class="sl">FALLBACK ORDER SIZE (no balance)</span><span class="sv2" id="oSzV">$50</span></div>
       <input type="range" min="10" max="500" value="50" id="oSz" oninput="sv('oSz','oSzV','$','');calcFees()">
       <div class="sr"><span class="sl">MIN XRP PER ORDER</span><span class="sv2" id="minShxV">10</span></div>
       <input type="range" min="10" max="200" value="10" step="1" id="minShx" oninput="sv('minShx','minShxV','','')">
@@ -1628,8 +1632,9 @@ function _saveAll(){
     apiSecret:kSecret? btoa(kSecret): "",
     claudeKey:cKey   ? btoa(cKey)   : "",
     // Sliders & settings
-    oSz:   document.getElementById("oSz").value,
-    mSp:   document.getElementById("mSp").value,
+    oSz:        document.getElementById("oSz").value,
+    maxRiskPct: document.getElementById("maxRiskPct").value,
+    mSp:        document.getElementById("mSp").value,
     mn:    document.getElementById("mn").value,
     ml:    document.getElementById("ml").value,
     intS:  document.getElementById("intS").value,
@@ -1666,7 +1671,7 @@ function _restoreAll(){
     var s=JSON.parse(raw);
 
     // Sliders — set value + trigger display update
-    var sliders=["oSz","mSp","mn","ml","intS","vt","minShx"];
+    var sliders=["oSz","maxRiskPct","mSp","mn","ml","intS","vt","minShx"];
     sliders.forEach(function(id){
       if(s[id]!==undefined){
         var el=document.getElementById(id);
@@ -1739,7 +1744,8 @@ function _restoreAll(){
 
 function init(){
   setInterval(function(){document.getElementById("clock").textContent=new Date().toTimeString().slice(0,5);},1000);
-  _syncTickerLabels(); // apply saved ticker to all labels
+  _syncTickerLabels();
+  updateRiskDial();
   // Restore everything before fetching data
   _restoreAll();
   _loadHistoryFromServer(); // merge with server trade log (longer history)
@@ -3231,15 +3237,13 @@ async function execLive(){
 
   // ── PHASE 2: Look for entry ────────────────────────────────────────────────
   if(aiPaused)return; // paused for new entries — only exit management runs above
-  var os=+document.getElementById("oSz").value;
-  // Confluence-scaled position sizing (Kelly-inspired)
-  // Higher confidence = larger position. Never exceeds 85% of balance.
+  var os=+document.getElementById("oSz").value; // fallback when no live balance
   if(typeof _liveUSDBalance==="number"&&_liveUSDBalance>10){
-    var cf=ind.confluence||50;
-    var sizeFrac=cf>=80?0.85:cf>=65?0.65:cf>=58?0.25:0.15;
-    os=Math.floor(_liveUSDBalance*sizeFrac);
-    os=Math.max(10,Math.min(os,+document.getElementById("oSz").value));
-    log("info","SIZE","Conf:"+cf.toFixed(0)+" → "+Math.round(sizeFrac*100)+"% of $"+_liveUSDBalance.toFixed(0)+" = $"+os);
+    var maxRiskPct=(+document.getElementById("maxRiskPct").value||10)/100;
+    var kellyFrac=(_simData&&_simData.kellyFrac)?_simData.kellyFrac:0.05;
+    var effectiveFrac=Math.min(kellyFrac,maxRiskPct);
+    os=Math.max(10,Math.floor(_liveUSDBalance*effectiveFrac));
+    log("info","SIZE","Kelly:"+( kellyFrac*100).toFixed(1)+"% cap:"+( maxRiskPct*100).toFixed(0)+"% → "+( effectiveFrac*100).toFixed(1)+"% of $"+_liveUSDBalance.toFixed(0)+" = $"+os);
   }
   if(os<10){log("warning","ORDER","Order size $"+os+" too small.");return;}
 
@@ -3554,6 +3558,38 @@ function calcFees(){
   document.getElementById("bestTrade")&&(document.getElementById("bestTrade").textContent="+$"+bestPnl.toFixed(4));
 }
 function sv(sid,lid,pre,suf){document.getElementById(lid).textContent=pre+document.getElementById(sid).value+suf;}
+
+function updateRiskDial(){
+  var pct=+document.getElementById('maxRiskPct').value||10;
+  document.getElementById('maxRiskV').textContent=pct+'%';
+  // Live dollar preview
+  var bal=typeof _liveUSDBalance==='number'&&_liveUSDBalance>10?_liveUSDBalance:null;
+  var preview=document.getElementById('riskPreview');
+  var warning=document.getElementById('riskWarning');
+  if(preview){
+    if(bal){
+      var kelly=(_simData&&_simData.kellyFrac)?_simData.kellyFrac:0.05;
+      var eff=Math.min(kelly,pct/100);
+      var dollars=Math.floor(bal*eff);
+      preview.textContent='Kelly: '+(kelly*100).toFixed(1)+'% · Your cap: '+pct+'% · Max per trade: $'+dollars+' of $'+bal.toFixed(0);
+    } else {
+      var est=Math.floor(1000*(pct/100)); // illustrative at $1000
+      preview.textContent='At $1,000 balance → $'+est+' per trade · (connect Kraken for live estimate)';
+    }
+  }
+  if(warning){
+    if(pct>35){
+      warning.style.display='block';
+      warning.style.cssText='display:block;font-family:Share Tech Mono,monospace;font-size:7px;padding:6px 9px;margin-bottom:8px;letter-spacing:.5px;border:1px solid var(--red);color:var(--red);background:rgba(255,51,85,0.06)';
+      warning.textContent='🚨 VERY AGGRESSIVE ('+pct+'%) — multi-loss streaks can cut your balance sharply. Half-Kelly (10–15%) is the professional standard.';
+    } else if(pct>20){
+      warning.style.cssText='display:block;font-family:Share Tech Mono,monospace;font-size:7px;padding:6px 9px;margin-bottom:8px;letter-spacing:.5px;border:1px solid var(--amber);color:var(--amber);background:rgba(255,170,0,0.06)';
+      warning.textContent='⚠️ ABOVE HALF-KELLY ('+pct+'%) — mathematically increases long-term growth but drawdowns get larger. Reduce if you feel uncomfortable with losses.';
+    } else {
+      warning.style.display='none';
+    }
+  }
+}
 function setMode(m,btn){mode=m;btn.closest(".trow").querySelectorAll(".tbtn").forEach(function(b){b.classList.remove("active");});btn.classList.add("active");if(m==="taker")addAlert("ac","TAKER MODE","52bps break-even. XRP can support this on volatile moves. Use MAKER for safety.");}
 function setTech(on,btn){useTech=on;btn.closest(".trow").querySelectorAll(".tbtn").forEach(function(b){b.classList.remove("active");});btn.classList.add("active");log("info","TECH","Tech signal gate "+(on?"ON - RSI/BB/MACD will block bad entries":"OFF"));}
 function setAP(on,btn){autoPause=on;btn.closest(".trow").querySelectorAll(".tbtn").forEach(function(b){b.classList.remove("active");});btn.classList.add("active");log("info","AI","Auto-pause "+(on?"ON":"OFF"));}
