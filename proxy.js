@@ -268,6 +268,50 @@ app.post('/billing/webhook', express.raw({ type: 'application/json' }), async (r
   res.json({ received: true });
 });
 
+// ─── Push notification endpoints ─────────────────────────────────────────
+const { saveSubscription, deleteSubscription, notify } = require('./trading_engine/push_notifications');
+
+// Save browser push subscription
+app.post('/push/subscribe', requireAuth, async (req, res) => {
+  const { subscription } = req.body;
+  if (!subscription?.endpoint) return res.status(400).json({ error: 'Invalid subscription object' });
+  await saveSubscription(req.user.id, subscription);
+  res.json({ ok: true });
+});
+
+// Remove push subscription (user turned off notifications)
+app.post('/push/unsubscribe', requireAuth, async (req, res) => {
+  await deleteSubscription(req.user.id);
+  res.json({ ok: true });
+});
+
+// Send a test notification to the requesting user
+app.post('/push/test', requireAuth, async (req, res) => {
+  const { type } = req.body;
+  const testData = {
+    trade_entry:      { pair: 'XRPUSD', price: '0.5234', score: 87, regime: 'Trending' },
+    trade_exit:       { pair: 'XRPUSD', price: '0.5301', pnl: 1, pnlBps: 12.6, reason: 'Take Profit' },
+    stop_loss:        { pair: 'XRPUSD', price: '0.5180', pnlBps: -10.0 },
+    take_profit:      { pair: 'XRPUSD', price: '0.5310', pnlBps: 14.5 },
+    high_confluence:  { pair: 'XRPUSD', score: 91, verdict: 'Strong Buy', regime: 'Trending' },
+    rsi_extreme:      { pair: 'XRPUSD', rsi: 27.3 },
+    volume_spike:     { pair: 'XRPUSD', ratio: 3.2 },
+    bb_squeeze:       { pair: 'XRPUSD' },
+    regime_change:    { pair: 'XRPUSD', from: 'Ranging', to: 'Trending' },
+    brain_update:     { pair: 'XRPUSD', message: 'Adjusted RSI threshold based on last 20 trades' },
+    fear_greed:       { value: 14, label: 'Extreme Fear' },
+    price_alert:      { pair: 'XRPUSD', price: '0.5250', targetPrice: '0.5250' },
+    obi_spike:        { pair: 'XRPUSD', obi: 0.72 },
+    support_resistance: { pair: 'XRPUSD', levelType: 'resistance', level: '0.5300' },
+    bot_status:       { status: 'RUNNING', message: 'Bot started successfully' },
+    weekly_report:    { trades: 47, winRate: 62, pnl: 1, pnlBps: 184 },
+    connection_lost:  { exchange: 'Kraken' },
+  };
+  const data = testData[type] || testData.bot_status;
+  await notify(req.user.id, type || 'bot_status', data);
+  res.json({ ok: true });
+});
+
 // ─── Tickers list (public) ────────────────────────────────────────────────
 app.get('/tickers', (_req, res) => {
   const { TICKERS, ALL_PAIRS } = require('./trading_engine/tickers');

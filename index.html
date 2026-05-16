@@ -254,6 +254,7 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
     <button class="tnav" onclick="showTab('trades',this)">TRADES</button>
     <button class="tnav" onclick="showTab('sim',this)">SIM LEARN</button>
     <button class="tnav" onclick="showTab('telegram',this)">TELEGRAM</button>
+    <button class="tnav" onclick="showTab('notifications',this)">🔔 ALERTS</button>
     <button class="tnav" onclick="showTab('plans',this)">⚡ PLANS</button>
     <button class="tnav" onclick="showTab('config',this)">CONFIG</button>
   </div>
@@ -863,6 +864,126 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
     </div>
   </div>
 
+  <!-- NOTIFICATIONS -->
+  <div class="pane" id="tab-notifications">
+    <!-- Enable / status card -->
+    <div class="card" style="border-color:rgba(0,212,255,0.3);background:rgba(0,212,255,0.02)">
+      <div class="clbl" style="color:var(--cyan);margin-bottom:6px">🔔 BROWSER PUSH NOTIFICATIONS</div>
+      <div style="font-family:Rajdhani,sans-serif;font-size:13px;color:var(--t2);line-height:1.7;margin-bottom:10px">Get instant alerts on your phone or desktop — even when this tab is closed. Works on Android, Windows, and Mac. iPhone requires iOS 16.4+ with the app added to your Home Screen.</div>
+      <div id="pushStatusBar" style="font-family:Share Tech Mono,monospace;font-size:8px;margin-bottom:10px;padding:8px;background:var(--bg3);border:1px solid var(--border);letter-spacing:1px">CHECKING SUPPORT...</div>
+      <div style="display:flex;gap:8px">
+        <button id="pushEnableBtn" onclick="enablePushNotifications()" class="btn btn-c" style="flex:1;font-size:8px;padding:10px">🔔 ENABLE NOTIFICATIONS</button>
+        <button id="pushDisableBtn" onclick="disablePushNotifications()" style="display:none;flex:1;padding:10px;background:none;border:1px solid var(--red);color:var(--red);font-family:Share Tech Mono,monospace;font-size:8px;cursor:pointer;letter-spacing:1px">DISABLE</button>
+      </div>
+    </div>
+
+    <!-- Alert type toggles -->
+    <div class="card" id="pushSettingsCard">
+      <div class="clbl" style="margin-bottom:10px">CHOOSE YOUR ALERTS</div>
+      <div style="display:flex;flex-direction:column;gap:0">
+
+        <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--purple);letter-spacing:2px;padding:6px 0 4px;border-bottom:1px solid var(--border);margin-bottom:6px">TRADING SIGNALS</div>
+        <label style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;cursor:pointer">
+          <span style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t2)">⚡ Trade Entry — new signal detected</span>
+          <input type="checkbox" id="pn_trade_entry" checked style="accent-color:var(--cyan)">
+        </label>
+        <label style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;cursor:pointer">
+          <span style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t2)">✅ Trade Exit — position closed</span>
+          <input type="checkbox" id="pn_trade_exit" checked style="accent-color:var(--cyan)">
+        </label>
+        <label style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;cursor:pointer">
+          <span style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t2)">🛑 Stop Loss triggered</span>
+          <input type="checkbox" id="pn_stop_loss" checked style="accent-color:var(--cyan)">
+        </label>
+        <label style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;cursor:pointer">
+          <span style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t2)">🎯 Take Profit hit</span>
+          <input type="checkbox" id="pn_take_profit" checked style="accent-color:var(--cyan)">
+        </label>
+        <label style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;cursor:pointer">
+          <span style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t2)">🔥 High Confluence Signal (score 80+)</span>
+          <input type="checkbox" id="pn_high_confluence" checked style="accent-color:var(--cyan)">
+        </label>
+
+        <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--cyan);letter-spacing:2px;padding:10px 0 4px;border-bottom:1px solid var(--border);margin-bottom:6px">MARKET CONDITIONS</div>
+        <label style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;cursor:pointer">
+          <span style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t2)">📊 RSI Extreme (overbought/oversold)</span>
+          <input type="checkbox" id="pn_rsi_extreme" checked style="accent-color:var(--cyan)">
+        </label>
+        <label style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;cursor:pointer">
+          <span style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t2)">📈 Volume Spike detected</span>
+          <input type="checkbox" id="pn_volume_spike" checked style="accent-color:var(--cyan)">
+        </label>
+        <label style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;cursor:pointer">
+          <span style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t2)">🎯 Bollinger Band Squeeze</span>
+          <input type="checkbox" id="pn_bb_squeeze" checked style="accent-color:var(--cyan)">
+        </label>
+        <label style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;cursor:pointer">
+          <span style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t2)">🔄 Regime Change (trend shift)</span>
+          <input type="checkbox" id="pn_regime_change" checked style="accent-color:var(--cyan)">
+        </label>
+        <label style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;cursor:pointer">
+          <span style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t2)">📍 Price Alert — level hit</span>
+          <input type="checkbox" id="pn_price_alert" checked style="accent-color:var(--cyan)">
+        </label>
+        <label style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;cursor:pointer">
+          <span style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t2)">📍 Support / Resistance level hit</span>
+          <input type="checkbox" id="pn_support_resistance" checked style="accent-color:var(--cyan)">
+        </label>
+        <label style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;cursor:pointer">
+          <span style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t2)">🐋 OBI Spike (order book imbalance)</span>
+          <input type="checkbox" id="pn_obi_spike" style="accent-color:var(--cyan)">
+        </label>
+
+        <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--amber);letter-spacing:2px;padding:10px 0 4px;border-bottom:1px solid var(--border);margin-bottom:6px">INTELLIGENCE & BOT</div>
+        <label style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;cursor:pointer">
+          <span style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t2)">🧠 NEXUS Learned — brain update</span>
+          <input type="checkbox" id="pn_brain_update" checked style="accent-color:var(--cyan)">
+        </label>
+        <label style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;cursor:pointer">
+          <span style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t2)">😱 Fear &amp; Greed extreme reading</span>
+          <input type="checkbox" id="pn_fear_greed" checked style="accent-color:var(--cyan)">
+        </label>
+        <label style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;cursor:pointer">
+          <span style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t2)">🤖 Bot status change (start/stop)</span>
+          <input type="checkbox" id="pn_bot_status" checked style="accent-color:var(--cyan)">
+        </label>
+        <label style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;cursor:pointer">
+          <span style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t2)">📊 Weekly Performance Report</span>
+          <input type="checkbox" id="pn_weekly_report" checked style="accent-color:var(--cyan)">
+        </label>
+        <label style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;cursor:pointer">
+          <span style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t2)">⚠️ Connection Lost alert</span>
+          <input type="checkbox" id="pn_connection_lost" checked style="accent-color:var(--cyan)">
+        </label>
+      </div>
+      <button onclick="savePushSettings()" class="btn btn-c" style="margin-top:12px;font-size:8px;padding:10px">💾 SAVE PREFERENCES</button>
+      <div id="pushSaveStatus" style="font-family:Share Tech Mono,monospace;font-size:8px;margin-top:7px;min-height:14px"></div>
+    </div>
+
+    <!-- Test notification -->
+    <div class="card">
+      <div class="clbl" style="margin-bottom:8px">TEST A NOTIFICATION</div>
+      <div style="font-family:Rajdhani,sans-serif;font-size:12px;color:var(--t2);line-height:1.6;margin-bottom:8px">Send yourself a real test push to confirm notifications are working on your device.</div>
+      <select id="pushTestType" class="sel">
+        <option value="trade_entry">⚡ Trade Entry Signal</option>
+        <option value="high_confluence">🔥 High Confluence Signal</option>
+        <option value="stop_loss">🛑 Stop Loss</option>
+        <option value="take_profit">🎯 Take Profit</option>
+        <option value="rsi_extreme">📊 RSI Extreme</option>
+        <option value="volume_spike">📈 Volume Spike</option>
+        <option value="bb_squeeze">🎯 BB Squeeze</option>
+        <option value="regime_change">🔄 Regime Change</option>
+        <option value="brain_update">🧠 Brain Update</option>
+        <option value="fear_greed">😱 Fear &amp; Greed</option>
+        <option value="bot_status">🤖 Bot Status</option>
+        <option value="weekly_report">📊 Weekly Report</option>
+        <option value="connection_lost">⚠️ Connection Lost</option>
+      </select>
+      <button onclick="sendTestPush()" class="btn btn-a" style="font-size:8px;padding:10px">▶ SEND TEST NOTIFICATION</button>
+      <div id="pushTestStatus" style="font-family:Share Tech Mono,monospace;font-size:8px;margin-top:7px;min-height:14px"></div>
+    </div>
+  </div>
+
   <!-- PLANS -->
   <div class="pane" id="tab-plans">
     <div style="text-align:center;padding:16px 0 8px">
@@ -1358,6 +1479,8 @@ function doLogout(){
 // Auto-login if token exists in localStorage
 window.addEventListener('DOMContentLoaded',async function(){
   setTimeout(function(){autoAdjustParams(true);},800);
+  // Register service worker for push notifications (runs regardless of auth)
+  _registerSW();
   if(_authToken){
     try{
       var r=await fetch('/auth/me',{headers:_authHeaders()});
@@ -3316,6 +3439,7 @@ function showTab(id,btn){
   if(btn)btn.classList.add("active");
   if(id==='plans') _renderPlansPage();
   if(id==='telegram') _renderTelegramPage();
+  if(id==='notifications') _renderNotificationsPage();
 }
 
 // ─── Plans page ────────────────────────────────────────────────────────────
@@ -3393,6 +3517,169 @@ function clearTelegram(){
   document.getElementById('tgChatId').value='';
   document.getElementById('tgStatus').textContent='Cleared';
   document.getElementById('tgStatus').style.color='var(--t3)';
+}
+
+// ─── Push Notifications ────────────────────────────────────────────────────
+var _swReg = null;
+var VAPID_PUBLIC_KEY = 'BNYguPpRDo7dttHM08o9wpNS9iArXVttqjUBs2nOgDqu8N6oPMKyJwFNF4xOIKKShew30kHyxcr53XhS7k1CoHc';
+
+function _urlBase64ToUint8Array(base64String){
+  var padding='='.repeat((4-base64String.length%4)%4);
+  var base64=(base64String+padding).replace(/-/g,'+').replace(/_/g,'/');
+  var raw=atob(base64);
+  var arr=new Uint8Array(raw.length);
+  for(var i=0;i<raw.length;i++) arr[i]=raw.charCodeAt(i);
+  return arr;
+}
+
+async function _registerSW(){
+  if(!('serviceWorker' in navigator)) return null;
+  try{
+    _swReg=await navigator.serviceWorker.register('/sw.js');
+    return _swReg;
+  }catch(e){ console.warn('SW registration failed',e); return null; }
+}
+
+function _renderNotificationsPage(){
+  var bar=document.getElementById('pushStatusBar');
+  var enableBtn=document.getElementById('pushEnableBtn');
+  var disableBtn=document.getElementById('pushDisableBtn');
+  if(!bar) return;
+
+  if(!('serviceWorker' in navigator)||!('PushManager' in window)){
+    bar.textContent='❌ Your browser does not support push notifications';
+    bar.style.color='var(--red)';
+    if(enableBtn) enableBtn.disabled=true;
+    return;
+  }
+
+  var perm=Notification.permission;
+  if(perm==='granted'&&localStorage.getItem('nexus_push_active')==='1'){
+    bar.textContent='✓ NOTIFICATIONS ACTIVE — you will receive alerts';
+    bar.style.color='var(--green)';
+    if(enableBtn) enableBtn.style.display='none';
+    if(disableBtn) disableBtn.style.display='block';
+  } else if(perm==='denied'){
+    bar.textContent='🚫 BLOCKED — open browser site settings to allow notifications';
+    bar.style.color='var(--red)';
+    if(enableBtn) enableBtn.disabled=true;
+  } else {
+    bar.textContent='○ INACTIVE — click Enable to start receiving alerts';
+    bar.style.color='var(--t2)';
+    if(enableBtn){ enableBtn.style.display='block'; enableBtn.disabled=false; }
+    if(disableBtn) disableBtn.style.display='none';
+  }
+
+  // Restore saved toggles
+  var saved=localStorage.getItem('nexus_push_prefs');
+  if(saved){
+    try{
+      var prefs=JSON.parse(saved);
+      Object.keys(prefs).forEach(function(k){
+        var el=document.getElementById('pn_'+k);
+        if(el) el.checked=!!prefs[k];
+      });
+    }catch(e){}
+  }
+}
+
+async function enablePushNotifications(){
+  var bar=document.getElementById('pushStatusBar');
+  var enableBtn=document.getElementById('pushEnableBtn');
+  var disableBtn=document.getElementById('pushDisableBtn');
+  if(bar){bar.textContent='REQUESTING PERMISSION...';bar.style.color='var(--cyan)';}
+  if(enableBtn) enableBtn.disabled=true;
+
+  var perm=await Notification.requestPermission();
+  if(perm!=='granted'){
+    if(bar){bar.textContent='🚫 Permission denied — check browser settings';bar.style.color='var(--red)';}
+    if(enableBtn) enableBtn.disabled=false;
+    return;
+  }
+
+  try{
+    var reg=_swReg||await _registerSW();
+    if(!reg){ if(bar){bar.textContent='❌ Service worker failed to register';bar.style.color='var(--red)';}; return; }
+    var sub=await reg.pushManager.subscribe({
+      userVisibleOnly:true,
+      applicationServerKey:_urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+    });
+    if(_authToken&&!_demoMode){
+      await fetch('/push/subscribe',{method:'POST',headers:_authHeaders(),body:JSON.stringify({subscription:sub.toJSON()})});
+    }
+    localStorage.setItem('nexus_push_active','1');
+    if(bar){bar.textContent='✓ NOTIFICATIONS ACTIVE — you will receive alerts';bar.style.color='var(--green)';}
+    if(enableBtn) enableBtn.style.display='none';
+    if(disableBtn) disableBtn.style.display='block';
+    log('success','PUSH','Push notifications enabled');
+  }catch(e){
+    if(bar){bar.textContent='Error: '+e.message;bar.style.color='var(--red)';}
+    if(enableBtn) enableBtn.disabled=false;
+  }
+}
+
+async function disablePushNotifications(){
+  try{
+    var reg=_swReg||await navigator.serviceWorker.getRegistration('/sw.js');
+    if(reg){
+      var sub=await reg.pushManager.getSubscription();
+      if(sub) await sub.unsubscribe();
+    }
+    if(_authToken&&!_demoMode){
+      await fetch('/push/unsubscribe',{method:'POST',headers:_authHeaders()});
+    }
+    localStorage.setItem('nexus_push_active','0');
+    _renderNotificationsPage();
+    log('info','PUSH','Push notifications disabled');
+  }catch(e){ console.warn('Disable push error',e); }
+}
+
+function savePushSettings(){
+  var types=['trade_entry','trade_exit','stop_loss','take_profit','high_confluence','rsi_extreme','volume_spike','bb_squeeze','regime_change','price_alert','support_resistance','obi_spike','brain_update','fear_greed','bot_status','weekly_report','connection_lost'];
+  var prefs={};
+  types.forEach(function(t){
+    var el=document.getElementById('pn_'+t);
+    if(el) prefs[t]=el.checked;
+  });
+  localStorage.setItem('nexus_push_prefs',JSON.stringify(prefs));
+  var s=document.getElementById('pushSaveStatus');
+  if(s){s.textContent='✓ Preferences saved';s.style.color='var(--green)';setTimeout(function(){s.textContent='';},2500);}
+}
+
+async function sendTestPush(){
+  var type=document.getElementById('pushTestType').value;
+  var s=document.getElementById('pushTestStatus');
+  if(s){s.textContent='SENDING...';s.style.color='var(--cyan)';}
+  if(_demoMode||!_authToken){
+    // In demo mode show a local notification
+    if(Notification.permission==='granted'){
+      new Notification('NEXUS TEST — '+type.replace(/_/g,' ').toUpperCase(),{body:'Test notification from NEXUS',icon:'/icon.png'});
+      if(s){s.textContent='✓ Test sent (demo mode — local only)';s.style.color='var(--green)';}
+    } else {
+      if(s){s.textContent='Enable notifications first';s.style.color='var(--amber)';}
+    }
+    return;
+  }
+  try{
+    var r=await fetch('/push/test',{method:'POST',headers:_authHeaders(),body:JSON.stringify({type})});
+    var d=await r.json();
+    if(d.ok){
+      if(s){s.textContent='✓ Test notification sent — check your device';s.style.color='var(--green)';}
+    } else {
+      if(s){s.textContent='Error: '+(d.error||'unknown');s.style.color='var(--red)';}
+    }
+  }catch(e){
+    if(s){s.textContent='Request failed: '+e.message;s.style.color='var(--red)';}
+  }
+}
+
+// Check if we can surface push alerts from trading events
+function _maybePushNotify(type, data){
+  var prefs=localStorage.getItem('nexus_push_prefs');
+  if(prefs){try{var p=JSON.parse(prefs);if(p[type]===false) return;}catch(e){}}
+  if(localStorage.getItem('nexus_push_active')!=='1') return;
+  if(_demoMode||!_authToken) return;
+  fetch('/push/test',{method:'POST',headers:_authHeaders(),body:JSON.stringify({type})}).catch(function(){});
 }
 
 function addAlert(type,title,body){
