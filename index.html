@@ -176,6 +176,10 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
 .chatSend{width:100%;padding:11px;background:transparent;border:1px solid var(--pink);color:var(--pink);font-family:'Orbitron',monospace;font-size:10px;font-weight:700;letter-spacing:3px;cursor:pointer;margin-top:5px}
 .fbadge{display:inline-block;font-family:'Share Tech Mono',monospace;font-size:7px;letter-spacing:1px;padding:2px 6px;border:1px solid;margin-top:3px}
 .fw{border-color:var(--red);color:var(--red)}.fok{border-color:var(--green);color:var(--green)}
+.planFeature{font-family:Share Tech Mono,monospace;font-size:8px;letter-spacing:.5px;padding:3px 0;display:flex;align-items:center;gap:7px}
+.planFeature::before{content:'';width:14px;height:14px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px}
+.planFeature.ok{color:var(--t1)}.planFeature.ok::before{content:'✓';color:var(--green);background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.3)}
+.planFeature.no{color:var(--t3)}.planFeature.no::before{content:'✗';color:var(--t3);background:rgba(58,85,104,0.1);border:1px solid var(--border)}
 .loading{display:flex;align-items:center;gap:7px;font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t3);letter-spacing:1px;padding:10px 0}
 .lspin{width:10px;height:10px;border:2px solid var(--border);border-top-color:var(--cyan);border-radius:50%;animation:spin .8s linear infinite}
 .ob{display:grid;grid-template-columns:1fr 1fr;gap:1px}
@@ -249,6 +253,8 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
     <button class="tnav" onclick="showTab('alerts',this)">ALERTS</button>
     <button class="tnav" onclick="showTab('trades',this)">TRADES</button>
     <button class="tnav" onclick="showTab('sim',this)">SIM LEARN</button>
+    <button class="tnav" onclick="showTab('telegram',this)">TELEGRAM</button>
+    <button class="tnav" onclick="showTab('plans',this)">⚡ PLANS</button>
     <button class="tnav" onclick="showTab('config',this)">CONFIG</button>
   </div>
   <!-- DASHBOARD -->
@@ -801,6 +807,150 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
   </div>
 
   <!-- CONFIG -->
+  <!-- TELEGRAM -->
+  <div class="pane" id="tab-telegram">
+    <div class="card" style="border-color:rgba(0,212,255,0.3);background:rgba(0,212,255,0.02)">
+      <div class="clbl" style="color:var(--cyan);margin-bottom:6px">&#x1F4F1; TELEGRAM ALERTS — PRO &amp; ELITE</div>
+      <div style="font-family:Rajdhani,sans-serif;font-size:13px;color:var(--t2);line-height:1.7;margin-bottom:8px">Get instant trade signals, entries, exits and daily summaries sent directly to your Telegram. Never miss a signal while away from the dashboard.</div>
+      <div id="telegramGate"></div>
+    </div>
+    <div class="card" id="telegramSetup">
+      <div class="clbl" style="margin-bottom:10px">SETUP GUIDE — 3 STEPS</div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="border-left:2px solid var(--cyan);padding:0 0 0 12px">
+          <div style="font-family:Orbitron,monospace;font-size:8px;color:var(--cyan);letter-spacing:2px;margin-bottom:4px">STEP 1 — CREATE YOUR BOT</div>
+          <div style="font-family:Rajdhani,sans-serif;font-size:12px;color:var(--t2);line-height:1.6">Open Telegram and search for <span style="color:var(--cyan);font-family:Share Tech Mono,monospace">@BotFather</span>. Send the message <span style="color:var(--green);font-family:Share Tech Mono,monospace">/newbot</span> and follow the steps. You'll receive a <strong style="color:var(--t1)">Bot Token</strong> that looks like <span style="font-family:Share Tech Mono,monospace;color:var(--amber)">123456789:ABCdef...</span></div>
+        </div>
+        <div style="border-left:2px solid var(--cyan);padding:0 0 0 12px">
+          <div style="font-family:Orbitron,monospace;font-size:8px;color:var(--cyan);letter-spacing:2px;margin-bottom:4px">STEP 2 — GET YOUR CHAT ID</div>
+          <div style="font-family:Rajdhani,sans-serif;font-size:12px;color:var(--t2);line-height:1.6">Start a conversation with your new bot (send it any message). Then search Telegram for <span style="color:var(--cyan);font-family:Share Tech Mono,monospace">@userinfobot</span> and send it <span style="color:var(--green);font-family:Share Tech Mono,monospace">/start</span>. It will reply with your <strong style="color:var(--t1)">Chat ID</strong> — a number like <span style="font-family:Share Tech Mono,monospace;color:var(--amber)">987654321</span></div>
+        </div>
+        <div style="border-left:2px solid var(--cyan);padding:0 0 0 12px">
+          <div style="font-family:Orbitron,monospace;font-size:8px;color:var(--cyan);letter-spacing:2px;margin-bottom:4px">STEP 3 — CONNECT TO NEXUS</div>
+          <div style="font-family:Rajdhani,sans-serif;font-size:12px;color:var(--t2);line-height:1.6;margin-bottom:10px">Paste your Bot Token and Chat ID below. NEXUS will send you a test message to confirm it's working.</div>
+          <div class="fl">BOT TOKEN</div>
+          <input type="password" id="tgToken" class="ti" placeholder="123456789:ABCdefGhIjKlMnOpQrStUvWxYz">
+          <div class="fl">CHAT ID</div>
+          <input type="text" id="tgChatId" class="ti" placeholder="987654321">
+          <div style="display:flex;gap:8px;margin-top:4px">
+            <button onclick="saveTelegram()" class="btn btn-c" style="flex:1;font-size:8px;padding:10px">&#x1F4BE; SAVE &amp; TEST</button>
+            <button onclick="clearTelegram()" style="background:none;border:1px solid var(--border);color:var(--t3);font-family:Share Tech Mono,monospace;font-size:8px;padding:10px 14px;cursor:pointer">CLEAR</button>
+          </div>
+          <div id="tgStatus" style="font-family:Share Tech Mono,monospace;font-size:8px;margin-top:8px;min-height:14px"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="clbl" style="margin-bottom:8px">ALERT SETTINGS</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+          <span style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t2);letter-spacing:1px">Trade Entry Signals</span>
+          <input type="checkbox" id="tgEntry" checked style="accent-color:var(--cyan)">
+        </label>
+        <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+          <span style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t2);letter-spacing:1px">Trade Exit Alerts</span>
+          <input type="checkbox" id="tgExit" checked style="accent-color:var(--cyan)">
+        </label>
+        <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+          <span style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t2);letter-spacing:1px">Daily Summary</span>
+          <input type="checkbox" id="tgDaily" checked style="accent-color:var(--cyan)">
+        </label>
+        <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+          <span style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t2);letter-spacing:1px">High Confluence Alerts (75+)</span>
+          <input type="checkbox" id="tgHighConf" checked style="accent-color:var(--cyan)">
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- PLANS -->
+  <div class="pane" id="tab-plans">
+    <div style="text-align:center;padding:16px 0 8px">
+      <div style="font-family:Orbitron,monospace;font-size:18px;font-weight:900;color:var(--cyan);letter-spacing:4px;margin-bottom:6px">NEXUS PLANS</div>
+      <div style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t2);letter-spacing:2px">Choose the plan that fits your trading style</div>
+    </div>
+
+    <!-- Current plan indicator -->
+    <div id="currentPlanBar" style="text-align:center;margin-bottom:12px"></div>
+
+    <!-- Free -->
+    <div class="card" id="planCardFree" style="border-color:var(--border);position:relative">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+        <div>
+          <div style="font-family:Orbitron,monospace;font-size:14px;font-weight:700;color:var(--t1);letter-spacing:2px">FREE</div>
+          <div style="font-family:Share Tech Mono,monospace;font-size:9px;color:var(--t3);margin-top:2px">Always free</div>
+        </div>
+        <div style="font-family:Orbitron,monospace;font-size:22px;font-weight:900;color:var(--t2)">$0</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
+        <div class="planFeature ok">Live price &amp; market data</div>
+        <div class="planFeature ok">RSI · Bollinger Bands · MACD</div>
+        <div class="planFeature ok">3 tickers — your choice</div>
+        <div class="planFeature ok">Multi-timeframe overview</div>
+        <div class="planFeature no">AI trade verdict &amp; scoring</div>
+        <div class="planFeature no">Self-learning sim engine</div>
+        <div class="planFeature no">Telegram alerts</div>
+        <div class="planFeature no">Brain tab — visible learning</div>
+      </div>
+      <div id="freePlanBtn"></div>
+    </div>
+
+    <!-- Pro -->
+    <div class="card" id="planCardPro" style="border-color:rgba(0,212,255,0.5);background:rgba(0,212,255,0.02);position:relative">
+      <div style="position:absolute;top:-1px;right:16px;background:var(--cyan);color:var(--bg);font-family:Orbitron,monospace;font-size:7px;font-weight:700;letter-spacing:2px;padding:3px 10px">MOST POPULAR</div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+        <div>
+          <div style="font-family:Orbitron,monospace;font-size:14px;font-weight:700;color:var(--cyan);letter-spacing:2px">PRO</div>
+          <div style="font-family:Share Tech Mono,monospace;font-size:9px;color:var(--t3);margin-top:2px">Cancel anytime</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-family:Orbitron,monospace;font-size:22px;font-weight:900;color:var(--cyan)">$29</div>
+          <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3)">/month</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
+        <div class="planFeature ok">Everything in Free</div>
+        <div class="planFeature ok">Full AI trade verdict &amp; scoring</div>
+        <div class="planFeature ok">Self-learning sim engine</div>
+        <div class="planFeature ok">Regime detection &amp; Kelly sizing</div>
+        <div class="planFeature ok">Telegram trade alerts</div>
+        <div class="planFeature ok">Brain tab — watch it learn</div>
+        <div class="planFeature ok">Confluence score &amp; analysis</div>
+        <div class="planFeature ok">Trade history export (CSV)</div>
+        <div class="planFeature no">Multi-ticker scanner</div>
+        <div class="planFeature no">Simultaneous multi-ticker</div>
+      </div>
+      <div id="proPlanBtn"></div>
+    </div>
+
+    <!-- Elite -->
+    <div class="card" id="planCardElite" style="border-color:rgba(153,69,255,0.5);background:rgba(153,69,255,0.02);position:relative">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+        <div>
+          <div style="font-family:Orbitron,monospace;font-size:14px;font-weight:700;color:var(--purple);letter-spacing:2px">ELITE</div>
+          <div style="font-family:Share Tech Mono,monospace;font-size:9px;color:var(--t3);margin-top:2px">For serious traders</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-family:Orbitron,monospace;font-size:22px;font-weight:900;color:var(--purple)">$79</div>
+          <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3)">/month</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
+        <div class="planFeature ok">Everything in Pro</div>
+        <div class="planFeature ok">Multi-ticker scanner — top signals now</div>
+        <div class="planFeature ok">Simultaneous multi-ticker monitoring</div>
+        <div class="planFeature ok">Priority AI analysis</div>
+        <div class="planFeature ok">Advanced regime &amp; pattern memory</div>
+        <div class="planFeature ok">Early access to new features</div>
+      </div>
+      <div id="elitePlanBtn"></div>
+    </div>
+
+    <div style="text-align:center;padding:12px 0">
+      <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);letter-spacing:1px;line-height:2">Secure payment via Stripe · Cancel anytime · No hidden fees<br>All plans include access to 130+ Kraken trading pairs</div>
+    </div>
+  </div>
+
   <div class="pane" id="tab-config">
     <div class="slbl">KRAKEN API</div>
     <div class="card">
@@ -3159,7 +3309,91 @@ function setMode(m,btn){mode=m;btn.closest(".trow").querySelectorAll(".tbtn").fo
 function setTech(on,btn){useTech=on;btn.closest(".trow").querySelectorAll(".tbtn").forEach(function(b){b.classList.remove("active");});btn.classList.add("active");log("info","TECH","Tech signal gate "+(on?"ON - RSI/BB/MACD will block bad entries":"OFF"));}
 function setAP(on,btn){autoPause=on;btn.closest(".trow").querySelectorAll(".tbtn").forEach(function(b){b.classList.remove("active");});btn.classList.add("active");log("info","AI","Auto-pause "+(on?"ON":"OFF"));}
 function setCoach(on,btn){coachMode=on;btn.closest(".trow").querySelectorAll(".tbtn").forEach(function(b){b.classList.remove("active");});btn.classList.add("active");}
-function showTab(id,btn){document.querySelectorAll(".pane").forEach(function(p){p.classList.remove("active");});document.querySelectorAll(".tnav").forEach(function(b){b.classList.remove("active");});document.getElementById("tab-"+id).classList.add("active");if(btn)btn.classList.add("active");}
+function showTab(id,btn){
+  document.querySelectorAll(".pane").forEach(function(p){p.classList.remove("active");});
+  document.querySelectorAll(".tnav").forEach(function(b){b.classList.remove("active");});
+  document.getElementById("tab-"+id).classList.add("active");
+  if(btn)btn.classList.add("active");
+  if(id==='plans') _renderPlansPage();
+  if(id==='telegram') _renderTelegramPage();
+}
+
+// ─── Plans page ────────────────────────────────────────────────────────────
+function _renderPlansPage(){
+  var isPro=_isPro(), isElite=_isElite();
+  var planLabel = isElite?'ELITE':isPro?'PRO':'FREE';
+  var planColor = isElite?'var(--purple)':isPro?'var(--cyan)':'var(--t3)';
+
+  // Current plan bar
+  var bar = document.getElementById('currentPlanBar');
+  if(bar) bar.innerHTML = '<div style="display:inline-block;font-family:Share Tech Mono,monospace;font-size:8px;color:'+planColor+';border:1px solid '+planColor+';padding:4px 14px;letter-spacing:2px">CURRENT PLAN: '+planLabel+'</div>';
+
+  // Free button
+  var freeBtn = document.getElementById('freePlanBtn');
+  if(freeBtn) freeBtn.innerHTML = !isPro
+    ? '<div style="width:100%;padding:10px;text-align:center;font-family:Orbitron,monospace;font-size:9px;color:var(--green);letter-spacing:2px;border:1px solid var(--green)">✓ YOUR CURRENT PLAN</div>'
+    : '<div style="width:100%;padding:10px;text-align:center;font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t3);letter-spacing:1px">Manage via billing portal</div>';
+
+  // Pro button
+  var proBtn = document.getElementById('proPlanBtn');
+  if(proBtn){
+    if(isPro && !isElite) proBtn.innerHTML = '<button onclick="openBillingPortal()" style="width:100%;padding:12px;background:transparent;border:1px solid var(--cyan);color:var(--cyan);font-family:Orbitron,monospace;font-size:9px;letter-spacing:2px;cursor:pointer">MANAGE SUBSCRIPTION</button>';
+    else if(isElite) proBtn.innerHTML = '<div style="width:100%;padding:10px;text-align:center;font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t3)">Included in Elite</div>';
+    else proBtn.innerHTML = '<button onclick="startCheckout(\'pro\')" style="width:100%;padding:13px;background:var(--cyan);border:none;color:var(--bg);font-family:Orbitron,monospace;font-size:10px;font-weight:700;letter-spacing:3px;cursor:pointer">⚡ UPGRADE TO PRO</button>';
+  }
+
+  // Elite button
+  var eliteBtn = document.getElementById('elitePlanBtn');
+  if(eliteBtn){
+    if(isElite) eliteBtn.innerHTML = '<button onclick="openBillingPortal()" style="width:100%;padding:12px;background:transparent;border:1px solid var(--purple);color:var(--purple);font-family:Orbitron,monospace;font-size:9px;letter-spacing:2px;cursor:pointer">✓ CURRENT PLAN — MANAGE</button>';
+    else eliteBtn.innerHTML = '<button onclick="startCheckout(\'elite\')" style="width:100%;padding:13px;background:var(--purple);border:none;color:white;font-family:Orbitron,monospace;font-size:10px;font-weight:700;letter-spacing:3px;cursor:pointer">⚡ UPGRADE TO ELITE</button>';
+  }
+}
+
+// ─── Telegram page ─────────────────────────────────────────────────────────
+function _renderTelegramPage(){
+  var isPro = _isPro();
+  var gate = document.getElementById('telegramGate');
+  var setup = document.getElementById('telegramSetup');
+  if(!isPro){
+    if(gate) gate.innerHTML = '<div style="margin:8px 0 4px"><button onclick="showUpgradeModal(\'Telegram Alerts\',\'pro\')" style="width:100%;padding:12px;background:transparent;border:1px solid var(--cyan);color:var(--cyan);font-family:Orbitron,monospace;font-size:9px;letter-spacing:2px;cursor:pointer">🔒 PRO FEATURE — UPGRADE TO UNLOCK</button></div>';
+    if(setup) setup.style.opacity='0.3';
+    if(setup) setup.style.pointerEvents='none';
+  } else {
+    if(gate) gate.innerHTML='';
+    if(setup) { setup.style.opacity='1'; setup.style.pointerEvents='auto'; }
+    // Restore saved values
+    var saved = localStorage.getItem('nexus_tg');
+    if(saved){ var tg=JSON.parse(saved);
+      if(document.getElementById('tgToken')) document.getElementById('tgToken').value=tg.token||'';
+      if(document.getElementById('tgChatId')) document.getElementById('tgChatId').value=tg.chatId||'';
+    }
+  }
+}
+
+function saveTelegram(){
+  var token = document.getElementById('tgToken').value.trim();
+  var chatId = document.getElementById('tgChatId').value.trim();
+  var stat = document.getElementById('tgStatus');
+  if(!token||!chatId){stat.textContent='Enter both token and chat ID';stat.style.color='var(--red)';return;}
+  localStorage.setItem('nexus_tg', JSON.stringify({token, chatId}));
+  stat.textContent='SENDING TEST MESSAGE...';stat.style.color='var(--cyan)';
+  // Send test via Telegram API directly
+  var url = 'https://api.telegram.org/bot'+token+'/sendMessage';
+  fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:chatId,text:'✅ NEXUS connected! You will now receive trade alerts here.',parse_mode:'HTML'})})
+    .then(r=>r.json()).then(d=>{
+      if(d.ok){stat.textContent='✓ CONNECTED — Test message sent!';stat.style.color='var(--green)';}
+      else{stat.textContent='Error: '+d.description;stat.style.color='var(--red)';}
+    }).catch(()=>{stat.textContent='Connection error — check your token';stat.style.color='var(--red)';});
+}
+
+function clearTelegram(){
+  localStorage.removeItem('nexus_tg');
+  document.getElementById('tgToken').value='';
+  document.getElementById('tgChatId').value='';
+  document.getElementById('tgStatus').textContent='Cleared';
+  document.getElementById('tgStatus').style.color='var(--t3)';
+}
 
 function addAlert(type,title,body){
   var map={ac:"ac",aw:"aw",ai2:"ai2",as2:"as2",aai:"aai",acoach:"acoach"};
