@@ -1084,11 +1084,13 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
           </div>
           <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--purple);letter-spacing:1px;border:1px solid var(--purple);padding:3px 8px">ACTIVE</div>
         </div>
-        <div class="fl" style="margin-bottom:6px">CHOOSE YOUR PAIR</div>
+        <div class="fl" style="margin-bottom:6px">SEARCH OR BROWSE</div>
+        <input type="text" id="tickerSearch" class="ti" placeholder="Search BTC, SOL, DOGE..." oninput="renderTickerList()" style="margin-bottom:6px;font-size:11px;letter-spacing:1px">
         <select id="tickerGroupSel" class="sel" onchange="renderTickerList()" style="margin-bottom:6px">
+          <option value="">ALL PAIRS</option>
           <option value="MAJOR — BTC">MAJOR — BTC</option>
           <option value="MAJOR — ETH">MAJOR — ETH</option>
-          <option value="LAYER 1" selected>LAYER 1</option>
+          <option value="LAYER 1">LAYER 1</option>
           <option value="LAYER 2 / SCALING">LAYER 2 / SCALING</option>
           <option value="DeFi">DeFi</option>
           <option value="AI / DATA">AI / DATA</option>
@@ -3570,10 +3572,25 @@ async function _loadTickers(){
 
 async function renderTickerList(){
   var grp=document.getElementById('tickerGroupSel').value;
+  var searchEl=document.getElementById('tickerSearch');
+  var q=(searchEl?searchEl.value.trim().toLowerCase():'');
   var list=document.getElementById('tickerList');
   if(!list)return;
   var tickers=await _loadTickers();
-  var pairs=tickers[grp]||[];
+
+  // Build pair array — filter by group if selected, then by search query
+  var pairs=[];
+  if(grp){
+    pairs=tickers[grp]||[];
+  } else {
+    Object.values(tickers).forEach(function(g){pairs=pairs.concat(g);});
+  }
+  if(q) pairs=pairs.filter(function(t){return t.label.toLowerCase().includes(q)||t.pair.toLowerCase().includes(q);});
+
+  if(pairs.length===0){
+    list.innerHTML='<div style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t3);padding:4px">No pairs match "'+q+'"</div>';
+    return;
+  }
   list.innerHTML=pairs.map(function(t){
     var active=t.pair===_activeTicker;
     return '<button onclick="setActiveTicker(\''+t.pair+'\',\''+t.label+'\')" style="padding:5px 9px;font-family:Share Tech Mono,monospace;font-size:7px;letter-spacing:1px;cursor:pointer;background:'+(active?'var(--purple)':'transparent')+';border:1px solid '+(active?'var(--purple)':'var(--border)')+';color:'+(active?'var(--bg)':'var(--t2)')+'">'+t.label+'</button>';
