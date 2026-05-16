@@ -6,11 +6,16 @@ const { supabase, supabaseAdmin } = require('./supabase');
 
 const db = supabaseAdmin || supabase;
 
-webpush.setVapidDetails(
-  process.env.VAPID_EMAIL || 'mailto:admin@nexus.app',
-  process.env.VAPID_PUBLIC_KEY,
-  process.env.VAPID_PRIVATE_KEY
-);
+const _vapidReady = !!(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY);
+if (_vapidReady) {
+  webpush.setVapidDetails(
+    process.env.VAPID_EMAIL || 'mailto:admin@nexus.app',
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  );
+} else {
+  console.warn('[push] VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY not set — push notifications disabled');
+}
 
 // ─── Save push subscription for a user ────────────────────────────────────
 async function saveSubscription(userId, subscription) {
@@ -27,6 +32,7 @@ async function deleteSubscription(userId) {
 
 // ─── Send push to a single user ──────────────────────────────────────────
 async function sendToUser(userId, payload) {
+  if (!_vapidReady) return;
   const { data } = await db.from('push_subscriptions').select('subscription').eq('user_id', userId).single();
   if (!data?.subscription) return;
   try {

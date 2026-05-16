@@ -1858,7 +1858,15 @@ function calcAllInd(){
     if(sc!==null){_wConf+=sc*tw.w;_wSum+=tw.w;}
   });
   // Fall back to 1m-only if higher TF data not loaded yet
-  var rawConf=_wSum>0.3?_wConf/_wSum:calcConfluenceScore(ind.rsi,bb,macd,_liveOBI,stRsi,vwap,ema,ind.volR,cl[cl.length-1]);
+  var rawConf=_wSum>0.3?_wConf/_wSum:calcConfluenceScore(ind.rsi,bb,macd,_liveOBI,stRsi,vwap,ema,ind.volR,cl[cl.length-1],_divResult);
+  // Apply divergence modifier to MTF-weighted result too
+  if(_wSum>0.3&&_divResult){
+    var _dPts=_divResult.strength==='strong'?12:_divResult.strength==='moderate'?8:5;
+    if(_divResult.bullish)rawConf=Math.min(100,rawConf+_dPts);
+    if(_divResult.bearish)rawConf=Math.max(0,rawConf-_dPts);
+    if(_divResult.hiddenBullish)rawConf=Math.min(100,rawConf+4);
+    if(_divResult.hiddenBearish)rawConf=Math.max(0,rawConf-4);
+  }
   ind.confluence=Math.max(0,Math.min(100,rawConf));
   ind.verdict=getVerdict();
   // Confluence breakdown — shows what each indicator is contributing
@@ -2024,7 +2032,8 @@ function calcTFConfluence(tfCandles,obi){
   var vAvg=vl.slice(-20).reduce(function(a,b){return a+b;},0)/20;
   var volR=vl[vl.length-1]/(vAvg||1);
   var vwap=calcVWAP(tfCandles);
-  return calcConfluenceScore(rsi,bb,macd,obi,stRsi,vwap,ema,volR,cl[cl.length-1]);
+  var div=calcDivergence(cl,14,30);
+  return calcConfluenceScore(rsi,bb,macd,obi,stRsi,vwap,ema,volR,cl[cl.length-1],div);
 }
 
 // ─── MULTI-TIMEFRAME ENGINE ────────────────────────────────────────────────
@@ -2112,7 +2121,7 @@ async function fetchAllTF(){
   log("info","MTF","All timeframes updated | MTF bonus: "+(ind.mtfBonus>0?"+":"")+ind.mtfBonus);
 }
 
-function calcConfluenceScore(rsi,bb,macd,obi,stochRsi,vwap,emaCross,volR,price){
+function calcConfluenceScore(rsi,bb,macd,obi,stochRsi,vwap,emaCross,volR,price,divergence){
   var s=0;
   // OBI 25pts
   if(obi!==null&&obi!==undefined){s+=obi>0.4?25:obi>0.2?18:obi>0.05?10:obi<-0.4?-20:obi<-0.2?-12:obi<-0.05?-5:5;}
@@ -2130,6 +2139,14 @@ function calcConfluenceScore(rsi,bb,macd,obi,stochRsi,vwap,emaCross,volR,price){
   if(emaCross){s+=emaCross.crossedUp?5:emaCross.bullish?3:emaCross.crossedDown?-5:-2;}
   // Volume 4pts
   if(volR!==undefined){s+=volR>2?4:volR>1.3?2:volR<0.5?-2:0;}
+  // RSI Divergence bonus/penalty ±5–12pts
+  if(divergence){
+    var dPts=divergence.strength==='strong'?12:divergence.strength==='moderate'?8:5;
+    if(divergence.bullish)s+=dPts;
+    if(divergence.bearish)s-=dPts;
+    if(divergence.hiddenBullish)s+=4;
+    if(divergence.hiddenBearish)s-=4;
+  }
   return Math.max(0,Math.min(100,s+35));
 }
 // ─── RAW ORDER BOOK — OBI + Wall Detection + Iceberg Detection ───────────
