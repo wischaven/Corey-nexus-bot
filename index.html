@@ -103,6 +103,8 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
 .slbl{font-family:'Share Tech Mono',monospace;font-size:7px;color:var(--t3);letter-spacing:3px;text-transform:uppercase;padding:2px 0;margin-bottom:6px}
 .divider{height:1px;background:var(--border)}
 .chartWrap{position:relative;width:100%}
+.tvToggle{background:transparent;border:1px solid var(--border);color:var(--t3);font-family:'Share Tech Mono',monospace;font-size:7px;padding:3px 8px;cursor:pointer;letter-spacing:1px}
+.tvToggle.active{border-color:var(--cyan);color:var(--cyan)}
 .chartLbl{position:absolute;top:4px;left:7px;font-family:'Share Tech Mono',monospace;font-size:7px;color:var(--t3);letter-spacing:1px;pointer-events:none}
 .chartVal{position:absolute;top:4px;right:7px;font-family:'Share Tech Mono',monospace;font-size:8px;pointer-events:none}
 .indPanel{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
@@ -191,6 +193,7 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
 .obs{color:var(--t2)}
 .sprow{display:flex;justify-content:space-between;background:var(--bg2);padding:6px 10px;margin-top:2px;font-family:'Share Tech Mono',monospace;font-size:9px}
 </style>
+  <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 </head>
 <body>
 <div id="loginScreen">
@@ -452,20 +455,20 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
         <div class="clbl" style="margin:0" id="chartTickerLabel">XRP/USD + BOLLINGER BANDS (20,2)</div>
         <button onclick="fetchOHLC()" style="background:none;border:1px solid var(--border);color:var(--cyan);font-family:Share Tech Mono,monospace;font-size:7px;padding:3px 8px;cursor:pointer">&#x27F3;</button>
       </div>
-      <div class="chartWrap">
-        <canvas id="priceChart" style="width:100%;height:130px;display:block"></canvas>
-        <div class="chartLbl">PRICE + BB</div>
-        <div class="chartVal cc" id="priceChartLbl">--</div>
-      </div>
-      <div class="chartWrap">
-        <canvas id="rsiChart" style="width:100%;height:65px;display:block;border-top:1px solid var(--border)"></canvas>
-        <div class="chartLbl">RSI(14)</div>
-        <div class="chartVal ca" id="rsiChartLbl">--</div>
-      </div>
-      <div class="chartWrap">
-        <canvas id="macdChart" style="width:100%;height:60px;display:block;border-top:1px solid var(--border)"></canvas>
-        <div class="chartLbl">MACD(12,26,9)</div>
-        <div class="chartVal" id="macdChartLbl">--</div>
+      <!-- TradingView Lightweight Charts — replaces canvas charts -->
+      <div id="tvMain"   style="width:100%;height:280px;position:relative"></div>
+      <div id="tvVolume" style="width:100%;height:56px;position:relative;border-top:1px solid #1a1a2e"></div>
+      <div id="tvRSI"    style="width:100%;height:80px;position:relative;border-top:1px solid #1a1a2e"></div>
+      <div id="tvMACD"   style="width:100%;height:80px;position:relative;border-top:1px solid #1a1a2e"></div>
+      <!-- Indicator toggle bar -->
+      <div style="display:flex;gap:6px;flex-wrap:wrap;padding:6px 12px;border-top:1px solid #1a1a2e">
+        <button class="tvToggle active" data-ind="bb"   onclick="_tvToggle(this,'bb')">BB</button>
+        <button class="tvToggle active" data-ind="ema"  onclick="_tvToggle(this,'ema')">EMA 9/21</button>
+        <button class="tvToggle active" data-ind="vwap" onclick="_tvToggle(this,'vwap')">VWAP</button>
+        <button class="tvToggle active" data-ind="vol"  onclick="_tvToggle(this,'vol')">VOL</button>
+        <button class="tvToggle active" data-ind="rsi"  onclick="_tvToggle(this,'rsi')">RSI</button>
+        <button class="tvToggle active" data-ind="macd" onclick="_tvToggle(this,'macd')">MACD</button>
+        <button class="tvToggle active" data-ind="div"  onclick="_tvToggle(this,'div')">DIV</button>
       </div>
     </div>
     <div class="card">
@@ -2380,7 +2383,7 @@ function initCharts(){
   window.addEventListener("resize",function(){setTimeout(resize,100);});
   setTimeout(resize,400);
 }
-function drawAllCharts(){if(candles.length<2)return;drawPriceChart("dashChart",80);drawPriceChart("priceChart",120);drawRSI();drawMACD();}
+function drawAllCharts(){if(candles.length<2)return;drawPriceChart("dashChart",80);_updateTVCharts(candles);}
 
 function drawPriceChart(id,hpx){
   var cv=document.getElementById(id);if(!cv)return;
@@ -2454,6 +2457,195 @@ function drawMACD(){
   macdPts.forEach(function(v,i){var x=i*bw+bw/2;i===0?ctx.moveTo(x,scale(v)):ctx.lineTo(x,scale(v));});ctx.stroke();ctx.shadowBlur=0;
   ctx.beginPath();ctx.strokeStyle="#ff44aa";ctx.lineWidth=1;
   sigArr.slice(-hists.length).forEach(function(v,i){var x=i*bw+bw/2;i===0?ctx.moveTo(x,scale(v)):ctx.lineTo(x,scale(v));});ctx.stroke();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TRADINGVIEW LIGHTWEIGHT CHARTS — professional candlestick chart engine
+// Main pane: Candlesticks + BB + EMA 9/21 + VWAP
+// Sub-panes: Volume · RSI(14) · MACD(12,26,9) · Divergence markers
+// ═══════════════════════════════════════════════════════════════════════════
+var _tvCharts  = null;
+var _tvSeries  = {};
+var _tvInds    = { bb:true, ema:true, vwap:true, vol:true, rsi:true, macd:true, div:true };
+var _tvSyncing = false;
+
+var _C = {
+  bg:'#0a0a0f', grid:'#16161f', text:'#6b6b8a', border:'#1e1e2d',
+  up:'#00ff88', dn:'#ff3355',
+  bb:'rgba(139,92,246,0.55)', bbFill:'rgba(139,92,246,0.07)', bbMid:'rgba(139,92,246,0.3)',
+  ema9:'#00d4ff', ema21:'#f59e0b', vwap:'#ff44aa',
+  rsi:'#00d4ff', macdL:'#8b5cf6', sig:'#f59e0b',
+};
+
+function _tvOpts(h, showTime) {
+  return {
+    width:0, height:h,
+    layout:{ background:{type:'solid',color:_C.bg}, textColor:_C.text, fontSize:9, fontFamily:"'Share Tech Mono',monospace" },
+    grid:{ vertLines:{color:_C.grid}, horzLines:{color:_C.grid} },
+    crosshair:{ mode:LightweightCharts.CrosshairMode.Normal },
+    rightPriceScale:{ borderColor:_C.border, scaleMargins:{top:0.06,bottom:0.06} },
+    timeScale:{ borderColor:_C.border, timeVisible:!!showTime, secondsVisible:false, visible:!!showTime },
+    handleScroll:true, handleScale:true,
+  };
+}
+
+function initTVChart() {
+  if (typeof LightweightCharts === 'undefined') return;
+  var mEl=document.getElementById('tvMain'), vEl=document.getElementById('tvVolume'),
+      rEl=document.getElementById('tvRSI'),  dEl=document.getElementById('tvMACD');
+  if (!mEl || _tvCharts) return;
+
+  var MC = LightweightCharts.createChart(mEl, _tvOpts(280, false));
+  var VC = LightweightCharts.createChart(vEl, _tvOpts(56,  false));
+  var RC = LightweightCharts.createChart(rEl, _tvOpts(80,  false));
+  var DC = LightweightCharts.createChart(dEl, _tvOpts(80,  true));
+
+  // ── Main pane series ───────────────────────────────────────────
+  _tvSeries.candle = MC.addCandlestickSeries({
+    upColor:_C.up, downColor:_C.dn,
+    borderUpColor:_C.up, borderDownColor:_C.dn,
+    wickUpColor:_C.up, wickDownColor:_C.dn,
+  });
+  var LS = function(chart, color, lw, ls, title) {
+    return chart.addLineSeries({ color:color, lineWidth:lw||1, lineStyle:ls||0,
+      lastValueVisible:!!title, priceLineVisible:false, title:title||'' });
+  };
+  _tvSeries.bbUpper = LS(MC, _C.bb,   1, 2);
+  _tvSeries.bbLower = LS(MC, _C.bb,   1, 2);
+  _tvSeries.bbMid   = LS(MC, _C.bbMid,1, 3);
+  _tvSeries.ema9    = LS(MC, _C.ema9, 1, 0, 'EMA9');
+  _tvSeries.ema21   = LS(MC, _C.ema21,1, 0, 'EMA21');
+  _tvSeries.vwap    = LS(MC, _C.vwap, 1, 1, 'VWAP');
+
+  // ── Volume pane ────────────────────────────────────────────────
+  _tvSeries.vol = VC.addHistogramSeries({ priceFormat:{type:'volume'}, priceScaleId:'right' });
+  VC.priceScale('right').applyOptions({ scaleMargins:{top:0.1,bottom:0} });
+
+  // ── RSI pane ───────────────────────────────────────────────────
+  _tvSeries.rsi = RC.addLineSeries({ color:_C.rsi, lineWidth:1.5, lastValueVisible:true, priceLineVisible:false, title:'RSI' });
+  RC.priceScale('right').applyOptions({ autoScale:false, minimum:0, maximum:100, scaleMargins:{top:0.05,bottom:0.05} });
+  [[70,'rgba(255,51,85,0.5)',1],[50,'rgba(100,100,130,0.4)',2],[30,'rgba(0,255,136,0.5)',1]].forEach(function(r){
+    _tvSeries.rsi.createPriceLine({ price:r[0], color:r[1], lineWidth:1, lineStyle:r[2], axisLabelVisible:true });
+  });
+
+  // ── MACD pane ──────────────────────────────────────────────────
+  _tvSeries.macdHist = DC.addHistogramSeries({ priceScaleId:'right', lastValueVisible:false, priceLineVisible:false });
+  _tvSeries.macdLine = LS(DC, _C.macdL, 1, 0, 'MACD');
+  _tvSeries.sigLine  = LS(DC, _C.sig,   1, 0, 'Signal');
+  _tvSeries.macdHist.createPriceLine({ price:0, color:'rgba(100,100,130,0.4)', lineWidth:1, lineStyle:2, axisLabelVisible:false });
+
+  _tvCharts = { main:MC, vol:VC, rsi:RC, macd:DC };
+
+  // ── Sync time scales ───────────────────────────────────────────
+  [MC, VC, RC, DC].forEach(function(src) {
+    src.timeScale().subscribeVisibleLogicalRangeChange(function(range) {
+      if (_tvSyncing || !range) return;
+      _tvSyncing = true;
+      [MC,VC,RC,DC].forEach(function(c){ if(c!==src) c.timeScale().setVisibleLogicalRange(range); });
+      _tvSyncing = false;
+    });
+  });
+
+  // ── Auto-resize ────────────────────────────────────────────────
+  new ResizeObserver(function() {
+    [[mEl,MC,280],[vEl,VC,56],[rEl,RC,80],[dEl,DC,80]].forEach(function(t){
+      if(t[0].clientWidth>10) t[1].resize(t[0].clientWidth, t[2]);
+    });
+  }).observe(mEl.parentElement);
+}
+
+function _updateTVCharts(cdata) {
+  if (typeof LightweightCharts === 'undefined') return;
+  if (!_tvCharts) initTVChart();
+  if (!_tvCharts || !cdata || cdata.length < 2) return;
+
+  var cl = cdata.map(function(c){ return c.c; });
+
+  // Candlesticks
+  _tvSeries.candle.setData(cdata.map(function(c){ return {time:c.t,open:c.o,high:c.h,low:c.l,close:c.c}; }));
+
+  // Bollinger Bands
+  var bbU=[],bbM=[],bbL=[];
+  for(var bi=19;bi<cdata.length;bi++){
+    var bv=calcBB(cl.slice(0,bi+1),20,2);
+    if(bv){bbU.push({time:cdata[bi].t,value:bv.upper});bbM.push({time:cdata[bi].t,value:bv.mid});bbL.push({time:cdata[bi].t,value:bv.lower});}
+  }
+  _tvSeries.bbUpper.setData(bbU); _tvSeries.bbMid.setData(bbM); _tvSeries.bbLower.setData(bbL);
+
+  // EMA 9 / 21
+  var e9=calcEMAArr(cl,9), e21=calcEMAArr(cl,21);
+  _tvSeries.ema9.setData(cdata.map(function(c,i){return{time:c.t,value:e9[i]};}));
+  _tvSeries.ema21.setData(cdata.map(function(c,i){return{time:c.t,value:e21[i]};}));
+
+  // VWAP (cumulative session)
+  var ctpv=0,cvol=0;
+  _tvSeries.vwap.setData(cdata.map(function(c){
+    var tp=(c.h+c.l+c.c)/3; ctpv+=tp*c.v; cvol+=c.v;
+    return{time:c.t,value:cvol>0?ctpv/cvol:c.c};
+  }));
+
+  // Volume
+  _tvSeries.vol.setData(cdata.map(function(c){
+    return{time:c.t,value:c.v,color:c.c>=c.o?'rgba(0,255,136,0.5)':'rgba(255,51,85,0.45)'};
+  }));
+
+  // RSI (per candle rolling)
+  var rsiD=[];
+  for(var ri=14;ri<cdata.length;ri++){
+    var rv=calcRSI(cl.slice(0,ri+1),14);
+    rsiD.push({time:cdata[ri].t,value:rv});
+  }
+  _tvSeries.rsi.setData(rsiD);
+
+  // MACD
+  var fE=calcEMAArr(cl,12), sE=calcEMAArr(cl,26);
+  var mL=fE.map(function(f,i){return f-sE[i];});
+  var sigBase=mL.slice(25), sigA=calcEMAArr(sigBase,9);
+  var mD=[],sD=[],hD=[];
+  for(var mi=0;mi<sigA.length;mi++){
+    var ci=mi+25, t=cdata[ci]?cdata[ci].t:null; if(!t)continue;
+    var mv=mL[ci], sv=sigA[mi], hv=mv-sv;
+    mD.push({time:t,value:mv}); sD.push({time:t,value:sv});
+    hD.push({time:t,value:hv,color:hv>=0?'rgba(0,255,136,0.65)':'rgba(255,51,85,0.65)'});
+  }
+  _tvSeries.macdLine.setData(mD); _tvSeries.sigLine.setData(sD); _tvSeries.macdHist.setData(hD);
+
+  // Divergence markers on candlestick series
+  var markers=[];
+  if(_tvInds.div){
+    var dv=calcDivergence(cl,14,30);
+    if(dv){
+      var lt=cdata[cdata.length-1].t;
+      if(dv.bullish)      markers.push({time:lt,position:'belowBar',color:_C.up,   shape:'arrowUp',   text:'BULL DIV '+(dv.strength||'').toUpperCase()});
+      if(dv.bearish)      markers.push({time:lt,position:'aboveBar',color:_C.dn,   shape:'arrowDown', text:'BEAR DIV '+(dv.strength||'').toUpperCase()});
+      if(dv.hiddenBullish)markers.push({time:lt,position:'belowBar',color:'rgba(0,255,136,0.7)',shape:'circle',text:'Hidden↑'});
+      if(dv.hiddenBearish)markers.push({time:lt,position:'aboveBar',color:'rgba(255,51,85,0.7)', shape:'circle',text:'Hidden↓'});
+    }
+  }
+  _tvSeries.candle.setMarkers(markers);
+
+  _tvApplyVisibility();
+}
+
+function _tvApplyVisibility() {
+  if(!_tvSeries.bbUpper) return;
+  var s=_tvSeries;
+  [s.bbUpper,s.bbMid,s.bbLower].forEach(function(x){x.applyOptions({visible:_tvInds.bb});});
+  [s.ema9,s.ema21].forEach(function(x){x.applyOptions({visible:_tvInds.ema});});
+  s.vwap.applyOptions({visible:_tvInds.vwap});
+  s.vol.applyOptions({visible:_tvInds.vol});
+  [s.rsi].forEach(function(x){x.applyOptions({visible:_tvInds.rsi});});
+  [s.macdLine,s.sigLine,s.macdHist].forEach(function(x){x.applyOptions({visible:_tvInds.macd});});
+  var vEl=document.getElementById('tvVolume'),rEl=document.getElementById('tvRSI'),dEl=document.getElementById('tvMACD');
+  if(vEl)vEl.style.display=_tvInds.vol?'':'none';
+  if(rEl)rEl.style.display=_tvInds.rsi?'':'none';
+  if(dEl)dEl.style.display=_tvInds.macd?'':'none';
+}
+
+function _tvToggle(btn, ind) {
+  _tvInds[ind]=!_tvInds[ind];
+  btn.classList.toggle('active',_tvInds[ind]);
+  _tvApplyVisibility();
 }
 
 async function fetchAllMacro(){
@@ -3737,6 +3929,7 @@ function showTab(id,btn){
   document.querySelectorAll(".tnav").forEach(function(b){b.classList.remove("active");});
   document.getElementById("tab-"+id).classList.add("active");
   if(btn)btn.classList.add("active");
+  if(id==='chart'){ initTVChart(); if(candles.length>1) _updateTVCharts(candles); }
   if(id==='plans') _renderPlansPage();
   if(id==='telegram') _renderTelegramPage();
   if(id==='notifications') _renderNotificationsPage();
