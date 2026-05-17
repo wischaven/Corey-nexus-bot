@@ -340,6 +340,86 @@ app.get('/scanner/results', requireAuth, async (req, res) => {
   }
 });
 
+// ─── Indicator engine — fetch candles + compute full indicator bundle ─────────
+// GET /indicators/calc?pair=XRPUSD&interval=60&limit=500
+// Returns: { candles, indicators } — used by chart and strategy builder
+const BINANCE_INTERVAL_MAP = {
+  1:'1m',3:'3m',5:'5m',15:'15m',30:'30m',60:'1h',120:'2h',
+  240:'4h',360:'6h',480:'8h',720:'12h',1440:'1d',4320:'3d',10080:'1w',43200:'1M'
+};
+
+function fetchBinanceCandles(symbol, interval, limit=500) {
+  return new Promise((resolve) => {
+    const binSym = symbol.replace('XBT','BTC').replace('USD','USDT').replace(/^X/,'').replace(/^Z/,'');
+    const binInterval = BINANCE_INTERVAL_MAP[+interval] || '1h';
+    const url = `https://api.binance.com/api/v3/klines?symbol=${binSym}&interval=${binInterval}&limit=${limit}`;
+    const req = https.get(url, { headers: { 'User-Agent': 'NEXUS/4.0' } }, (res) => {
+      let raw = '';
+      res.on('data', d => raw += d);
+      res.on('end', () => {
+        try {
+          const rows = JSON.parse(raw);
+          if (!Array.isArray(rows)) { resolve(null); return; }
+          resolve(rows.map(r => ({
+            t: Math.floor(r[0] / 1000),
+            open: +r[1], high: +r[2], low: +r[3], close: +r[4], volume: +r[5],
+            o: +r[1], h: +r[2], l: +r[3], c: +r[4], v: +r[5],
+          })));
+        } catch { resolve(null); }
+      });
+    });
+    req.setTimeout(8000, () => { req.destroy(); resolve(null); });
+    req.on('error', () => resolve(null));
+  });
+}
+
+app.get('/indicators/calc', async (req, res) => {
+  const { pair = 'XRPUSD', interval = '60', limit = '500', params: rawParams } = req.query;
+  let indicatorParams = {};
+  try { if (rawParams) indicatorParams = JSON.parse(rawParams); } catch {}
+
+  try {
+    const candles = await fetchBinanceCandles(pair, +interval, Math.min(+limit, 1000));
+    if (!candles || candles.length < 10) return res.status(400).json({ error: 'No candle data available' });
+
+    let indLib;
+    try { indLib = require('./trading_engine/indicators'); } catch (e) {
+      return res.status(500).json({ error: 'Indicator library not loaded: ' + e.message });
+    }
+
+    const indicators = indLib.calcAll ? indLib.calcAll(candles, indicatorParams) : {};
+
+    // Also return slim candle array for chart rendering
+    const slim = candles.map(c => ({ t: c.t, o: c.o||c.open, h: c.h||c.high, l: c.l||c.low, c: c.c||c.close, v: c.v||c.volume }));
+    res.json({ ok: true, pair, interval: +interval, candles: slim, indicators, count: candles.length });
+  } catch (e) {
+    console.error('Indicators error:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// GET /indicators/htf?pair=XRPUSD&timeframes=60,240,1440 — multi-timeframe bundle
+app.get('/indicators/htf', async (req, res) => {
+  const { pair = 'XRPUSD', timeframes = '60,240,1440' } = req.query;
+  const tfs = timeframes.split(',').map(Number).filter(Boolean).slice(0, 5); // max 5 TFs
+  try {
+    let indLib;
+    try { indLib = require('./trading_engine/indicators'); } catch (e) {
+      return res.status(500).json({ error: 'Indicator library not loaded' });
+    }
+    const results = {};
+    await Promise.all(tfs.map(async (tf) => {
+      const candles = await fetchBinanceCandles(pair, tf, 300);
+      if (candles && candles.length >= 10 && indLib.calcAll) {
+        results[tf] = indLib.calcAll(candles, {});
+      }
+    }));
+    res.json({ ok: true, pair, timeframes: tfs, indicators: results });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ─── Tickers list (public) ────────────────────────────────────────────────
 app.get('/tickers', (_req, res) => {
   const { TICKERS, ALL_PAIRS } = require('./trading_engine/tickers');

@@ -1,0 +1,1210 @@
+<!-- STRATEGY BUILDER TAB -->
+<div class="pane" id="tab-stratbuilder">
+<style>
+/* ─── Strategy Builder Scoped Styles ─── */
+.sb-wrap{display:flex;gap:12px;width:100%;min-height:0}
+.sb-left{flex:1;display:flex;flex-direction:column;gap:10px;min-width:0}
+.sb-right{width:320px;flex-shrink:0;display:flex;flex-direction:column;gap:10px}
+
+/* Section panels */
+.sb-panel{background:var(--card);border:1px solid var(--border);padding:0;overflow:hidden}
+.sb-panel-head{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;border-bottom:1px solid var(--border)}
+.sb-panel-title{font-family:'Orbitron',monospace;font-size:9px;font-weight:700;letter-spacing:3px}
+.sb-panel-body{padding:10px 13px}
+.sb-panel-entry{border-left:3px solid var(--cyan)}
+.sb-panel-entry .sb-panel-title{color:var(--cyan)}
+.sb-panel-exit{border-left:3px solid var(--amber)}
+.sb-panel-exit .sb-panel-title{color:var(--amber)}
+.sb-panel-stop{border-left:3px solid var(--red)}
+.sb-panel-stop .sb-panel-title{color:var(--red)}
+.sb-panel-tp{border-left:3px solid var(--green)}
+.sb-panel-tp .sb-panel-title{color:var(--green)}
+.sb-panel-size{border-left:3px solid var(--purple)}
+.sb-panel-size .sb-panel-title{color:var(--purple)}
+
+/* Add condition button */
+.sb-add-btn{background:transparent;border:1px dashed;padding:5px 12px;font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:2px;cursor:pointer;text-transform:uppercase}
+.sb-panel-entry .sb-add-btn{border-color:rgba(0,212,255,0.4);color:var(--cyan)}
+.sb-panel-exit .sb-add-btn{border-color:rgba(255,170,0,0.4);color:var(--amber)}
+.sb-panel-entry .sb-add-btn:hover{background:rgba(0,212,255,0.07)}
+.sb-panel-exit .sb-add-btn:hover{background:rgba(255,170,0,0.07)}
+
+/* Condition rows */
+.sb-conditions{display:flex;flex-direction:column;gap:5px;margin-bottom:8px}
+.sb-row{display:flex;align-items:center;gap:5px;flex-wrap:nowrap;padding:5px 0;position:relative;animation:fadeUp .15s ease}
+.sb-sel{background:var(--bg2);border:1px solid var(--border);color:var(--t1);font-family:'Share Tech Mono',monospace;font-size:9px;padding:5px 7px;outline:none;min-width:0;flex-shrink:1}
+.sb-sel:focus{border-color:rgba(0,212,255,0.5)}
+.sb-ind-sel{flex:2;min-width:120px}
+.sb-tf-sel{width:58px;flex-shrink:0}
+.sb-op-sel{flex:1.2;min-width:110px}
+.sb-val-inp{background:var(--bg2);border:1px solid var(--border);color:var(--t1);font-family:'Share Tech Mono',monospace;font-size:9px;padding:5px 7px;outline:none;width:70px;flex-shrink:0}
+.sb-val-inp:focus{border-color:rgba(0,212,255,0.5)}
+.sb-period-inp{background:var(--bg2);border:1px solid var(--border);color:var(--cyan);font-family:'Share Tech Mono',monospace;font-size:8px;padding:4px 5px;outline:none;width:42px;flex-shrink:0}
+.sb-period-inp:focus{border-color:var(--cyan)}
+.sb-period-lbl{font-family:'Share Tech Mono',monospace;font-size:7px;color:var(--t3);white-space:nowrap;flex-shrink:0}
+
+/* AND/OR badge */
+.sb-logic-badge{flex-shrink:0;font-family:'Share Tech Mono',monospace;font-size:7px;font-weight:700;letter-spacing:1px;padding:3px 7px;border:1px solid;cursor:pointer;user-select:none;transition:all .15s}
+.sb-logic-badge.and{border-color:var(--green);color:var(--green);background:rgba(0,255,136,0.07)}
+.sb-logic-badge.or{border-color:var(--amber);color:var(--amber);background:rgba(255,170,0,0.07)}
+.sb-logic-badge:hover{filter:brightness(1.3)}
+
+/* Delete button */
+.sb-del-btn{flex-shrink:0;background:transparent;border:1px solid rgba(255,51,85,0.25);color:rgba(255,51,85,0.6);font-family:'Share Tech Mono',monospace;font-size:10px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;line-height:1}
+.sb-del-btn:hover{border-color:var(--red);color:var(--red);background:rgba(255,51,85,0.08)}
+
+/* Group logic selector */
+.sb-group-logic{display:flex;align-items:center;gap:8px;padding-top:7px;border-top:1px solid var(--border);margin-top:4px}
+.sb-group-logic-lbl{font-family:'Share Tech Mono',monospace;font-size:7px;color:var(--t3);letter-spacing:1px;white-space:nowrap}
+.sb-gl-opt{display:flex;align-items:center;gap:5px;cursor:pointer;font-family:'Share Tech Mono',monospace;font-size:8px}
+.sb-gl-radio{accent-color:var(--cyan);cursor:pointer}
+.sb-gl-label-and{color:var(--green)}
+.sb-gl-label-or{color:var(--amber)}
+
+/* Radio rows for stop/tp/size */
+.sb-radio-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:9px}
+.sb-radio-opt{display:flex;align-items:center;gap:5px;cursor:pointer;font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t2)}
+.sb-radio-opt input{accent-color:var(--cyan);cursor:pointer}
+.sb-radio-opt:hover{color:var(--t1)}
+.sb-config-row{display:flex;align-items:center;gap:9px;margin-bottom:7px;flex-wrap:wrap}
+.sb-config-lbl{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t3);letter-spacing:1px;white-space:nowrap;min-width:80px}
+.sb-trail-row{display:flex;align-items:center;gap:9px;margin-top:6px}
+.sb-toggle{position:relative;display:inline-block;width:32px;height:16px;flex-shrink:0}
+.sb-toggle input{opacity:0;width:0;height:0}
+.sb-toggle-slider{position:absolute;inset:0;background:var(--bg3);border:1px solid var(--border);cursor:pointer;transition:.2s}
+.sb-toggle input:checked+.sb-toggle-slider{background:rgba(0,255,136,0.15);border-color:var(--green)}
+.sb-toggle-slider:before{content:'';position:absolute;width:10px;height:10px;left:2px;top:2px;background:var(--t3);transition:.2s}
+.sb-toggle input:checked+.sb-toggle-slider:before{transform:translateX(16px);background:var(--green)}
+.sb-trail-lbl{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t3)}
+
+/* Right panel */
+.sb-name-inp{width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--t1);font-family:'Share Tech Mono',monospace;font-size:11px;padding:8px 10px;outline:none;margin-bottom:8px;letter-spacing:1px}
+.sb-name-inp:focus{border-color:var(--cyan)}
+.sb-slot-row{display:flex;gap:5px;margin-bottom:8px}
+.sb-slot-btn{flex:1;background:transparent;border:1px solid var(--border);color:var(--t3);font-family:'Share Tech Mono',monospace;font-size:9px;padding:6px 4px;cursor:pointer;letter-spacing:2px;text-align:center}
+.sb-slot-btn:hover{border-color:var(--cyan);color:var(--cyan)}
+.sb-slot-btn.active{border-color:var(--cyan);color:var(--cyan);background:rgba(0,212,255,0.08)}
+.sb-save-row{display:flex;gap:5px;margin-bottom:8px}
+.sb-action-btn{flex:1;padding:8px 4px;background:transparent;border:1px solid;font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:1px;cursor:pointer;text-align:center}
+.sb-action-btn:active{opacity:.6}
+.sb-btn-save{border-color:var(--cyan);color:var(--cyan)}
+.sb-btn-load{border-color:var(--t3);color:var(--t3)}
+.sb-btn-reset{border-color:rgba(255,51,85,0.4);color:rgba(255,51,85,0.7)}
+.sb-btn-save:hover{background:rgba(0,212,255,0.08)}
+.sb-btn-load:hover{background:rgba(255,255,255,0.03)}
+.sb-btn-reset:hover{background:rgba(255,51,85,0.06)}
+
+/* Active indicator */
+.sb-active-row{display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--bg3);border:1px solid var(--border);margin-bottom:8px}
+.sb-active-dot{width:8px;height:8px;border-radius:50%;background:var(--t3);flex-shrink:0;transition:all .3s}
+.sb-active-dot.live{background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite}
+.sb-active-name{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t3);flex:1;letter-spacing:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sb-active-name.live{color:var(--green)}
+.sb-active-tag{font-family:'Share Tech Mono',monospace;font-size:7px;color:var(--t3);letter-spacing:1px}
+.sb-active-tag.live{color:var(--green)}
+
+/* Activate / backtest buttons */
+.sb-activate-btn{width:100%;padding:14px;background:transparent;border:2px solid var(--green);color:var(--green);font-family:'Orbitron',monospace;font-size:11px;font-weight:700;letter-spacing:3px;cursor:pointer;box-shadow:0 0 20px rgba(0,255,136,0.3);margin-bottom:7px;transition:all .2s}
+.sb-activate-btn:hover{background:rgba(0,255,136,0.08);box-shadow:0 0 30px rgba(0,255,136,0.45)}
+.sb-activate-btn:active{opacity:.7}
+.sb-bt-btn{width:100%;padding:11px;background:transparent;border:1px solid var(--cyan);color:var(--cyan);font-family:'Orbitron',monospace;font-size:9px;font-weight:700;letter-spacing:3px;cursor:pointer;margin-bottom:10px}
+.sb-bt-btn:hover{background:rgba(0,212,255,0.07)}
+.sb-bt-btn:active{opacity:.6}
+
+/* JSON preview */
+.sb-json-wrap{background:var(--bg2);border:1px solid var(--border);padding:0;overflow:hidden}
+.sb-json-head{padding:6px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.sb-json-title{font-family:'Share Tech Mono',monospace;font-size:7px;color:var(--t3);letter-spacing:2px;text-transform:uppercase}
+.sb-json-copy{background:none;border:1px solid var(--border);color:var(--t3);font-family:'Share Tech Mono',monospace;font-size:7px;padding:2px 7px;cursor:pointer;letter-spacing:1px}
+.sb-json-copy:hover{border-color:var(--cyan);color:var(--cyan)}
+.sb-json-pre{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t2);line-height:1.6;padding:10px;max-height:280px;overflow-y:auto;white-space:pre;overflow-x:auto;margin:0}
+.sb-json-pre::-webkit-scrollbar{width:3px;height:3px}
+.sb-json-pre::-webkit-scrollbar-thumb{background:var(--border)}
+
+/* Toast */
+.sb-toast{position:fixed;bottom:calc(24px + var(--sb));left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--green);color:var(--green);font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;padding:9px 18px;z-index:9000;pointer-events:none;opacity:0;transition:opacity .2s;white-space:nowrap}
+.sb-toast.show{opacity:1}
+.sb-toast.err{border-color:var(--red);color:var(--red)}
+
+/* No conditions placeholder */
+.sb-empty{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t3);letter-spacing:1px;padding:8px 0;text-align:center}
+
+@media(max-width:700px){
+  .sb-wrap{flex-direction:column}
+  .sb-right{width:100%}
+  .sb-row{flex-wrap:wrap}
+  .sb-ind-sel{flex:none;width:100%}
+  .sb-op-sel{flex:none;width:100%}
+}
+</style>
+
+<!-- Toast -->
+<div id="sb-toast" class="sb-toast"></div>
+
+<div class="sb-wrap">
+  <!-- ═══ LEFT: Condition panels ═══ -->
+  <div class="sb-left">
+
+    <!-- 1. ENTRY CONDITIONS -->
+    <div class="sb-panel sb-panel-entry">
+      <div class="sb-panel-head">
+        <span class="sb-panel-title">ENTRY CONDITIONS</span>
+        <button class="sb-add-btn" onclick="_sbAddCondition('entry')">+ ADD CONDITION</button>
+      </div>
+      <div class="sb-panel-body">
+        <div class="sb-conditions" id="sb-entry-conditions">
+          <div class="sb-empty" id="sb-entry-empty">No conditions — add one above</div>
+        </div>
+        <div class="sb-group-logic">
+          <span class="sb-group-logic-lbl">GROUP LOGIC:</span>
+          <label class="sb-gl-opt">
+            <input type="radio" class="sb-gl-radio" name="sb-entry-logic" value="AND" checked onchange="_sbRenderJSON()">
+            <span class="sb-gl-label-and">ALL must match (AND)</span>
+          </label>
+          <label class="sb-gl-opt">
+            <input type="radio" class="sb-gl-radio" name="sb-entry-logic" value="OR" onchange="_sbRenderJSON()">
+            <span class="sb-gl-label-or">ANY must match (OR)</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. EXIT CONDITIONS -->
+    <div class="sb-panel sb-panel-exit">
+      <div class="sb-panel-head">
+        <span class="sb-panel-title">EXIT CONDITIONS</span>
+        <button class="sb-add-btn" onclick="_sbAddCondition('exit')">+ ADD CONDITION</button>
+      </div>
+      <div class="sb-panel-body">
+        <div class="sb-conditions" id="sb-exit-conditions">
+          <div class="sb-empty" id="sb-exit-empty">No conditions — add one above</div>
+        </div>
+        <div class="sb-group-logic">
+          <span class="sb-group-logic-lbl">GROUP LOGIC:</span>
+          <label class="sb-gl-opt">
+            <input type="radio" class="sb-gl-radio" name="sb-exit-logic" value="AND" onchange="_sbRenderJSON()">
+            <span class="sb-gl-label-and">ALL must match (AND)</span>
+          </label>
+          <label class="sb-gl-opt">
+            <input type="radio" class="sb-gl-radio" name="sb-exit-logic" value="OR" checked onchange="_sbRenderJSON()">
+            <span class="sb-gl-label-or">ANY must match (OR)</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. STOP LOSS -->
+    <div class="sb-panel sb-panel-stop">
+      <div class="sb-panel-head">
+        <span class="sb-panel-title">STOP LOSS</span>
+      </div>
+      <div class="sb-panel-body">
+        <div class="sb-radio-row">
+          <label class="sb-radio-opt">
+            <input type="radio" name="sb-sl-type" value="atr" checked onchange="_sbUpdateStopUI();_sbRenderJSON()">
+            ATR-based (recommended)
+          </label>
+          <label class="sb-radio-opt">
+            <input type="radio" name="sb-sl-type" value="pct" onchange="_sbUpdateStopUI();_sbRenderJSON()">
+            Fixed %
+          </label>
+          <label class="sb-radio-opt">
+            <input type="radio" name="sb-sl-type" value="fixed" onchange="_sbUpdateStopUI();_sbRenderJSON()">
+            Fixed $
+          </label>
+          <label class="sb-radio-opt">
+            <input type="radio" name="sb-sl-type" value="indicator" onchange="_sbUpdateStopUI();_sbRenderJSON()">
+            Custom indicator
+          </label>
+        </div>
+        <div class="sb-config-row">
+          <span class="sb-config-lbl" id="sb-sl-val-lbl">ATR MULTIPLIER:</span>
+          <input class="sb-val-inp" id="sb-sl-value" type="number" step="0.1" min="0" value="1.5" style="width:80px" onchange="_sbRenderJSON()">
+          <span id="sb-sl-unit" style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t3)">× ATR</span>
+        </div>
+        <div id="sb-sl-ind-row" style="display:none" class="sb-config-row">
+          <span class="sb-config-lbl">INDICATOR:</span>
+          <select class="sb-sel" id="sb-sl-indicator" style="flex:1" onchange="_sbRenderJSON()"></select>
+        </div>
+        <div class="sb-trail-row">
+          <label class="sb-toggle">
+            <input type="checkbox" id="sb-sl-trailing" onchange="_sbToggleTrail();_sbRenderJSON()">
+            <span class="sb-toggle-slider"></span>
+          </label>
+          <span class="sb-trail-lbl">TRAILING STOP</span>
+          <span id="sb-trail-dist-wrap" style="display:none;align-items:center;gap:6px">
+            <input class="sb-val-inp" id="sb-sl-trail-dist" type="number" step="0.1" min="0" value="0.5" style="width:65px" onchange="_sbRenderJSON()">
+            <span style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t3)">% distance</span>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. TAKE PROFIT -->
+    <div class="sb-panel sb-panel-tp">
+      <div class="sb-panel-head">
+        <span class="sb-panel-title">TAKE PROFIT</span>
+      </div>
+      <div class="sb-panel-body">
+        <div class="sb-radio-row">
+          <label class="sb-radio-opt">
+            <input type="radio" name="sb-tp-type" value="atr" checked onchange="_sbUpdateTpUI();_sbRenderJSON()">
+            ATR-based
+          </label>
+          <label class="sb-radio-opt">
+            <input type="radio" name="sb-tp-type" value="pct" onchange="_sbUpdateTpUI();_sbRenderJSON()">
+            Fixed %
+          </label>
+          <label class="sb-radio-opt">
+            <input type="radio" name="sb-tp-type" value="fixed" onchange="_sbUpdateTpUI();_sbRenderJSON()">
+            Fixed $
+          </label>
+          <label class="sb-radio-opt">
+            <input type="radio" name="sb-tp-type" value="rr" onchange="_sbUpdateTpUI();_sbRenderJSON()">
+            Risk:Reward ratio
+          </label>
+          <label class="sb-radio-opt">
+            <input type="radio" name="sb-tp-type" value="indicator" onchange="_sbUpdateTpUI();_sbRenderJSON()">
+            Indicator level
+          </label>
+        </div>
+        <div class="sb-config-row">
+          <span class="sb-config-lbl" id="sb-tp-val-lbl">ATR MULTIPLIER:</span>
+          <input class="sb-val-inp" id="sb-tp-value" type="number" step="0.1" min="0" value="2.5" style="width:80px" onchange="_sbRenderJSON()">
+          <span id="sb-tp-unit" style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t3)">× ATR</span>
+        </div>
+        <div id="sb-tp-ind-row" style="display:none" class="sb-config-row">
+          <span class="sb-config-lbl">INDICATOR:</span>
+          <select class="sb-sel" id="sb-tp-indicator" style="flex:1" onchange="_sbRenderJSON()"></select>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. POSITION SIZING -->
+    <div class="sb-panel sb-panel-size">
+      <div class="sb-panel-head">
+        <span class="sb-panel-title">POSITION SIZING</span>
+      </div>
+      <div class="sb-panel-body">
+        <div class="sb-radio-row">
+          <label class="sb-radio-opt">
+            <input type="radio" name="sb-sz-type" value="fixed" onchange="_sbUpdateSizeUI();_sbRenderJSON()">
+            Fixed $
+          </label>
+          <label class="sb-radio-opt">
+            <input type="radio" name="sb-sz-type" value="pct" checked onchange="_sbUpdateSizeUI();_sbRenderJSON()">
+            % of balance
+          </label>
+          <label class="sb-radio-opt">
+            <input type="radio" name="sb-sz-type" value="atr" onchange="_sbUpdateSizeUI();_sbRenderJSON()">
+            ATR-based risk
+          </label>
+          <label class="sb-radio-opt">
+            <input type="radio" name="sb-sz-type" value="kelly" onchange="_sbUpdateSizeUI();_sbRenderJSON()">
+            Kelly fraction
+          </label>
+        </div>
+        <div class="sb-config-row">
+          <span class="sb-config-lbl" id="sb-sz-val-lbl">% OF BALANCE:</span>
+          <input class="sb-val-inp" id="sb-sz-value" type="number" step="0.5" min="0" value="10" style="width:80px" onchange="_sbRenderJSON()">
+          <span id="sb-sz-unit" style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t3)">%</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /sb-left -->
+
+  <!-- ═══ RIGHT: Info + Save/Load + JSON ═══ -->
+  <div class="sb-right">
+
+    <div class="sb-panel">
+      <div class="sb-panel-head">
+        <span class="sb-panel-title" style="color:var(--t1)">STRATEGY INFO</span>
+      </div>
+      <div class="sb-panel-body">
+        <div class="clbl">STRATEGY NAME</div>
+        <input class="sb-name-inp" id="sb-strat-name" type="text" value="My Strategy" maxlength="40" placeholder="Enter strategy name..." onkeyup="_sbRenderJSON()">
+
+        <div class="clbl" style="margin-bottom:5px">SAVE SLOT</div>
+        <div class="sb-slot-row" id="sb-slot-row">
+          <button class="sb-slot-btn active" onclick="_sbSelectSlot('A',this)">SLOT A</button>
+          <button class="sb-slot-btn" onclick="_sbSelectSlot('B',this)">SLOT B</button>
+          <button class="sb-slot-btn" onclick="_sbSelectSlot('C',this)">SLOT C</button>
+        </div>
+
+        <div class="sb-save-row">
+          <button class="sb-action-btn sb-btn-save" onclick="_sbSave(_sbCurrentSlot)">SAVE</button>
+          <button class="sb-action-btn sb-btn-load" onclick="_sbLoad(_sbCurrentSlot)">LOAD</button>
+          <button class="sb-action-btn sb-btn-reset" onclick="_sbReset()">RESET</button>
+        </div>
+
+        <div class="sb-active-row" id="sb-active-row">
+          <div class="sb-active-dot" id="sb-active-dot"></div>
+          <div class="sb-active-name" id="sb-active-name">No strategy active</div>
+          <div class="sb-active-tag" id="sb-active-tag">INACTIVE</div>
+        </div>
+
+        <button class="sb-activate-btn" onclick="_sbActivate()">&#9654; ACTIVATE ON BOT</button>
+        <button class="sb-bt-btn" onclick="_sbTestBacktest()">&#10148; TEST IN BACKTEST</button>
+      </div>
+    </div>
+
+    <!-- JSON Preview -->
+    <div class="sb-json-wrap">
+      <div class="sb-json-head">
+        <span class="sb-json-title">COMPILED STRATEGY JSON</span>
+        <button class="sb-json-copy" onclick="_sbCopyJSON()">COPY</button>
+      </div>
+      <pre class="sb-json-pre" id="sb-json-preview">{}</pre>
+    </div>
+
+  </div><!-- /sb-right -->
+</div><!-- /sb-wrap -->
+</div><!-- /tab-stratbuilder -->
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- ═══ STRATEGY BUILDER JS ═══ -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<script>
+(function(){
+'use strict';
+
+/* ─── Constants ─── */
+var SB_VERSION = 2;
+var SB_STORAGE_PREFIX = 'nexus_strat_';
+
+/* ─── Indicator definitions ─── */
+var SB_INDICATORS = [
+  {group:'Moving Averages',items:[
+    {name:'SMA',hasPeriod:true,defaultPeriod:20},
+    {name:'EMA',hasPeriod:true,defaultPeriod:21},
+    {name:'WMA',hasPeriod:true,defaultPeriod:20},
+    {name:'HMA',hasPeriod:true,defaultPeriod:14},
+    {name:'DEMA',hasPeriod:true,defaultPeriod:20},
+    {name:'TEMA',hasPeriod:true,defaultPeriod:20},
+    {name:'VWMA',hasPeriod:true,defaultPeriod:20},
+    {name:'ZLEMA',hasPeriod:true,defaultPeriod:20}
+  ]},
+  {group:'Trend',items:[
+    {name:'MACD Line',hasPeriod:false},
+    {name:'MACD Signal',hasPeriod:false},
+    {name:'MACD Histogram',hasPeriod:false},
+    {name:'ADX',hasPeriod:true,defaultPeriod:14},
+    {name:'DI+',hasPeriod:true,defaultPeriod:14},
+    {name:'DI-',hasPeriod:true,defaultPeriod:14},
+    {name:'Aroon Up',hasPeriod:true,defaultPeriod:25},
+    {name:'Aroon Down',hasPeriod:true,defaultPeriod:25},
+    {name:'Supertrend',hasPeriod:true,defaultPeriod:10},
+    {name:'Parabolic SAR',hasPeriod:false}
+  ]},
+  {group:'Volatility',items:[
+    {name:'BB Upper',hasPeriod:true,defaultPeriod:20},
+    {name:'BB Mid',hasPeriod:true,defaultPeriod:20},
+    {name:'BB Lower',hasPeriod:true,defaultPeriod:20},
+    {name:'BB %B',hasPeriod:true,defaultPeriod:20},
+    {name:'BB Width',hasPeriod:true,defaultPeriod:20},
+    {name:'Keltner Upper',hasPeriod:true,defaultPeriod:20},
+    {name:'Keltner Lower',hasPeriod:true,defaultPeriod:20},
+    {name:'ATR',hasPeriod:true,defaultPeriod:14},
+    {name:'Choppiness',hasPeriod:true,defaultPeriod:14}
+  ]},
+  {group:'Oscillators',items:[
+    {name:'RSI',hasPeriod:true,defaultPeriod:14},
+    {name:'StochRSI %K',hasPeriod:true,defaultPeriod:14},
+    {name:'StochRSI %D',hasPeriod:true,defaultPeriod:14},
+    {name:'Stochastic %K',hasPeriod:true,defaultPeriod:14},
+    {name:'Stochastic %D',hasPeriod:true,defaultPeriod:14},
+    {name:'Williams %R',hasPeriod:true,defaultPeriod:14},
+    {name:'CCI',hasPeriod:true,defaultPeriod:20},
+    {name:'MFI',hasPeriod:true,defaultPeriod:14},
+    {name:'CMF',hasPeriod:true,defaultPeriod:20},
+    {name:'Chande MO',hasPeriod:true,defaultPeriod:9},
+    {name:'Awesome Osc',hasPeriod:false},
+    {name:'TSI',hasPeriod:true,defaultPeriod:13}
+  ]},
+  {group:'Volume',items:[
+    {name:'OBV',hasPeriod:false},
+    {name:'VWAP',hasPeriod:false},
+    {name:'Volume',hasPeriod:false},
+    {name:'Volume SMA',hasPeriod:true,defaultPeriod:20},
+    {name:'Force Index',hasPeriod:true,defaultPeriod:13}
+  ]},
+  {group:'Price',items:[
+    {name:'Close',hasPeriod:false},
+    {name:'Open',hasPeriod:false},
+    {name:'High',hasPeriod:false},
+    {name:'Low',hasPeriod:false},
+    {name:'Typical Price',hasPeriod:false}
+  ]}
+];
+
+var SB_TIMEFRAMES = ['1m','3m','5m','15m','30m','1H','2H','4H','6H','8H','12H','1D','3D','1W','1M'];
+
+var SB_OPERATORS = [
+  'crosses above','crosses below','is above','is below',
+  'is equal to','is greater than','is less than',
+  'increases by %','decreases by %'
+];
+
+/* ─── State ─── */
+window._sbCurrentSlot = 'A';
+var _sbEntryConditions = [];
+var _sbExitConditions = [];
+var _sbCondCounter = 0;
+
+/* ─── Helper: get indicator meta ─── */
+function _sbGetIndMeta(name) {
+  for (var g = 0; g < SB_INDICATORS.length; g++) {
+    var grp = SB_INDICATORS[g];
+    for (var i = 0; i < grp.items.length; i++) {
+      if (grp.items[i].name === name) return grp.items[i];
+    }
+  }
+  return null;
+}
+
+/* ─── Build indicator <select> HTML ─── */
+function _sbBuildIndOptions(selectedName) {
+  var html = '';
+  for (var g = 0; g < SB_INDICATORS.length; g++) {
+    var grp = SB_INDICATORS[g];
+    html += '<optgroup label="' + grp.group + '">';
+    for (var i = 0; i < grp.items.length; i++) {
+      var item = grp.items[i];
+      var sel = (item.name === selectedName) ? ' selected' : '';
+      html += '<option value="' + item.name + '"' + sel + '>' + item.name + '</option>';
+    }
+    html += '</optgroup>';
+  }
+  return html;
+}
+
+/* ─── Populate indicator selects for stop/tp panels ─── */
+function _sbPopulateIndSelects() {
+  ['sb-sl-indicator','sb-tp-indicator'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.innerHTML = _sbBuildIndOptions('');
+  });
+}
+
+/* ─── Add condition row ─── */
+window._sbAddCondition = function(section) {
+  _sbCondCounter++;
+  var id = _sbCondCounter;
+  var condList = (section === 'entry') ? _sbEntryConditions : _sbExitConditions;
+  condList.push({id: id, logic: 'AND'});
+
+  // Hide empty placeholder
+  var emptyEl = document.getElementById('sb-' + section + '-empty');
+  if (emptyEl) emptyEl.style.display = 'none';
+
+  var container = document.getElementById('sb-' + section + '-conditions');
+
+  var row = document.createElement('div');
+  row.className = 'sb-row';
+  row.id = 'sb-row-' + section + '-' + id;
+
+  var defaultInd = 'RSI';
+  var defaultTf = '1H';
+  var defaultOp = 'is below';
+
+  row.innerHTML =
+    '<select class="sb-sel sb-ind-sel" id="sb-ind-' + section + '-' + id + '" ' +
+      'onchange="_sbOnIndicatorChange(\'' + section + '\',' + id + ')">' +
+      _sbBuildIndOptions(defaultInd) +
+    '</select>' +
+    '<input class="sb-period-inp" id="sb-period-' + section + '-' + id + '" ' +
+      'type="number" min="1" max="500" value="14" title="Period" ' +
+      'onchange="_sbRenderJSON()">' +
+    '<select class="sb-sel sb-tf-sel" id="sb-tf-' + section + '-' + id + '" onchange="_sbRenderJSON()">' +
+      SB_TIMEFRAMES.map(function(tf){ return '<option value="' + tf + '"' + (tf===defaultTf?' selected':'') + '>' + tf + '</option>'; }).join('') +
+    '</select>' +
+    '<select class="sb-sel sb-op-sel" id="sb-op-' + section + '-' + id + '" onchange="_sbOnOpChange(\'' + section + '\',' + id + ')">' +
+      SB_OPERATORS.map(function(op){ return '<option value="' + op + '"' + (op===defaultOp?' selected':'') + '>' + op + '</option>'; }).join('') +
+    '</select>' +
+    '<input class="sb-val-inp" id="sb-val-' + section + '-' + id + '" ' +
+      'type="number" step="any" value="30" title="Value" onchange="_sbRenderJSON()">' +
+    '<button class="sb-logic-badge and" id="sb-logic-' + section + '-' + id + '" ' +
+      'onclick="_sbToggleLogic(\'' + section + '\',' + id + ')" title="Toggle AND/OR">AND</button>' +
+    '<button class="sb-del-btn" onclick="_sbRemoveCondition(\'' + section + '\',' + id + ')" title="Remove">✕</button>';
+
+  container.insertBefore(row, document.getElementById('sb-' + section + '-empty'));
+
+  // Set correct period visibility
+  _sbOnIndicatorChange(section, id, true);
+  _sbRenderJSON();
+};
+
+/* ─── Indicator change handler ─── */
+window._sbOnIndicatorChange = function(section, id, silent) {
+  var indEl = document.getElementById('sb-ind-' + section + '-' + id);
+  var periodEl = document.getElementById('sb-period-' + section + '-' + id);
+  if (!indEl || !periodEl) return;
+
+  var meta = _sbGetIndMeta(indEl.value);
+  if (meta && meta.hasPeriod) {
+    periodEl.style.display = '';
+    if (silent && meta.defaultPeriod) periodEl.value = meta.defaultPeriod;
+  } else {
+    periodEl.style.display = 'none';
+  }
+  if (!silent) _sbRenderJSON();
+};
+
+/* ─── Operator change handler ─── */
+window._sbOnOpChange = function(section, id) {
+  _sbRenderJSON();
+};
+
+/* ─── Toggle AND/OR badge ─── */
+window._sbToggleLogic = function(section, id) {
+  var btn = document.getElementById('sb-logic-' + section + '-' + id);
+  if (!btn) return;
+  var condList = (section === 'entry') ? _sbEntryConditions : _sbExitConditions;
+  var cond = null;
+  for (var i = 0; i < condList.length; i++) {
+    if (condList[i].id === id) { cond = condList[i]; break; }
+  }
+  if (!cond) return;
+  cond.logic = (cond.logic === 'AND') ? 'OR' : 'AND';
+  btn.textContent = cond.logic;
+  btn.className = 'sb-logic-badge ' + cond.logic.toLowerCase();
+  _sbRenderJSON();
+};
+
+/* ─── Remove condition ─── */
+window._sbRemoveCondition = function(section, id) {
+  var condList = (section === 'entry') ? _sbEntryConditions : _sbExitConditions;
+  var idx = -1;
+  for (var i = 0; i < condList.length; i++) {
+    if (condList[i].id === id) { idx = i; break; }
+  }
+  if (idx >= 0) condList.splice(idx, 1);
+
+  var row = document.getElementById('sb-row-' + section + '-' + id);
+  if (row) row.remove();
+
+  // Show empty placeholder if none left
+  if (condList.length === 0) {
+    var emptyEl = document.getElementById('sb-' + section + '-empty');
+    if (emptyEl) emptyEl.style.display = '';
+  }
+  _sbRenderJSON();
+};
+
+/* ─── Get single condition values ─── */
+window._sbGetCondition = function(section, id) {
+  var indEl = document.getElementById('sb-ind-' + section + '-' + id);
+  var periodEl = document.getElementById('sb-period-' + section + '-' + id);
+  var tfEl = document.getElementById('sb-tf-' + section + '-' + id);
+  var opEl = document.getElementById('sb-op-' + section + '-' + id);
+  var valEl = document.getElementById('sb-val-' + section + '-' + id);
+  if (!indEl) return null;
+
+  var meta = _sbGetIndMeta(indEl.value);
+  return {
+    indicator: indEl.value,
+    period: (meta && meta.hasPeriod) ? parseInt(periodEl.value, 10) : null,
+    timeframe: tfEl ? tfEl.value : '1H',
+    operator: opEl ? opEl.value : 'is below',
+    value: valEl ? parseFloat(valEl.value) : 0
+  };
+};
+
+/* ─── Compile strategy ─── */
+window._sbCompile = function() {
+  var name = (document.getElementById('sb-strat-name') || {}).value || 'Untitled';
+
+  // Entry
+  var entryLogicEl = document.querySelector('input[name="sb-entry-logic"]:checked');
+  var entryLogic = entryLogicEl ? entryLogicEl.value : 'AND';
+  var entryConditions = _sbEntryConditions.map(function(c) {
+    return _sbGetCondition('entry', c.id);
+  }).filter(Boolean);
+
+  // Exit
+  var exitLogicEl = document.querySelector('input[name="sb-exit-logic"]:checked');
+  var exitLogic = exitLogicEl ? exitLogicEl.value : 'OR';
+  var exitConditions = _sbExitConditions.map(function(c) {
+    return _sbGetCondition('exit', c.id);
+  }).filter(Boolean);
+
+  // Stop loss
+  var slTypeEl = document.querySelector('input[name="sb-sl-type"]:checked');
+  var slType = slTypeEl ? slTypeEl.value : 'atr';
+  var slValue = parseFloat((document.getElementById('sb-sl-value') || {}).value) || 1.5;
+  var slTrailing = (document.getElementById('sb-sl-trailing') || {}).checked || false;
+  var slTrailDist = parseFloat((document.getElementById('sb-sl-trail-dist') || {}).value) || 0;
+  var slIndicator = slType === 'indicator' ? ((document.getElementById('sb-sl-indicator') || {}).value || '') : null;
+
+  // Take profit
+  var tpTypeEl = document.querySelector('input[name="sb-tp-type"]:checked');
+  var tpType = tpTypeEl ? tpTypeEl.value : 'atr';
+  var tpValue = parseFloat((document.getElementById('sb-tp-value') || {}).value) || 2.5;
+  var tpIndicator = tpType === 'indicator' ? ((document.getElementById('sb-tp-indicator') || {}).value || '') : null;
+
+  // Sizing
+  var szTypeEl = document.querySelector('input[name="sb-sz-type"]:checked');
+  var szType = szTypeEl ? szTypeEl.value : 'pct';
+  var szValue = parseFloat((document.getElementById('sb-sz-value') || {}).value) || 10;
+
+  var compiled = {
+    name: name.trim(),
+    version: SB_VERSION,
+    entry: {
+      logic: entryLogic,
+      conditions: entryConditions
+    },
+    exit: {
+      logic: exitLogic,
+      conditions: exitConditions
+    },
+    stopLoss: {
+      type: slType,
+      value: slValue,
+      trailing: slTrailing,
+      trailDistance: slTrailDist
+    },
+    takeProfit: {
+      type: tpType,
+      value: tpValue
+    },
+    sizing: {
+      type: szType,
+      value: szValue
+    }
+  };
+
+  if (slIndicator) compiled.stopLoss.indicator = slIndicator;
+  if (tpIndicator) compiled.takeProfit.indicator = tpIndicator;
+
+  return compiled;
+};
+
+/* ─── Render JSON preview ─── */
+window._sbRenderJSON = function() {
+  var compiled = _sbCompile();
+  var pre = document.getElementById('sb-json-preview');
+  if (pre) pre.textContent = JSON.stringify(compiled, null, 2);
+};
+
+/* ─── Save slot ─── */
+window._sbSave = function(slot) {
+  var compiled = _sbCompile();
+  try {
+    localStorage.setItem(SB_STORAGE_PREFIX + slot, JSON.stringify(compiled));
+    _sbToast('SAVED TO SLOT ' + slot, false);
+  } catch(e) {
+    _sbToast('SAVE FAILED: ' + e.message, true);
+  }
+};
+
+/* ─── Load slot ─── */
+window._sbLoad = function(slot) {
+  var raw = null;
+  try { raw = localStorage.getItem(SB_STORAGE_PREFIX + slot); } catch(e) {}
+  if (!raw) { _sbToast('SLOT ' + slot + ' IS EMPTY', true); return; }
+  var strat = null;
+  try { strat = JSON.parse(raw); } catch(e) { _sbToast('CORRUPT DATA IN SLOT ' + slot, true); return; }
+  _sbApplyStrategy(strat);
+  _sbToast('LOADED FROM SLOT ' + slot, false);
+};
+
+/* ─── Apply a strategy object to the UI ─── */
+function _sbApplyStrategy(strat) {
+  if (!strat) return;
+
+  // Name
+  var nameEl = document.getElementById('sb-strat-name');
+  if (nameEl && strat.name) nameEl.value = strat.name;
+
+  // Clear existing conditions
+  _sbClearSection('entry');
+  _sbClearSection('exit');
+
+  // Entry conditions
+  if (strat.entry && Array.isArray(strat.entry.conditions)) {
+    strat.entry.conditions.forEach(function(c) {
+      _sbAddCondition('entry');
+      var id = _sbEntryConditions[_sbEntryConditions.length - 1].id;
+      _sbApplyConditionToRow('entry', id, c);
+    });
+    // Set group logic
+    var logicEl = document.querySelector('input[name="sb-entry-logic"][value="' + (strat.entry.logic || 'AND') + '"]');
+    if (logicEl) logicEl.checked = true;
+  }
+
+  // Exit conditions
+  if (strat.exit && Array.isArray(strat.exit.conditions)) {
+    strat.exit.conditions.forEach(function(c) {
+      _sbAddCondition('exit');
+      var id = _sbExitConditions[_sbExitConditions.length - 1].id;
+      _sbApplyConditionToRow('exit', id, c);
+    });
+    var exitLogicEl = document.querySelector('input[name="sb-exit-logic"][value="' + (strat.exit.logic || 'OR') + '"]');
+    if (exitLogicEl) exitLogicEl.checked = true;
+  }
+
+  // Stop loss
+  if (strat.stopLoss) {
+    var slTypeEl = document.querySelector('input[name="sb-sl-type"][value="' + strat.stopLoss.type + '"]');
+    if (slTypeEl) { slTypeEl.checked = true; _sbUpdateStopUI(); }
+    var slValEl = document.getElementById('sb-sl-value');
+    if (slValEl) slValEl.value = strat.stopLoss.value;
+    var slTrailEl = document.getElementById('sb-sl-trailing');
+    if (slTrailEl) { slTrailEl.checked = !!strat.stopLoss.trailing; _sbToggleTrail(); }
+    var slDistEl = document.getElementById('sb-sl-trail-dist');
+    if (slDistEl) slDistEl.value = strat.stopLoss.trailDistance || 0;
+  }
+
+  // Take profit
+  if (strat.takeProfit) {
+    var tpTypeEl = document.querySelector('input[name="sb-tp-type"][value="' + strat.takeProfit.type + '"]');
+    if (tpTypeEl) { tpTypeEl.checked = true; _sbUpdateTpUI(); }
+    var tpValEl = document.getElementById('sb-tp-value');
+    if (tpValEl) tpValEl.value = strat.takeProfit.value;
+  }
+
+  // Sizing
+  if (strat.sizing) {
+    var szTypeEl = document.querySelector('input[name="sb-sz-type"][value="' + strat.sizing.type + '"]');
+    if (szTypeEl) { szTypeEl.checked = true; _sbUpdateSizeUI(); }
+    var szValEl = document.getElementById('sb-sz-value');
+    if (szValEl) szValEl.value = strat.sizing.value;
+  }
+
+  _sbRenderJSON();
+}
+
+/* ─── Apply a single condition data to a row ─── */
+function _sbApplyConditionToRow(section, id, c) {
+  if (!c) return;
+  var indEl = document.getElementById('sb-ind-' + section + '-' + id);
+  var periodEl = document.getElementById('sb-period-' + section + '-' + id);
+  var tfEl = document.getElementById('sb-tf-' + section + '-' + id);
+  var opEl = document.getElementById('sb-op-' + section + '-' + id);
+  var valEl = document.getElementById('sb-val-' + section + '-' + id);
+
+  if (indEl && c.indicator) {
+    indEl.value = c.indicator;
+    _sbOnIndicatorChange(section, id, false);
+  }
+  if (periodEl && c.period != null) periodEl.value = c.period;
+  if (tfEl && c.timeframe) tfEl.value = c.timeframe;
+  if (opEl && c.operator) opEl.value = c.operator;
+  if (valEl && c.value != null) valEl.value = c.value;
+}
+
+/* ─── Clear a section's conditions ─── */
+function _sbClearSection(section) {
+  var condList = (section === 'entry') ? _sbEntryConditions : _sbExitConditions;
+  condList.slice().forEach(function(c) { _sbRemoveCondition(section, c.id); });
+  if (section === 'entry') _sbEntryConditions = [];
+  else _sbExitConditions = [];
+}
+
+/* ─── Reset everything ─── */
+window._sbReset = function() {
+  if (!confirm('Reset all conditions?')) return;
+  _sbClearSection('entry');
+  _sbClearSection('exit');
+  var nameEl = document.getElementById('sb-strat-name');
+  if (nameEl) nameEl.value = 'My Strategy';
+  // Reset radios to defaults
+  var slDef = document.querySelector('input[name="sb-sl-type"][value="atr"]');
+  if (slDef) { slDef.checked = true; _sbUpdateStopUI(); }
+  var slV = document.getElementById('sb-sl-value'); if (slV) slV.value = 1.5;
+  var tpDef = document.querySelector('input[name="sb-tp-type"][value="atr"]');
+  if (tpDef) { tpDef.checked = true; _sbUpdateTpUI(); }
+  var tpV = document.getElementById('sb-tp-value'); if (tpV) tpV.value = 2.5;
+  var szDef = document.querySelector('input[name="sb-sz-type"][value="pct"]');
+  if (szDef) { szDef.checked = true; _sbUpdateSizeUI(); }
+  var szV = document.getElementById('sb-sz-value'); if (szV) szV.value = 10;
+  var trailEl = document.getElementById('sb-sl-trailing');
+  if (trailEl) { trailEl.checked = false; _sbToggleTrail(); }
+  _sbRenderJSON();
+  _sbToast('STRATEGY RESET', false);
+};
+
+/* ─── Slot selector ─── */
+window._sbSelectSlot = function(slot, btn) {
+  window._sbCurrentSlot = slot;
+  document.querySelectorAll('.sb-slot-btn').forEach(function(b){ b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+};
+
+/* ─── Stop loss UI update ─── */
+window._sbUpdateStopUI = function() {
+  var typeEl = document.querySelector('input[name="sb-sl-type"]:checked');
+  if (!typeEl) return;
+  var t = typeEl.value;
+  var lbl = document.getElementById('sb-sl-val-lbl');
+  var unit = document.getElementById('sb-sl-unit');
+  var indRow = document.getElementById('sb-sl-ind-row');
+  var valInp = document.getElementById('sb-sl-value');
+
+  if (t === 'atr') {
+    if (lbl) lbl.textContent = 'ATR MULTIPLIER:';
+    if (unit) { unit.textContent = '× ATR'; unit.style.display = ''; }
+    if (valInp) { valInp.style.display = ''; valInp.value = valInp.value || 1.5; }
+    if (indRow) indRow.style.display = 'none';
+  } else if (t === 'pct') {
+    if (lbl) lbl.textContent = 'PERCENTAGE:';
+    if (unit) { unit.textContent = '%'; unit.style.display = ''; }
+    if (valInp) { valInp.style.display = ''; valInp.value = valInp.value || 2; }
+    if (indRow) indRow.style.display = 'none';
+  } else if (t === 'fixed') {
+    if (lbl) lbl.textContent = 'FIXED AMOUNT:';
+    if (unit) { unit.textContent = '$'; unit.style.display = ''; }
+    if (valInp) { valInp.style.display = ''; valInp.value = valInp.value || 100; }
+    if (indRow) indRow.style.display = 'none';
+  } else if (t === 'indicator') {
+    if (lbl) lbl.textContent = 'INDICATOR:';
+    if (unit) unit.style.display = 'none';
+    if (valInp) valInp.style.display = 'none';
+    if (indRow) indRow.style.display = 'flex';
+  }
+};
+
+/* ─── Trailing stop toggle ─── */
+window._sbToggleTrail = function() {
+  var cb = document.getElementById('sb-sl-trailing');
+  var wrap = document.getElementById('sb-trail-dist-wrap');
+  if (wrap) wrap.style.display = (cb && cb.checked) ? 'flex' : 'none';
+};
+
+/* ─── Take profit UI update ─── */
+window._sbUpdateTpUI = function() {
+  var typeEl = document.querySelector('input[name="sb-tp-type"]:checked');
+  if (!typeEl) return;
+  var t = typeEl.value;
+  var lbl = document.getElementById('sb-tp-val-lbl');
+  var unit = document.getElementById('sb-tp-unit');
+  var indRow = document.getElementById('sb-tp-ind-row');
+  var valInp = document.getElementById('sb-tp-value');
+
+  if (t === 'atr') {
+    if (lbl) lbl.textContent = 'ATR MULTIPLIER:';
+    if (unit) { unit.textContent = '× ATR'; unit.style.display = ''; }
+    if (valInp) { valInp.style.display = ''; valInp.value = valInp.value || 2.5; }
+    if (indRow) indRow.style.display = 'none';
+  } else if (t === 'pct') {
+    if (lbl) lbl.textContent = 'PERCENTAGE:';
+    if (unit) { unit.textContent = '%'; unit.style.display = ''; }
+    if (valInp) { valInp.style.display = ''; valInp.value = valInp.value || 4; }
+    if (indRow) indRow.style.display = 'none';
+  } else if (t === 'fixed') {
+    if (lbl) lbl.textContent = 'FIXED AMOUNT:';
+    if (unit) { unit.textContent = '$'; unit.style.display = ''; }
+    if (valInp) { valInp.style.display = ''; valInp.value = valInp.value || 200; }
+    if (indRow) indRow.style.display = 'none';
+  } else if (t === 'rr') {
+    if (lbl) lbl.textContent = 'RISK:REWARD:';
+    if (unit) { unit.textContent = '× risk'; unit.style.display = ''; }
+    if (valInp) { valInp.style.display = ''; valInp.value = valInp.value || 2; }
+    if (indRow) indRow.style.display = 'none';
+  } else if (t === 'indicator') {
+    if (lbl) lbl.textContent = 'INDICATOR:';
+    if (unit) unit.style.display = 'none';
+    if (valInp) valInp.style.display = 'none';
+    if (indRow) indRow.style.display = 'flex';
+  }
+};
+
+/* ─── Position sizing UI update ─── */
+window._sbUpdateSizeUI = function() {
+  var typeEl = document.querySelector('input[name="sb-sz-type"]:checked');
+  if (!typeEl) return;
+  var t = typeEl.value;
+  var lbl = document.getElementById('sb-sz-val-lbl');
+  var unit = document.getElementById('sb-sz-unit');
+  var valInp = document.getElementById('sb-sz-value');
+
+  if (t === 'fixed') {
+    if (lbl) lbl.textContent = 'FIXED AMOUNT:';
+    if (unit) unit.textContent = '$';
+    if (valInp) valInp.step = '10';
+  } else if (t === 'pct') {
+    if (lbl) lbl.textContent = '% OF BALANCE:';
+    if (unit) unit.textContent = '%';
+    if (valInp) valInp.step = '0.5';
+  } else if (t === 'atr') {
+    if (lbl) lbl.textContent = 'RISK PER TRADE:';
+    if (unit) unit.textContent = '% balance at risk';
+    if (valInp) valInp.step = '0.5';
+  } else if (t === 'kelly') {
+    if (lbl) lbl.textContent = 'KELLY FRACTION:';
+    if (unit) unit.textContent = '× kelly (0-1)';
+    if (valInp) { valInp.step = '0.05'; valInp.max = '1'; }
+  }
+};
+
+/* ─── Activate strategy ─── */
+window._sbActivate = function() {
+  var compiled = _sbCompile();
+  if (!compiled.entry.conditions.length && !compiled.exit.conditions.length) {
+    _sbToast('ADD AT LEAST ONE CONDITION', true);
+    return;
+  }
+  window._activeStrategy = compiled;
+  if (typeof _strategyActivate === 'function') _strategyActivate(compiled);
+  _sbUpdateActiveIndicator(compiled.name);
+  _sbToast('STRATEGY ACTIVATED: ' + compiled.name.toUpperCase(), false);
+};
+
+/* ─── Test in backtest ─── */
+window._sbTestBacktest = function() {
+  var compiled = _sbCompile();
+  window._sbPendingBacktestStrategy = compiled;
+  var btBtn = Array.from(document.querySelectorAll('.tnav')).find(function(b){
+    return b.textContent.indexOf('BACKTEST') >= 0;
+  });
+  if (btBtn) {
+    if (typeof showTab === 'function') showTab('backtest', btBtn);
+    _sbToast('STRATEGY LOADED INTO BACKTEST', false);
+  } else {
+    _sbToast('SWITCH TO BACKTEST TAB TO TEST', false);
+  }
+};
+
+/* ─── Copy JSON ─── */
+window._sbCopyJSON = function() {
+  var pre = document.getElementById('sb-json-preview');
+  if (!pre) return;
+  try {
+    navigator.clipboard.writeText(pre.textContent).then(function(){
+      _sbToast('JSON COPIED TO CLIPBOARD', false);
+    }).catch(function(){ _sbToast('COPY FAILED', true); });
+  } catch(e) { _sbToast('COPY NOT SUPPORTED', true); }
+};
+
+/* ─── Active indicator display ─── */
+function _sbUpdateActiveIndicator(name) {
+  var dot = document.getElementById('sb-active-dot');
+  var nameEl = document.getElementById('sb-active-name');
+  var tag = document.getElementById('sb-active-tag');
+  if (dot) dot.className = 'sb-active-dot live';
+  if (nameEl) { nameEl.textContent = name || 'Unknown'; nameEl.className = 'sb-active-name live'; }
+  if (tag) { tag.textContent = 'ACTIVE'; tag.className = 'sb-active-tag live'; }
+}
+
+/* ─── Toast notification ─── */
+var _sbToastTimer = null;
+function _sbToast(msg, isErr) {
+  var el = document.getElementById('sb-toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'sb-toast' + (isErr ? ' err' : '') + ' show';
+  clearTimeout(_sbToastTimer);
+  _sbToastTimer = setTimeout(function(){ el.className = 'sb-toast'; }, 2400);
+}
+
+/* ═══════════════════════════════════════════════
+   STRATEGY EVALUATOR
+   Returns { entry:bool, exit:bool, stopPrice, tpPrice, size }
+═══════════════════════════════════════════════ */
+var IND_MAP = {
+  'RSI': function(ind){ return ind.rsi; },
+  'MACD Line': function(ind){ return ind.macd && ind.macd.macd; },
+  'MACD Signal': function(ind){ return ind.macd && ind.macd.signal; },
+  'MACD Histogram': function(ind){ return ind.macd && ind.macd.hist; },
+  'BB %B': function(ind){ return ind.bb && ind.bb.pct; },
+  'BB Upper': function(ind){ return ind.bb && ind.bb.upper; },
+  'BB Mid': function(ind){ return ind.bb && ind.bb.mid; },
+  'BB Lower': function(ind){ return ind.bb && ind.bb.lower; },
+  'BB Width': function(ind){ return ind.bb && ind.bb.width; },
+  'ADX': function(ind){ return ind.adx && ind.adx.adx; },
+  'DI+': function(ind){ return ind.adx && ind.adx.diPlus; },
+  'DI-': function(ind){ return ind.adx && ind.adx.diMinus; },
+  'StochRSI %K': function(ind){ return ind.stochRsi && (ind.stochRsi.value * 100); },
+  'StochRSI %D': function(ind){ return ind.stochRsi && (ind.stochRsi.d != null ? ind.stochRsi.d * 100 : null); },
+  'Stochastic %K': function(ind){ return ind.stochastic && ind.stochastic.k; },
+  'Stochastic %D': function(ind){ return ind.stochastic && ind.stochastic.d; },
+  'Williams %R': function(ind){ return ind.williamsR; },
+  'CCI': function(ind){ return ind.cci; },
+  'MFI': function(ind){ return ind.mfi; },
+  'CMF': function(ind){ return ind.cmf; },
+  'ATR': function(ind){ return ind.atr && ind.atr.value; },
+  'VWAP': function(ind){ return ind.vwap && ind.vwap.value; },
+  'OBV': function(ind){ return ind.obv && ind.obv.value; },
+  'Volume': function(ind){ return ind.volume; },
+  'Volume SMA': function(ind){ return ind.volumeSma; },
+  'Close': function(ind){ return ind.price; },
+  'Open': function(ind){ return ind.open; },
+  'High': function(ind){ return ind.high; },
+  'Low': function(ind){ return ind.low; },
+  'Typical Price': function(ind){ return ind.price && ind.high && ind.low ? (ind.price + ind.high + ind.low) / 3 : null; },
+  'Aroon Up': function(ind){ return ind.aroon && ind.aroon.up; },
+  'Aroon Down': function(ind){ return ind.aroon && ind.aroon.down; },
+  'Awesome Osc': function(ind){ return ind.awesomeOsc; },
+  'TSI': function(ind){ return ind.tsi && ind.tsi.tsi; },
+  'Choppiness': function(ind){ return ind.choppiness; },
+  'Force Index': function(ind){ return ind.forceIndex; },
+  'Supertrend': function(ind){ return ind.supertrend && ind.supertrend.value; },
+  'Parabolic SAR': function(ind){ return ind.sar; },
+  'Chande MO': function(ind){ return ind.chandeMo; },
+  'SMA': function(ind, p){ return ind['sma' + (p || 20)]; },
+  'EMA': function(ind, p){ return ind['ema' + (p || 21)]; },
+  'WMA': function(ind, p){ return ind['wma' + (p || 20)]; },
+  'HMA': function(ind, p){ return ind['hma' + (p || 14)]; },
+  'DEMA': function(ind, p){ return ind['dema' + (p || 20)]; },
+  'TEMA': function(ind, p){ return ind['tema' + (p || 20)]; },
+  'VWMA': function(ind, p){ return ind['vwma' + (p || 20)]; },
+  'ZLEMA': function(ind, p){ return ind['zlema' + (p || 20)]; },
+  'Keltner Upper': function(ind, p){ return ind['keltnerUpper' + (p || 20)]; },
+  'Keltner Lower': function(ind, p){ return ind['keltnerLower' + (p || 20)]; }
+};
+
+function _sbGetIndValue(name, period, indicators) {
+  var fn = IND_MAP[name];
+  if (!fn || !indicators) return null;
+  var v = fn(indicators, period);
+  return (v == null || v !== v) ? null : v; // NaN check
+}
+
+function _sbEvalOperator(op, current, value, prev) {
+  if (current == null || current !== current) return false;
+  switch (op) {
+    case 'is above':
+    case 'is greater than': return current > value;
+    case 'is below':
+    case 'is less than': return current < value;
+    case 'is equal to': return Math.abs(current - value) < 1e-9;
+    case 'crosses above':
+      return prev != null && prev <= value && current > value;
+    case 'crosses below':
+      return prev != null && prev >= value && current < value;
+    case 'increases by %':
+      return prev != null && prev !== 0 && ((current - prev) / Math.abs(prev)) * 100 >= value;
+    case 'decreases by %':
+      return prev != null && prev !== 0 && ((prev - current) / Math.abs(prev)) * 100 >= value;
+    default: return false;
+  }
+}
+
+function _sbEvalConditions(conditions, logic, indicators, htfIndicators, prevIndicators, prevHtf) {
+  if (!conditions || !conditions.length) return true; // no conditions = always true
+  var results = conditions.map(function(c) {
+    // Determine indicator source by timeframe
+    var ind = indicators;
+    var prevInd = prevIndicators || null;
+    if (htfIndicators && c.timeframe) {
+      var htfKey = c.timeframe;
+      if (htfIndicators[htfKey]) {
+        ind = htfIndicators[htfKey];
+        prevInd = (prevHtf && prevHtf[htfKey]) || null;
+      }
+    }
+    var current = _sbGetIndValue(c.indicator, c.period, ind);
+    var prev = _sbGetIndValue(c.indicator, c.period, prevInd);
+    return _sbEvalOperator(c.operator, current, c.value, prev);
+  });
+
+  if (logic === 'OR') return results.some(Boolean);
+  return results.every(Boolean); // AND
+}
+
+window._sbEvaluate = function(strategy, indicators, htfIndicators, price, balance, prevIndicators, prevHtf) {
+  if (!strategy) return { entry: false, exit: false, stopPrice: null, tpPrice: null, size: null };
+
+  var entryMet = _sbEvalConditions(
+    strategy.entry && strategy.entry.conditions,
+    strategy.entry && strategy.entry.logic,
+    indicators, htfIndicators, prevIndicators, prevHtf
+  );
+
+  var exitMet = _sbEvalConditions(
+    strategy.exit && strategy.exit.conditions,
+    strategy.exit && strategy.exit.logic,
+    indicators, htfIndicators, prevIndicators, prevHtf
+  );
+
+  // Stop price
+  var stopPrice = null;
+  var sl = strategy.stopLoss;
+  if (sl && price) {
+    if (sl.type === 'atr') {
+      var atrVal = _sbGetIndValue('ATR', null, indicators);
+      if (atrVal != null) stopPrice = price - atrVal * sl.value;
+    } else if (sl.type === 'pct') {
+      stopPrice = price * (1 - sl.value / 100);
+    } else if (sl.type === 'fixed') {
+      stopPrice = price - sl.value;
+    } else if (sl.type === 'indicator' && sl.indicator) {
+      stopPrice = _sbGetIndValue(sl.indicator, null, indicators);
+    }
+  }
+
+  // TP price
+  var tpPrice = null;
+  var tp = strategy.takeProfit;
+  if (tp && price) {
+    if (tp.type === 'atr') {
+      var atrV = _sbGetIndValue('ATR', null, indicators);
+      if (atrV != null) tpPrice = price + atrV * tp.value;
+    } else if (tp.type === 'pct') {
+      tpPrice = price * (1 + tp.value / 100);
+    } else if (tp.type === 'fixed') {
+      tpPrice = price + tp.value;
+    } else if (tp.type === 'rr') {
+      if (stopPrice != null) tpPrice = price + (price - stopPrice) * tp.value;
+    } else if (tp.type === 'indicator' && tp.indicator) {
+      tpPrice = _sbGetIndValue(tp.indicator, null, indicators);
+    }
+  }
+
+  // Position size
+  var size = null;
+  var sz = strategy.sizing;
+  if (sz && balance) {
+    if (sz.type === 'pct') {
+      size = balance * sz.value / 100;
+    } else if (sz.type === 'fixed') {
+      size = sz.value;
+    } else if (sz.type === 'atr') {
+      // ATR-based: risk sz.value% of balance, size = (balance * risk%) / (price - stopPrice)
+      var riskAmt = balance * sz.value / 100;
+      if (stopPrice != null && price > stopPrice) {
+        size = riskAmt / (price - stopPrice);
+      } else {
+        size = balance * sz.value / 100 / price;
+      }
+    } else if (sz.type === 'kelly') {
+      // Kelly fraction: use sz.value as fraction multiplier (0–1)
+      // Full Kelly requires win rate & avg win/loss — here we use as a capital fraction cap
+      size = balance * Math.min(Math.max(sz.value, 0), 1);
+    }
+  }
+
+  return {
+    entry: entryMet,
+    exit: exitMet,
+    stopPrice: stopPrice,
+    tpPrice: tpPrice,
+    size: size
+  };
+};
+
+/* ─── Init on DOM ready ─── */
+function _sbInit() {
+  _sbPopulateIndSelects();
+  _sbUpdateStopUI();
+  _sbUpdateTpUI();
+  _sbUpdateSizeUI();
+  _sbRenderJSON();
+
+  // Check if there's an active strategy already loaded in window
+  if (window._activeStrategy) {
+    _sbUpdateActiveIndicator(window._activeStrategy.name);
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', _sbInit);
+} else {
+  _sbInit();
+}
+
+})(); // end IIFE
+</script>
