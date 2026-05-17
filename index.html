@@ -1,214 +1,4 @@
-﻿  <!-- BACKTEST TAB -->
-  <div class="pane" id="tab-backtest" style="display:none">
-    <div style="display:grid;grid-template-columns:280px 1fr;gap:10px;height:100%;min-height:0">
-      <!-- Config Panel -->
-      <div style="display:flex;flex-direction:column;gap:8px;overflow-y:auto;padding-right:4px">
-        <div class="card" style="border-color:rgba(0,212,255,0.3)">
-          <div class="clbl" style="color:var(--cyan);margin-bottom:8px">&#x1F4CA; BACKTESTER CONFIG</div>
-          <div style="display:flex;flex-direction:column;gap:6px">
-            <div style="display:flex;align-items:center;gap:6px">
-              <span style="font-family:Share Tech Mono,monospace;font-size:9px;color:var(--t2);width:80px">PAIR</span>
-              <select id="bt_pair" style="flex:1;background:var(--bg2);border:1px solid var(--border);color:var(--t1);font-family:Share Tech Mono,monospace;font-size:10px;padding:3px 5px">
-                <option value="XRPUSD">XRP/USD</option>
-                <option value="XXBTZUSD">BTC/USD</option>
-                <option value="XETHZUSD">ETH/USD</option>
-                <option value="SOLUSD">SOL/USD</option>
-                <option value="ADAUSD">ADA/USD</option>
-                <option value="DOTUSD">DOT/USD</option>
-              </select>
-            </div>
-            <div style="display:flex;align-items:center;gap:6px">
-              <span style="font-family:Share Tech Mono,monospace;font-size:9px;color:var(--t2);width:80px">INTERVAL</span>
-              <select id="bt_interval" style="flex:1;background:var(--bg2);border:1px solid var(--border);color:var(--t1);font-family:Share Tech Mono,monospace;font-size:10px;padding:3px 5px">
-                <option value="15">15m</option>
-                <option value="60" selected>1H</option>
-                <option value="240">4H</option>
-                <option value="1440">1D</option>
-              </select>
-            </div>
-            <div style="display:flex;align-items:center;gap:6px">
-              <span style="font-family:Share Tech Mono,monospace;font-size:9px;color:var(--t2);width:80px">DAYS BACK</span>
-              <input id="bt_days" type="number" value="90" min="14" max="730" style="flex:1;background:var(--bg2);border:1px solid var(--border);color:var(--t1);font-family:Share Tech Mono,monospace;font-size:10px;padding:3px 5px">
-            </div>
-            <div style="display:flex;align-items:center;gap:6px">
-              <span style="font-family:Share Tech Mono,monospace;font-size:9px;color:var(--t2);width:80px">SLIPPAGE BPS</span>
-              <input id="bt_slip" type="number" value="5" min="0" max="50" style="flex:1;background:var(--bg2);border:1px solid var(--border);color:var(--t1);font-family:Share Tech Mono,monospace;font-size:10px;padding:3px 5px">
-            </div>
-            <div style="display:flex;align-items:center;gap:6px">
-              <span style="font-family:Share Tech Mono,monospace;font-size:9px;color:var(--t2);width:80px">FEE %</span>
-              <input id="bt_fee" type="number" value="0.16" min="0" max="1" step="0.01" style="flex:1;background:var(--bg2);border:1px solid var(--border);color:var(--t1);font-family:Share Tech Mono,monospace;font-size:10px;padding:3px 5px">
-            </div>
-            <div style="display:flex;align-items:center;gap:6px">
-              <span style="font-family:Share Tech Mono,monospace;font-size:9px;color:var(--t2);width:80px">START CASH</span>
-              <input id="bt_cash" type="number" value="10000" min="100" style="flex:1;background:var(--bg2);border:1px solid var(--border);color:var(--t1);font-family:Share Tech Mono,monospace;font-size:10px;padding:3px 5px">
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
-              <label style="font-family:Share Tech Mono,monospace;font-size:9px;color:var(--t2);display:flex;align-items:center;gap:5px;cursor:pointer">
-                <input type="checkbox" id="bt_wf"> WALK-FORWARD (70/30)
-              </label>
-            </div>
-          </div>
-        </div>
-        <!-- Strategy Params -->
-        <div class="card" style="border-color:rgba(0,212,255,0.2)">
-          <div class="clbl" style="color:var(--cyan);margin-bottom:8px">STRATEGY PARAMS</div>
-          <div style="display:flex;flex-direction:column;gap:5px;font-family:Share Tech Mono,monospace;font-size:9px">
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="color:var(--t2)">RSI OVERSOLD</span><input id="bt_rsiOS" type="number" value="30" min="10" max="50" style="width:55px;background:var(--bg3);border:1px solid var(--border);color:var(--cyan);text-align:center;padding:2px;font-family:inherit;font-size:9px">
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="color:var(--t2)">RSI OVERBOUGHT</span><input id="bt_rsiOB" type="number" value="70" min="50" max="90" style="width:55px;background:var(--bg3);border:1px solid var(--border);color:var(--cyan);text-align:center;padding:2px;font-family:inherit;font-size:9px">
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="color:var(--t2)">BB PERIOD</span><input id="bt_bbP" type="number" value="20" min="10" max="50" style="width:55px;background:var(--bg3);border:1px solid var(--border);color:var(--cyan);text-align:center;padding:2px;font-family:inherit;font-size:9px">
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="color:var(--t2)">BB STD DEV</span><input id="bt_bbS" type="number" value="2.0" min="1" max="3" step="0.1" style="width:55px;background:var(--bg3);border:1px solid var(--border);color:var(--cyan);text-align:center;padding:2px;font-family:inherit;font-size:9px">
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="color:var(--t2)">CONFLUENCE MIN</span><input id="bt_conf" type="number" value="60" min="30" max="90" style="width:55px;background:var(--bg3);border:1px solid var(--border);color:var(--cyan);text-align:center;padding:2px;font-family:inherit;font-size:9px">
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="color:var(--t2)">ATR STOP ×</span><input id="bt_atrSL" type="number" value="1.5" min="0.5" max="4" step="0.1" style="width:55px;background:var(--bg3);border:1px solid var(--border);color:var(--red);text-align:center;padding:2px;font-family:inherit;font-size:9px">
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="color:var(--t2)">RISK PER TRADE %</span><input id="bt_risk" type="number" value="10" min="1" max="25" style="width:55px;background:var(--bg3);border:1px solid var(--border);color:var(--amber);text-align:center;padding:2px;font-family:inherit;font-size:9px">
-            </div>
-          </div>
-        </div>
-        <!-- Run Buttons -->
-        <button onclick="_runBacktest()" style="background:rgba(0,212,255,0.15);border:1px solid var(--cyan);color:var(--cyan);font-family:Share Tech Mono,monospace;font-size:11px;letter-spacing:2px;padding:10px;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='rgba(0,212,255,0.3)'" onmouseout="this.style.background='rgba(0,212,255,0.15)'">&#x25BA; RUN BACKTEST</button>
-        <button onclick="_runOptimizer()" id="bt_optBtn" style="background:rgba(255,170,0,0.1);border:1px solid var(--amber);color:var(--amber);font-family:Share Tech Mono,monospace;font-size:10px;letter-spacing:2px;padding:8px;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='rgba(255,170,0,0.25)'" onmouseout="this.style.background='rgba(255,170,0,0.1)'">&#x26A1; GRID OPTIMIZER (ELITE)</button>
-        <div id="bt_status" style="font-family:Share Tech Mono,monospace;font-size:9px;color:var(--t3);text-align:center;min-height:16px"></div>
-      </div>
-      <!-- Results Panel -->
-      <div style="display:flex;flex-direction:column;gap:8px;overflow-y:auto;min-height:0">
-        <!-- Metrics Grid -->
-        <div id="bt_metrics" style="display:none" class="card" style="border-color:rgba(0,212,255,0.2)">
-          <div class="clbl" style="color:var(--cyan);margin-bottom:8px">PERFORMANCE METRICS</div>
-          <div id="bt_metricsGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px"></div>
-          <div id="bt_wfResult" style="margin-top:8px;display:none">
-            <div class="clbl" style="color:var(--amber);margin-bottom:6px;font-size:8px">WALK-FORWARD RESULT</div>
-            <div id="bt_wfGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:6px"></div>
-          </div>
-        </div>
-        <!-- Equity Curve -->
-        <div id="bt_chartWrap" style="display:none" class="card" style="padding:6px">
-          <div class="clbl" style="color:var(--cyan);margin-bottom:4px;font-size:8px">EQUITY CURVE</div>
-          <div id="bt_chart" style="height:200px;width:100%"></div>
-        </div>
-        <!-- Trade Table -->
-        <div id="bt_tradeWrap" style="display:none" class="card">
-          <div class="clbl" style="color:var(--cyan);margin-bottom:6px;font-size:8px">TRADE LOG <span id="bt_tradeCount" style="color:var(--t3)"></span></div>
-          <div style="overflow-x:auto;max-height:220px;overflow-y:auto">
-            <table style="width:100%;font-family:Share Tech Mono,monospace;font-size:8px;border-collapse:collapse">
-              <thead><tr style="color:var(--t3);border-bottom:1px solid var(--border)"><th style="padding:3px 6px;text-align:left">ENTRY</th><th>EXIT</th><th>SIZE</th><th>PNL</th><th>RSI</th><th>BB%</th><th>HOLD</th><th>REASON</th></tr></thead>
-              <tbody id="bt_tradeBody"></tbody>
-            </table>
-          </div>
-        </div>
-        <!-- Optimizer Results -->
-        <div id="bt_optWrap" style="display:none" class="card" style="border-color:rgba(255,170,0,0.3)">
-          <div class="clbl" style="color:var(--amber);margin-bottom:6px">&#x26A1; OPTIMIZER RESULTS <span id="bt_optSubtitle" style="font-size:8px;color:var(--t3)"></span></div>
-          <div style="overflow-x:auto">
-            <table style="width:100%;font-family:Share Tech Mono,monospace;font-size:8px;border-collapse:collapse">
-              <thead><tr style="color:var(--t3);border-bottom:1px solid var(--border)">
-                <th style="padding:3px 6px;text-align:left">#</th>
-                <th>SHARPE</th><th>WIN%</th><th>MAX DD</th><th>DEGRADE</th>
-                <th>RSI OS</th><th>RSI OB</th><th>ATR SL</th><th>RISK%</th><th>CONF</th>
-                <th>ACTION</th>
-              </tr></thead>
-              <tbody id="bt_optBody"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- STRATEGY TAB -->
-  <div class="pane" id="tab-strategy" style="display:none">
-    <div style="display:grid;grid-template-columns:1fr 340px;gap:10px;height:100%;min-height:0">
-      <!-- Monaco Editor -->
-      <div style="display:flex;flex-direction:column;gap:6px;min-height:0">
-        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-          <div class="clbl" style="color:var(--cyan)">&#x2328; CUSTOM STRATEGY EDITOR</div>
-          <span style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t3)">Runs in isolated sandbox — no network access</span>
-          <div style="margin-left:auto;display:flex;gap:6px">
-            <button onclick="_stratTest()" style="background:rgba(0,212,255,0.1);border:1px solid var(--cyan);color:var(--cyan);font-family:Share Tech Mono,monospace;font-size:9px;padding:4px 10px;cursor:pointer">&#x25BA; TEST ON LAST BACKTEST</button>
-            <button onclick="_stratSave()" style="background:rgba(0,255,136,0.1);border:1px solid var(--green);color:var(--green);font-family:Share Tech Mono,monospace;font-size:9px;padding:4px 10px;cursor:pointer">&#x1F4BE; SAVE</button>
-            <button onclick="_stratLoad()" style="background:rgba(255,170,0,0.08);border:1px solid var(--amber);color:var(--amber);font-family:Share Tech Mono,monospace;font-size:9px;padding:4px 10px;cursor:pointer">&#x1F4C2; LOAD</button>
-          </div>
-        </div>
-        <div id="stratEditor" style="flex:1;min-height:0;border:1px solid rgba(0,212,255,0.2);border-radius:4px;overflow:hidden"></div>
-        <div id="strat_status" style="font-family:Share Tech Mono,monospace;font-size:9px;color:var(--t3);min-height:16px"></div>
-      </div>
-      <!-- Docs + Webhook Panel -->
-      <div style="display:flex;flex-direction:column;gap:8px;overflow-y:auto">
-        <div class="card" style="border-color:rgba(0,212,255,0.2)">
-          <div class="clbl" style="color:var(--cyan);margin-bottom:8px">STRATEGY API</div>
-          <pre style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t2);line-height:1.6;white-space:pre-wrap;margin:0">// Called on every completed candle
-function onCandle(candle, indicators, portfolio) {
-  // candle: { t, o, h, l, c, v }
-  // indicators: {
-  //   rsi, bb:{upper,mid,lower,pct},
-  //   macd:{macd,signal,hist},
-  //   atr, ema9, ema21, vwap,
-  //   stochRsi:{k,d}, confluence
-  // }
-  // portfolio: {
-  //   cash, position, entryPrice,
-  //   equity, trades
-  // }
-  // Return: "buy" | "sell" | null
-
-  if (indicators.rsi &lt; 30 &amp;&amp;
-      indicators.bb.pct &lt; 0.2 &amp;&amp;
-      !portfolio.position) {
-    return "buy";
-  }
-  if (indicators.rsi &gt; 70 &amp;&amp;
-      portfolio.position) {
-    return "sell";
-  }
-  return null;
-}</pre>
-        </div>
-        <!-- Webhook SDK -->
-        <div class="card" style="border-color:rgba(255,170,0,0.3)">
-          <div class="clbl" style="color:var(--amber);margin-bottom:8px">&#x1F517; WEBHOOK SIGNAL SDK</div>
-          <div style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t2);line-height:1.7;margin-bottom:8px">External signals (TradingView alerts, Python scripts, Pine Script) → NEXUS bot via HTTP POST.</div>
-          <div style="margin-bottom:8px">
-            <div style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t3);margin-bottom:4px">YOUR WEBHOOK TOKEN</div>
-            <div style="display:flex;gap:5px">
-              <input id="wh_token" readonly style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--amber);font-family:Share Tech Mono,monospace;font-size:8px;padding:4px 6px" placeholder="click Generate to create token">
-              <button onclick="_genWebhookToken()" style="background:rgba(255,170,0,0.15);border:1px solid var(--amber);color:var(--amber);font-family:Share Tech Mono,monospace;font-size:8px;padding:4px 8px;cursor:pointer">GENERATE</button>
-              <button onclick="navigator.clipboard.writeText(document.getElementById('wh_token').value)" style="background:rgba(0,212,255,0.1);border:1px solid var(--cyan);color:var(--cyan);font-family:Share Tech Mono,monospace;font-size:8px;padding:4px 8px;cursor:pointer">COPY</button>
-            </div>
-          </div>
-          <div style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t3);margin-bottom:4px">EXAMPLE REQUEST</div>
-          <pre id="wh_example" style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t2);background:var(--bg3);padding:8px;border-radius:3px;white-space:pre-wrap;margin:0">POST https://your-site.railway.app/signal
-Authorization: Bearer YOUR_TOKEN
-Content-Type: application/json
-
-{
-  "action": "buy",
-  "pair": "XRPUSD",
-  "confidence": 85,
-  "source": "tradingview"
-}</pre>
-          <div style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t3);margin-top:8px">PINE SCRIPT ALERT MSG</div>
-          <pre style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t2);background:var(--bg3);padding:8px;border-radius:3px;white-space:pre-wrap;margin:4px 0 0">{"action":"buy","pair":"XRPUSD","source":"pine"}</pre>
-        </div>
-        <!-- Strategy Test Results -->
-        <div id="strat_results" class="card" style="display:none;border-color:rgba(0,255,136,0.2)">
-          <div class="clbl" style="color:var(--green);margin-bottom:6px">TEST RESULTS</div>
-          <div id="strat_metricsGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:5px"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -822,6 +612,217 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
       <div class="ind"><div class="indL">VERDICT</div><div class="indV ca" id="c_Verd">--</div><div class="indS ca" id="c_Verds">--</div></div>
     </div>
   </div>
+  <!-- BACKTEST TAB -->
+  <div class="pane" id="tab-backtest">
+    <div style="display:grid;grid-template-columns:280px 1fr;gap:10px;height:100%;min-height:0">
+      <!-- Config Panel -->
+      <div style="display:flex;flex-direction:column;gap:8px;overflow-y:auto;padding-right:4px">
+        <div class="card" style="border-color:rgba(0,212,255,0.3)">
+          <div class="clbl" style="color:var(--cyan);margin-bottom:8px">&#x1F4CA; BACKTESTER CONFIG</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="font-family:Share Tech Mono,monospace;font-size:9px;color:var(--t2);width:80px">PAIR</span>
+              <select id="bt_pair" style="flex:1;background:var(--bg2);border:1px solid var(--border);color:var(--t1);font-family:Share Tech Mono,monospace;font-size:10px;padding:3px 5px">
+                <option value="XRPUSD">XRP/USD</option>
+                <option value="XXBTZUSD">BTC/USD</option>
+                <option value="XETHZUSD">ETH/USD</option>
+                <option value="SOLUSD">SOL/USD</option>
+                <option value="ADAUSD">ADA/USD</option>
+                <option value="DOTUSD">DOT/USD</option>
+              </select>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="font-family:Share Tech Mono,monospace;font-size:9px;color:var(--t2);width:80px">INTERVAL</span>
+              <select id="bt_interval" style="flex:1;background:var(--bg2);border:1px solid var(--border);color:var(--t1);font-family:Share Tech Mono,monospace;font-size:10px;padding:3px 5px">
+                <option value="15">15m</option>
+                <option value="60" selected>1H</option>
+                <option value="240">4H</option>
+                <option value="1440">1D</option>
+              </select>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="font-family:Share Tech Mono,monospace;font-size:9px;color:var(--t2);width:80px">DAYS BACK</span>
+              <input id="bt_days" type="number" value="90" min="14" max="730" style="flex:1;background:var(--bg2);border:1px solid var(--border);color:var(--t1);font-family:Share Tech Mono,monospace;font-size:10px;padding:3px 5px">
+            </div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="font-family:Share Tech Mono,monospace;font-size:9px;color:var(--t2);width:80px">SLIPPAGE BPS</span>
+              <input id="bt_slip" type="number" value="5" min="0" max="50" style="flex:1;background:var(--bg2);border:1px solid var(--border);color:var(--t1);font-family:Share Tech Mono,monospace;font-size:10px;padding:3px 5px">
+            </div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="font-family:Share Tech Mono,monospace;font-size:9px;color:var(--t2);width:80px">FEE %</span>
+              <input id="bt_fee" type="number" value="0.16" min="0" max="1" step="0.01" style="flex:1;background:var(--bg2);border:1px solid var(--border);color:var(--t1);font-family:Share Tech Mono,monospace;font-size:10px;padding:3px 5px">
+            </div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="font-family:Share Tech Mono,monospace;font-size:9px;color:var(--t2);width:80px">START CASH</span>
+              <input id="bt_cash" type="number" value="10000" min="100" style="flex:1;background:var(--bg2);border:1px solid var(--border);color:var(--t1);font-family:Share Tech Mono,monospace;font-size:10px;padding:3px 5px">
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+              <label style="font-family:Share Tech Mono,monospace;font-size:9px;color:var(--t2);display:flex;align-items:center;gap:5px;cursor:pointer">
+                <input type="checkbox" id="bt_wf"> WALK-FORWARD (70/30)
+              </label>
+            </div>
+          </div>
+        </div>
+        <!-- Strategy Params -->
+        <div class="card" style="border-color:rgba(0,212,255,0.2)">
+          <div class="clbl" style="color:var(--cyan);margin-bottom:8px">STRATEGY PARAMS</div>
+          <div style="display:flex;flex-direction:column;gap:5px;font-family:Share Tech Mono,monospace;font-size:9px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="color:var(--t2)">RSI OVERSOLD</span><input id="bt_rsiOS" type="number" value="30" min="10" max="50" style="width:55px;background:var(--bg3);border:1px solid var(--border);color:var(--cyan);text-align:center;padding:2px;font-family:inherit;font-size:9px">
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="color:var(--t2)">RSI OVERBOUGHT</span><input id="bt_rsiOB" type="number" value="70" min="50" max="90" style="width:55px;background:var(--bg3);border:1px solid var(--border);color:var(--cyan);text-align:center;padding:2px;font-family:inherit;font-size:9px">
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="color:var(--t2)">BB PERIOD</span><input id="bt_bbP" type="number" value="20" min="10" max="50" style="width:55px;background:var(--bg3);border:1px solid var(--border);color:var(--cyan);text-align:center;padding:2px;font-family:inherit;font-size:9px">
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="color:var(--t2)">BB STD DEV</span><input id="bt_bbS" type="number" value="2.0" min="1" max="3" step="0.1" style="width:55px;background:var(--bg3);border:1px solid var(--border);color:var(--cyan);text-align:center;padding:2px;font-family:inherit;font-size:9px">
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="color:var(--t2)">CONFLUENCE MIN</span><input id="bt_conf" type="number" value="60" min="30" max="90" style="width:55px;background:var(--bg3);border:1px solid var(--border);color:var(--cyan);text-align:center;padding:2px;font-family:inherit;font-size:9px">
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="color:var(--t2)">ATR STOP ×</span><input id="bt_atrSL" type="number" value="1.5" min="0.5" max="4" step="0.1" style="width:55px;background:var(--bg3);border:1px solid var(--border);color:var(--red);text-align:center;padding:2px;font-family:inherit;font-size:9px">
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="color:var(--t2)">RISK PER TRADE %</span><input id="bt_risk" type="number" value="10" min="1" max="25" style="width:55px;background:var(--bg3);border:1px solid var(--border);color:var(--amber);text-align:center;padding:2px;font-family:inherit;font-size:9px">
+            </div>
+          </div>
+        </div>
+        <!-- Run Buttons -->
+        <button onclick="_runBacktest()" style="background:rgba(0,212,255,0.15);border:1px solid var(--cyan);color:var(--cyan);font-family:Share Tech Mono,monospace;font-size:11px;letter-spacing:2px;padding:10px;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='rgba(0,212,255,0.3)'" onmouseout="this.style.background='rgba(0,212,255,0.15)'">&#x25BA; RUN BACKTEST</button>
+        <button onclick="_runOptimizer()" id="bt_optBtn" style="background:rgba(255,170,0,0.1);border:1px solid var(--amber);color:var(--amber);font-family:Share Tech Mono,monospace;font-size:10px;letter-spacing:2px;padding:8px;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='rgba(255,170,0,0.25)'" onmouseout="this.style.background='rgba(255,170,0,0.1)'">&#x26A1; GRID OPTIMIZER (ELITE)</button>
+        <div id="bt_status" style="font-family:Share Tech Mono,monospace;font-size:9px;color:var(--t3);text-align:center;min-height:16px"></div>
+      </div>
+      <!-- Results Panel -->
+      <div style="display:flex;flex-direction:column;gap:8px;overflow-y:auto;min-height:0">
+        <!-- Metrics Grid -->
+        <div id="bt_metrics" style="display:none" class="card" style="border-color:rgba(0,212,255,0.2)">
+          <div class="clbl" style="color:var(--cyan);margin-bottom:8px">PERFORMANCE METRICS</div>
+          <div id="bt_metricsGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px"></div>
+          <div id="bt_wfResult" style="margin-top:8px;display:none">
+            <div class="clbl" style="color:var(--amber);margin-bottom:6px;font-size:8px">WALK-FORWARD RESULT</div>
+            <div id="bt_wfGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:6px"></div>
+          </div>
+        </div>
+        <!-- Equity Curve -->
+        <div id="bt_chartWrap" style="display:none" class="card" style="padding:6px">
+          <div class="clbl" style="color:var(--cyan);margin-bottom:4px;font-size:8px">EQUITY CURVE</div>
+          <div id="bt_chart" style="height:200px;width:100%"></div>
+        </div>
+        <!-- Trade Table -->
+        <div id="bt_tradeWrap" style="display:none" class="card">
+          <div class="clbl" style="color:var(--cyan);margin-bottom:6px;font-size:8px">TRADE LOG <span id="bt_tradeCount" style="color:var(--t3)"></span></div>
+          <div style="overflow-x:auto;max-height:220px;overflow-y:auto">
+            <table style="width:100%;font-family:Share Tech Mono,monospace;font-size:8px;border-collapse:collapse">
+              <thead><tr style="color:var(--t3);border-bottom:1px solid var(--border)"><th style="padding:3px 6px;text-align:left">ENTRY</th><th>EXIT</th><th>SIZE</th><th>PNL</th><th>RSI</th><th>BB%</th><th>HOLD</th><th>REASON</th></tr></thead>
+              <tbody id="bt_tradeBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <!-- Optimizer Results -->
+        <div id="bt_optWrap" style="display:none" class="card" style="border-color:rgba(255,170,0,0.3)">
+          <div class="clbl" style="color:var(--amber);margin-bottom:6px">&#x26A1; OPTIMIZER RESULTS <span id="bt_optSubtitle" style="font-size:8px;color:var(--t3)"></span></div>
+          <div style="overflow-x:auto">
+            <table style="width:100%;font-family:Share Tech Mono,monospace;font-size:8px;border-collapse:collapse">
+              <thead><tr style="color:var(--t3);border-bottom:1px solid var(--border)">
+                <th style="padding:3px 6px;text-align:left">#</th>
+                <th>SHARPE</th><th>WIN%</th><th>MAX DD</th><th>DEGRADE</th>
+                <th>RSI OS</th><th>RSI OB</th><th>ATR SL</th><th>RISK%</th><th>CONF</th>
+                <th>ACTION</th>
+              </tr></thead>
+              <tbody id="bt_optBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STRATEGY TAB -->
+  <div class="pane" id="tab-strategy">
+    <div style="display:grid;grid-template-columns:1fr 340px;gap:10px;height:100%;min-height:0">
+      <!-- Monaco Editor -->
+      <div style="display:flex;flex-direction:column;gap:6px;min-height:0">
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+          <div class="clbl" style="color:var(--cyan)">&#x2328; CUSTOM STRATEGY EDITOR</div>
+          <span style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t3)">Runs in isolated sandbox — no network access</span>
+          <div style="margin-left:auto;display:flex;gap:6px">
+            <button onclick="_stratTest()" style="background:rgba(0,212,255,0.1);border:1px solid var(--cyan);color:var(--cyan);font-family:Share Tech Mono,monospace;font-size:9px;padding:4px 10px;cursor:pointer">&#x25BA; TEST ON LAST BACKTEST</button>
+            <button onclick="_stratSave()" style="background:rgba(0,255,136,0.1);border:1px solid var(--green);color:var(--green);font-family:Share Tech Mono,monospace;font-size:9px;padding:4px 10px;cursor:pointer">&#x1F4BE; SAVE</button>
+            <button onclick="_stratLoad()" style="background:rgba(255,170,0,0.08);border:1px solid var(--amber);color:var(--amber);font-family:Share Tech Mono,monospace;font-size:9px;padding:4px 10px;cursor:pointer">&#x1F4C2; LOAD</button>
+          </div>
+        </div>
+        <div id="stratEditor" style="flex:1;min-height:0;border:1px solid rgba(0,212,255,0.2);border-radius:4px;overflow:hidden"></div>
+        <div id="strat_status" style="font-family:Share Tech Mono,monospace;font-size:9px;color:var(--t3);min-height:16px"></div>
+      </div>
+      <!-- Docs + Webhook Panel -->
+      <div style="display:flex;flex-direction:column;gap:8px;overflow-y:auto">
+        <div class="card" style="border-color:rgba(0,212,255,0.2)">
+          <div class="clbl" style="color:var(--cyan);margin-bottom:8px">STRATEGY API</div>
+          <pre style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t2);line-height:1.6;white-space:pre-wrap;margin:0">// Called on every completed candle
+function onCandle(candle, indicators, portfolio) {
+  // candle: { t, o, h, l, c, v }
+  // indicators: {
+  //   rsi, bb:{upper,mid,lower,pct},
+  //   macd:{macd,signal,hist},
+  //   atr, ema9, ema21, vwap,
+  //   stochRsi:{k,d}, confluence
+  // }
+  // portfolio: {
+  //   cash, position, entryPrice,
+  //   equity, trades
+  // }
+  // Return: "buy" | "sell" | null
+
+  if (indicators.rsi &lt; 30 &amp;&amp;
+      indicators.bb.pct &lt; 0.2 &amp;&amp;
+      !portfolio.position) {
+    return "buy";
+  }
+  if (indicators.rsi &gt; 70 &amp;&amp;
+      portfolio.position) {
+    return "sell";
+  }
+  return null;
+}</pre>
+        </div>
+        <!-- Webhook SDK -->
+        <div class="card" style="border-color:rgba(255,170,0,0.3)">
+          <div class="clbl" style="color:var(--amber);margin-bottom:8px">&#x1F517; WEBHOOK SIGNAL SDK</div>
+          <div style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t2);line-height:1.7;margin-bottom:8px">External signals (TradingView alerts, Python scripts, Pine Script) → NEXUS bot via HTTP POST.</div>
+          <div style="margin-bottom:8px">
+            <div style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t3);margin-bottom:4px">YOUR WEBHOOK TOKEN</div>
+            <div style="display:flex;gap:5px">
+              <input id="wh_token" readonly style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--amber);font-family:Share Tech Mono,monospace;font-size:8px;padding:4px 6px" placeholder="click Generate to create token">
+              <button onclick="_genWebhookToken()" style="background:rgba(255,170,0,0.15);border:1px solid var(--amber);color:var(--amber);font-family:Share Tech Mono,monospace;font-size:8px;padding:4px 8px;cursor:pointer">GENERATE</button>
+              <button onclick="navigator.clipboard.writeText(document.getElementById('wh_token').value)" style="background:rgba(0,212,255,0.1);border:1px solid var(--cyan);color:var(--cyan);font-family:Share Tech Mono,monospace;font-size:8px;padding:4px 8px;cursor:pointer">COPY</button>
+            </div>
+          </div>
+          <div style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t3);margin-bottom:4px">EXAMPLE REQUEST</div>
+          <pre id="wh_example" style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t2);background:var(--bg3);padding:8px;border-radius:3px;white-space:pre-wrap;margin:0">POST https://your-site.railway.app/signal
+Authorization: Bearer YOUR_TOKEN
+Content-Type: application/json
+
+{
+  "action": "buy",
+  "pair": "XRPUSD",
+  "confidence": 85,
+  "source": "tradingview"
+}</pre>
+          <div style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t3);margin-top:8px">PINE SCRIPT ALERT MSG</div>
+          <pre style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t2);background:var(--bg3);padding:8px;border-radius:3px;white-space:pre-wrap;margin:4px 0 0">{"action":"buy","pair":"XRPUSD","source":"pine"}</pre>
+        </div>
+        <!-- Strategy Test Results -->
+        <div id="strat_results" class="card" style="display:none;border-color:rgba(0,255,136,0.2)">
+          <div class="clbl" style="color:var(--green);margin-bottom:6px">TEST RESULTS</div>
+          <div id="strat_metricsGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:5px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
     <!-- AI BRAIN -->
   <div class="pane" id="tab-ai">
     <div class="card" style="border-color:rgba(255,68,170,0.3);background:rgba(255,68,170,0.02)">
