@@ -680,15 +680,32 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
                 <option value="SOLUSD">SOL/USD</option>
                 <option value="ADAUSD">ADA/USD</option>
                 <option value="DOTUSD">DOT/USD</option>
+                <option value="LINKUSD">LINK/USD</option>
+                <option value="AVAXUSD">AVAX/USD</option>
+                <option value="MATICUSD">MATIC/USD</option>
+                <option value="UNIUSD">UNI/USD</option>
+                <option value="ATOMUSD">ATOM/USD</option>
+                <option value="LTCUSD">LTC/USD</option>
               </select>
             </div>
             <div style="display:flex;align-items:center;gap:6px">
               <span style="font-family:Share Tech Mono,monospace;font-size:9px;color:var(--t2);width:80px">INTERVAL</span>
               <select id="bt_interval" style="flex:1;background:var(--bg2);border:1px solid var(--border);color:var(--t1);font-family:Share Tech Mono,monospace;font-size:10px;padding:3px 5px">
+                <option value="1">1m</option>
+                <option value="3">3m</option>
+                <option value="5">5m</option>
                 <option value="15">15m</option>
+                <option value="30">30m</option>
                 <option value="60" selected>1H</option>
+                <option value="120">2H</option>
                 <option value="240">4H</option>
+                <option value="360">6H</option>
+                <option value="480">8H</option>
+                <option value="720">12H</option>
                 <option value="1440">1D</option>
+                <option value="4320">3D</option>
+                <option value="10080">1W</option>
+                <option value="43200">1M</option>
               </select>
             </div>
             <div style="display:flex;align-items:center;gap:6px">
@@ -3298,6 +3315,15 @@ function initTVChart() {
   _tvSeries.keltM   = LS(MC, 'rgba(255,170,0,0.25)',1, 3);
   // Parabolic SAR (rendered as scatter dots via histogram)
   _tvSeries.psar    = MC.addLineSeries({ color:'rgba(255,255,255,0.6)', lineWidth:0, lastValueVisible:false, priceLineVisible:false, crosshairMarkerVisible:true });
+  // Ichimoku Cloud
+  _tvSeries.ichTenkan  = LS(MC, 'rgba(0,212,255,0.7)',  1, 0, '');
+  _tvSeries.ichKijun   = LS(MC, 'rgba(255,51,85,0.7)',   1, 0, '');
+  _tvSeries.ichSpanA   = LS(MC, 'rgba(0,255,136,0.4)',   1, 0, '');
+  _tvSeries.ichSpanB   = LS(MC, 'rgba(255,51,85,0.4)',   1, 0, '');
+  _tvSeries.ichChikou  = LS(MC, 'rgba(139,92,246,0.6)',  1, 1, '');
+  // Supertrend — two lines (bull / bear)
+  _tvSeries.stBull  = LS(MC, 'rgba(0,255,136,0.85)', 2, 0, '');
+  _tvSeries.stBear  = LS(MC, 'rgba(255,51,85,0.85)',  2, 0, '');
 
   // ── Volume pane ────────────────────────────────────────────────
   _tvSeries.vol = VC.addHistogramSeries({ priceFormat:{type:'volume'}, priceScaleId:'right' });
@@ -3405,6 +3431,66 @@ function _updateTVCharts(cdata) {
   // ── Parabolic SAR ─────────────────────────────────────────────
   var psarD=_calcPSAR(cdata);
   _tvSeries.psar.setData(psarD.map(function(p){return{time:p.t,value:p.v};}));
+
+  // ── Ichimoku Cloud ────────────────────────────────────────────
+  if(_tvInds.ich){
+    var _ichHL=function(data,p){var h=Math.max.apply(null,data.map(function(c){return c.h||c.high;}));var l=Math.min.apply(null,data.map(function(c){return c.l||c.low;}));return(h+l)/2;};
+    var ichTen=[],ichKij=[],ichSpA=[],ichSpB=[],ichChi=[];
+    for(var ii=51;ii<n;ii++){
+      var t=cdata[ii].t;
+      var ten=_ichHL(cdata.slice(ii-8,ii+1),9);
+      var kij=_ichHL(cdata.slice(ii-25,ii+1),26);
+      ichTen.push({time:t,value:ten});
+      ichKij.push({time:t,value:kij});
+      // Senkou Span A/B: projected 26 bars forward — if we have room show at current bar
+      var spA=(ten+kij)/2;
+      var spB=_ichHL(cdata.slice(ii-51,ii+1),52);
+      ichSpA.push({time:t,value:spA});
+      ichSpB.push({time:t,value:spB});
+      // Chikou: close plotted 26 bars back
+      if(ii>=26)ichChi.push({time:cdata[ii-26].t,value:cl[ii]});
+    }
+    _tvSeries.ichTenkan.setData(ichTen);
+    _tvSeries.ichKijun.setData(ichKij);
+    _tvSeries.ichSpanA.setData(ichSpA);
+    _tvSeries.ichSpanB.setData(ichSpB);
+    _tvSeries.ichChikou.setData(ichChi);
+  } else {
+    ['ichTenkan','ichKijun','ichSpanA','ichSpanB','ichChikou'].forEach(function(k){if(_tvSeries[k])_tvSeries[k].setData([]);});
+  }
+
+  // ── Supertrend ────────────────────────────────────────────────
+  if(_tvInds.supertrend){
+    var _stPeriod=10, _stMult=3;
+    var stBullPts=[],stBearPts=[];
+    var stDir=1, stPrev=null;
+    for(var si2=_stPeriod;si2<n;si2++){
+      var stSlice=cdata.slice(si2-_stPeriod,si2+1);
+      var stATR=0;
+      for(var sk=1;sk<stSlice.length;sk++){
+        var sh=stSlice[sk].h||stSlice[sk].high, sl2=stSlice[sk].l||stSlice[sk].low, spc=stSlice[sk-1].c||stSlice[sk-1].close;
+        stATR+=Math.max(sh-sl2,Math.abs(sh-spc),Math.abs(sl2-spc));
+      }
+      stATR/=_stPeriod;
+      var stHL=(( (cdata[si2].h||cdata[si2].high)+(cdata[si2].l||cdata[si2].low))/2);
+      var stUp=stHL+_stMult*stATR, stDn=stHL-_stMult*stATR;
+      var sc2=cdata[si2].c||cdata[si2].close;
+      if(stPrev===null){stDir=sc2>stHL?1:-1;stPrev={up:stUp,dn:stDn,dir:stDir};}
+      else{
+        if(stPrev.dir===1){stDn=Math.max(stDn,stPrev.dn);stDir=sc2>stDn?1:-1;}
+        else{stUp=Math.min(stUp,stPrev.up);stDir=sc2<stUp?-1:1;}
+        stPrev={up:stUp,dn:stDn,dir:stDir};
+      }
+      var stVal=stDir===1?stDn:stUp;
+      if(stDir===1)stBullPts.push({time:cdata[si2].t,value:stVal});
+      else stBearPts.push({time:cdata[si2].t,value:stVal});
+    }
+    _tvSeries.stBull.setData(stBullPts);
+    _tvSeries.stBear.setData(stBearPts);
+  } else {
+    if(_tvSeries.stBull)_tvSeries.stBull.setData([]);
+    if(_tvSeries.stBear)_tvSeries.stBear.setData([]);
+  }
 
   // ── Volume ────────────────────────────────────────────────────
   _tvSeries.vol.setData(cdata.map(function(c){
@@ -3678,6 +3764,8 @@ function _tvApplyVisibility() {
   s.vwap.applyOptions({visible:!!_tvInds.vwap});
   if(s.keltU)  [s.keltU,s.keltM,s.keltL].forEach(function(x){x.applyOptions({visible:!!_tvInds.kelt});});
   if(s.psar)   s.psar.applyOptions({visible:!!_tvInds.psar});
+  if(s.ichTenkan)[s.ichTenkan,s.ichKijun,s.ichSpanA,s.ichSpanB,s.ichChikou].forEach(function(x){if(x)x.applyOptions({visible:!!_tvInds.ich});});
+  if(s.stBull) [s.stBull,s.stBear].forEach(function(x){if(x)x.applyOptions({visible:!!_tvInds.supertrend});});
   s.vol.applyOptions({visible:!!_tvInds.vol});
   var vEl=document.getElementById('tvVolume');
   if(vEl)vEl.style.display=_tvInds.vol?'':'none';
