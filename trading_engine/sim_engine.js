@@ -103,6 +103,9 @@ class SimEngine {
     this.regime     = 'RANGING';
     this.kellyFrac  = 0.05;
 
+    // Active pair — mirrors the user's selected ticker
+    this.pair = 'XRPUSD';
+
     // Intervals
     this._tickInterval = null;
     this._obInterval   = null;
@@ -162,8 +165,21 @@ class SimEngine {
 
   // ─── Data fetching ──────────────────────────────────────────────────────
 
+  setPair(pair) {
+    if (pair === this.pair) return;
+    this.pair   = pair;
+    this._ready = false;
+    this.candles    = [];
+    this.ticker     = null;
+    this.orderBook  = null;
+    this.openTrade  = null; // close any open paper trade on pair switch
+    console.log('[SimEngine] Switched to pair:', pair);
+    // Immediate tick on pair change so data populates quickly
+    this._tick().catch(() => {});
+  }
+
   async _fetchOHLC() {
-    const res = await this._krakenGet('0/public/OHLC?pair=XRPUSD&interval=1');
+    const res = await this._krakenGet(`0/public/OHLC?pair=${this.pair}&interval=1`);
     if (res.error && res.error.length) throw new Error(res.error.join(', '));
     const result = res.result || {};
     const key = Object.keys(result).find(k => k !== 'last');
@@ -175,7 +191,7 @@ class SimEngine {
   }
 
   async _fetchTicker() {
-    const res = await this._krakenGet('0/public/Ticker?pair=XRPUSD');
+    const res = await this._krakenGet(`0/public/Ticker?pair=${this.pair}`);
     if (res.error && res.error.length) throw new Error(res.error.join(', '));
     const key = Object.keys(res.result || {})[0];
     if (!key) throw new Error('No ticker key');
@@ -189,7 +205,7 @@ class SimEngine {
 
   async _fetchOrderBook() {
     try {
-      this.orderBook = await fetchOrderBook(this._krakenGet.bind(this), 'XRPUSD', 20);
+      this.orderBook = await fetchOrderBook(this._krakenGet.bind(this), this.pair, 20);
     } catch (e) {
       // Order book errors are non-fatal — OBI will be null
       console.warn('[SimEngine] Order book fetch failed:', e.message);
@@ -541,6 +557,7 @@ class SimEngine {
 
     return {
       ready:        this._ready,
+      pair:         this.pair,
       totalTrades:  all.length,
       winRate:      all.length > 0 ? wins.length / all.length : 0,
       totalPnlBps:  all.reduce((s, t) => s + t.pnlBps, 0),

@@ -1782,6 +1782,8 @@ function init(){
   fetchAllMacro();
   fetchOHLC();
   fetchNews();
+  // Sync sim engine to whichever pair this user has selected
+  if(_authToken)fetch('/sim/pair',{method:'POST',headers:_authHeaders(),body:JSON.stringify({pair:_activeTicker})}).catch(function(){});
   setInterval(fetchAllMacro,300000);
   setInterval(fetchOHLC,120000);
   setInterval(fetchAllTF,10000); // refresh all TFs every 10s
@@ -4134,9 +4136,10 @@ async function setActiveTicker(pair, label){
   // Refresh the button highlights
   renderTickerList();
 
-  // Save to server
+  // Save to server + sync sim engine pair
   if(_authToken&&!_demoMode){
     fetch('/auth/ticker',{method:'POST',headers:_authHeaders(),body:JSON.stringify({ticker:pair})}).catch(function(){});
+    fetch('/sim/pair',{method:'POST',headers:_authHeaders(),body:JSON.stringify({pair:pair})}).catch(function(){});
   }
 
   // Update TradingView widget to new pair

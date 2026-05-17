@@ -153,6 +153,13 @@ app.get('/sim/orderbook', (_req, res) => {
   res.json({ ready: true, ...ob });
 });
 
+app.post('/sim/pair', requireAuth, (req, res) => {
+  const { pair } = req.body;
+  if (!pair || typeof pair !== 'string') return res.status(400).json({ error: 'pair required' });
+  simEngine.setPair(pair.toUpperCase());
+  res.json({ ok: true, pair: simEngine.pair });
+});
+
 app.post('/sim/apply-params', (req, res) => {
   simEngine.applyParams(req.body);
   res.json({ status: 'ok', params: simEngine.params });
