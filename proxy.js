@@ -172,6 +172,9 @@ app.post('/sim/learn', (_req, res) => {
 // ─── Bot state — Supabase-backed, auth required ────────────────────────────
 
 app.post('/bot/push', requireAuth, async (req, res) => {
+  const settings = await getUserPlan(req.user.id);
+  const plan = isOwner(req.user) ? 'elite' : settings.plan;
+  if (plan === 'free') return res.status(403).json({ error: 'Live bot requires Pro or Elite plan' });
   const state = { ...req.body, user_id: req.user.id, updated_at: new Date().toISOString() };
   await supabase.from('bot_state').upsert(state, { onConflict: 'user_id' });
   res.json({ ok: true });
@@ -193,6 +196,9 @@ app.get('/bot/history', requireAuth, async (req, res) => {
 });
 
 app.post('/bot/trade', requireAuth, async (req, res) => {
+  const settings = await getUserPlan(req.user.id);
+  const plan = isOwner(req.user) ? 'elite' : settings.plan;
+  if (plan === 'free') return res.status(403).json({ error: 'Live bot requires Pro or Elite plan' });
   const trade = { ...req.body, user_id: req.user.id, traded_at: new Date().toISOString() };
   await supabase.from('trade_log').insert(trade);
   res.json({ ok: true });

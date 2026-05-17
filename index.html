@@ -1211,7 +1211,7 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
     </div>
     <div class="divider"></div>
     <div class="slbl">KRAKEN API</div>
-    <div class="card">
+    <div class="card" id="krakenApiCard">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
         <div style="width:10px;height:10px;border-radius:50%;background:var(--t3)" id="apiDot"></div>
         <div style="font-family:Share Tech Mono,monospace;font-size:9px;color:var(--t3)" id="apiLbl">SIMULATION MODE</div>
@@ -1557,16 +1557,28 @@ function _applyPlanGating(){
   var isPro = _isPro();
   var isElite = _isElite();
 
-  // Gate SIM tab for free users
-  if(!isPro){
-    _gateTab('sim','The self-learning simulation engine requires Pro. Watch the bot learn and adapt in real time.','pro');
-  } else {
-    _ungateTab('sim');
+  // Free users: sim is available, but live bot (Settings API section) is locked
+  _ungateTab('sim');
+
+  // Lock the Kraken API card for free users
+  var apiCard = document.getElementById('krakenApiCard');
+  if(apiCard){
+    var existingLock = document.getElementById('krakenApiLock');
+    if(!isPro && !existingLock){
+      var lock = document.createElement('div');
+      lock.id = 'krakenApiLock';
+      lock.style.cssText = 'position:absolute;inset:0;background:rgba(2,6,9,0.88);z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:16px;backdrop-filter:blur(3px)';
+      lock.innerHTML = '<div style="font-size:22px">🔒</div><div style="font-family:Orbitron,monospace;font-size:9px;color:var(--cyan);letter-spacing:3px">PRO FEATURE</div><div style="font-family:Rajdhani,sans-serif;font-size:12px;color:var(--t2);line-height:1.5">Live bot trading requires a Pro or Elite plan. Use the sim engine free forever.</div><button onclick="showUpgradeModal(\'Live Bot Trading\',\'pro\')" style="padding:8px 18px;background:transparent;border:1px solid var(--cyan);color:var(--cyan);font-family:Orbitron,monospace;font-size:8px;font-weight:700;letter-spacing:2px;cursor:pointer">⚡ UPGRADE TO PRO</button>';
+      apiCard.style.position = 'relative';
+      apiCard.appendChild(lock);
+    } else if(isPro && existingLock){
+      existingLock.remove();
+    }
   }
 
   // Gate Elite-only features
   if(!isElite){
-    // Scanner tab will be gated when we build it
+    // Scanner tab gate handled in scanner tab render
   }
 
   // Show plan badge in top bar
@@ -1592,7 +1604,7 @@ function _applyPlanGating(){
       var banner = document.createElement('div');
       banner.id = 'freeBanner';
       banner.style.cssText = 'background:rgba(0,212,255,0.05);border-bottom:1px solid rgba(0,212,255,0.15);padding:6px 14px;display:flex;align-items:center;justify-content:space-between';
-      banner.innerHTML = '<span style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t2);letter-spacing:1px">FREE PLAN — 3 tickers · Basic indicators · Upgrade for AI verdicts, sim engine &amp; more</span><button onclick="showUpgradeModal(\'NEXUS Pro\',\'pro\')" style="background:transparent;border:1px solid var(--cyan);color:var(--cyan);font-family:Share Tech Mono,monospace;font-size:7px;padding:3px 8px;cursor:pointer;letter-spacing:1px;white-space:nowrap">⚡ UPGRADE</button>';
+      banner.innerHTML = '<span style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t2);letter-spacing:1px">FREE PLAN — Sim trading included · Upgrade for live bot, AI verdicts, scanner &amp; more</span><button onclick="showUpgradeModal(\'NEXUS Pro\',\'pro\')" style="background:transparent;border:1px solid var(--cyan);color:var(--cyan);font-family:Share Tech Mono,monospace;font-size:7px;padding:3px 8px;cursor:pointer;letter-spacing:1px;white-space:nowrap">⚡ UPGRADE</button>';
       var tabnav = document.querySelector('.tabnav');
       if(tabnav) tabnav.parentNode.insertBefore(banner, tabnav);
     }
@@ -1731,8 +1743,8 @@ function _restoreAll(){
     if(s.wins!==undefined)wins=+s.wins;
     if(s.bestPnl!==undefined)bestPnl=+s.bestPnl;
 
-    // API keys — decode and auto-connect
-    if(s.apiKey&&s.apiSecret){
+    // API keys — decode and auto-connect (Pro/Elite only)
+    if(s.apiKey&&s.apiSecret&&_isPro()){
       try{
         kKey=atob(s.apiKey);kSecret=atob(s.apiSecret);
         document.getElementById("apiKey").value=kKey;
@@ -3841,6 +3853,7 @@ async function kPub(ep,params){
   try{var qs=new URLSearchParams(params).toString();var r=await fetch("/api"+ep+(qs?"?"+qs:""));return await r.json();}catch(e){return{error:[e.message]};}
 }
 async function saveKeys(){
+  if(!_isPro()){showUpgradeModal('Live Bot Trading','pro');return;}
   var k=document.getElementById("apiKey").value.trim(),s=document.getElementById("apiSecret").value.trim();
   if(!k||!s)return;kKey=k;kSecret=s;live=true;
   document.getElementById("apiDot").style.background="var(--amber)";
