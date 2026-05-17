@@ -194,6 +194,7 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
 .sprow{display:flex;justify-content:space-between;background:var(--bg2);padding:6px 10px;margin-top:2px;font-family:'Share Tech Mono',monospace;font-size:9px}
 </style>
   <script src="https://s3.tradingview.com/tv.js"></script>
+  <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 </head>
 <body>
 <div id="loginScreen">
@@ -296,105 +297,6 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
       </div>
       <div style="display:flex;justify-content:space-between;margin-top:3px;font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3)">
         <span id="posStop">SL: --</span><span id="posTP">TP: --</span>
-      </div>
-    </div>
-    <!-- ══ MANUAL ORDER DESK (Live) ══ -->
-    <div class="card" id="manualDeskLive" style="padding:10px 12px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <div style="font-family:Orbitron,monospace;font-size:8px;color:var(--green);letter-spacing:2px">ORDER DESK · LIVE</div>
-        <div style="font-family:Share Tech Mono,monospace;font-size:7px"><span style="color:var(--t3)">SPOT</span> <span style="color:var(--cyan)" id="mlLiveBal">--</span> &nbsp;<span style="color:var(--t3)">MARGIN</span> <span style="color:var(--purple)" id="mlLiveMarginBal">--</span></div>
-      </div>
-      <!-- Bid / Ask / Spread bar -->
-      <div style="background:rgba(0,0,0,0.25);border-radius:3px;padding:5px 10px;margin-bottom:8px;display:flex;justify-content:space-between;font-family:Share Tech Mono,monospace;font-size:8px">
-        <span><span style="color:var(--t3)">BID</span> <b style="color:var(--red)" id="mlLiveBid">--</b></span>
-        <span><span style="color:var(--t3)">SPREAD</span> <span style="color:var(--amber)" id="mlLiveSpread">--</span></span>
-        <span><span style="color:var(--t3)">ASK</span> <b style="color:var(--green)" id="mlLiveAsk">--</b></span>
-      </div>
-      <!-- Trading Mode -->
-      <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);letter-spacing:1px;margin-bottom:3px">TRADING MODE</div>
-      <div class="trow" style="margin-bottom:8px">
-        <button class="tbtn active" id="mlLiveModSpot" onclick="setMLMode('live','spot',this)" style="flex:1">SPOT</button>
-        <button class="tbtn" id="mlLiveModMgn" onclick="setMLMode('live','margin',this)" style="flex:1">MARGIN / LEV</button>
-      </div>
-      <!-- Buy / Sell -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
-        <button id="mlLiveBuyBtn" onclick="setMLSide('live','buy',this)" class="btn btn-g" style="font-size:11px;padding:9px;letter-spacing:2px;font-weight:700">▲ BUY / LONG</button>
-        <button id="mlLiveSellBtn" onclick="setMLSide('live','sell',this)" class="btn" style="font-size:11px;padding:9px;letter-spacing:2px;font-weight:700;background:none;border-color:var(--border);color:var(--t2)">▼ SELL / SHORT</button>
-      </div>
-      <!-- Order Type (6 types) -->
-      <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);letter-spacing:1px;margin-bottom:3px">ORDER TYPE</div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:8px">
-        <button class="tbtn active" id="mlLiveT-market"      onclick="setMLType('live','market',this)"      style="font-size:7px;padding:5px 2px">MARKET</button>
-        <button class="tbtn"        id="mlLiveT-limit"       onclick="setMLType('live','limit',this)"       style="font-size:7px;padding:5px 2px">LIMIT</button>
-        <button class="tbtn"        id="mlLiveT-stop-loss"   onclick="setMLType('live','stop-loss',this)"   style="font-size:7px;padding:5px 2px">STOP-LOSS</button>
-        <button class="tbtn"        id="mlLiveT-stop-limit"  onclick="setMLType('live','stop-limit',this)"  style="font-size:7px;padding:5px 2px">STOP-LMT</button>
-        <button class="tbtn"        id="mlLiveT-take-profit" onclick="setMLType('live','take-profit',this)" style="font-size:7px;padding:5px 2px">TAKE-PROF</button>
-        <button class="tbtn"        id="mlLiveT-tp-limit"    onclick="setMLType('live','tp-limit',this)"    style="font-size:7px;padding:5px 2px">TP-LIMIT</button>
-      </div>
-      <!-- Trigger price (stop-loss / stop-limit / take-profit / tp-limit) -->
-      <div id="mlLiveRow-trigger" style="display:none;margin-bottom:6px">
-        <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);margin-bottom:2px" id="mlLiveTriggerLbl">TRIGGER PRICE ($)</div>
-        <input type="number" id="mlLiveTriggerPx" class="ti" placeholder="0.0000" step="0.0001" oninput="updateMLQty('live')">
-      </div>
-      <!-- Limit price (limit / stop-limit / tp-limit) -->
-      <div id="mlLiveRow-limit" style="display:none;margin-bottom:6px">
-        <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);margin-bottom:2px">LIMIT PRICE ($)</div>
-        <input type="number" id="mlLiveLimPx" class="ti" placeholder="0.0000" step="0.0001" oninput="updateMLQty('live')">
-      </div>
-      <!-- Leverage (margin mode only) -->
-      <div id="mlLiveLevRow" style="display:none;margin-bottom:8px">
-        <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);letter-spacing:1px;margin-bottom:3px">LEVERAGE</div>
-        <div class="trow">
-          <button class="tbtn active" id="mlLiveLev2" onclick="setMLLev('live',2,this)">2×</button>
-          <button class="tbtn"        id="mlLiveLev3" onclick="setMLLev('live',3,this)">3×</button>
-          <button class="tbtn"        id="mlLiveLev4" onclick="setMLLev('live',4,this)">4×</button>
-          <button class="tbtn"        id="mlLiveLev5" onclick="setMLLev('live',5,this)">5×</button>
-        </div>
-      </div>
-      <!-- Amount -->
-      <div style="margin-bottom:8px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
-          <div style="display:flex;gap:6px;align-items:center">
-            <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);letter-spacing:1px" id="mlLiveAmtLbl">ORDER SIZE (USD)</div>
-            <button onclick="toggleMLUnit('live')" id="mlLiveUnitBtn" style="font-family:Share Tech Mono,monospace;font-size:6px;background:none;border:1px solid var(--border);color:var(--purple);padding:1px 5px;cursor:pointer;border-radius:2px">↔ COIN</button>
-          </div>
-          <div style="display:flex;gap:3px">
-            <button onclick="setMLPct('live',0.25)" style="font-family:Share Tech Mono,monospace;font-size:6px;background:none;border:1px solid var(--border);color:var(--t3);padding:2px 5px;cursor:pointer;border-radius:2px">25%</button>
-            <button onclick="setMLPct('live',0.50)" style="font-family:Share Tech Mono,monospace;font-size:6px;background:none;border:1px solid var(--border);color:var(--t3);padding:2px 5px;cursor:pointer;border-radius:2px">50%</button>
-            <button onclick="setMLPct('live',0.75)" style="font-family:Share Tech Mono,monospace;font-size:6px;background:none;border:1px solid var(--border);color:var(--t3);padding:2px 5px;cursor:pointer;border-radius:2px">75%</button>
-            <button onclick="setMLPct('live',1.00)" style="font-family:Share Tech Mono,monospace;font-size:6px;background:none;border:1px solid var(--amber);color:var(--amber);padding:2px 5px;cursor:pointer;border-radius:2px">MAX</button>
-          </div>
-        </div>
-        <input type="number" id="mlLiveAmt" class="ti" placeholder="50.00" min="0.0001" step="0.0001" oninput="updateMLQty('live')">
-        <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);margin-top:3px;line-height:1.8">
-          <span style="color:var(--t2)" id="mlLiveQtyLine">--</span>
-          <span id="mlLiveNotional" style="display:none"> · notional: <b style="color:var(--cyan)" id="mlLiveNotionalVal">--</b></span>
-          <span> · fee: <span style="color:var(--amber)" id="mlLiveFeeVal">--</span></span>
-          <span id="mlLiveLiqSpan" style="display:none"> · <span style="color:var(--red)">LIQ $<span id="mlLiveLiqVal">--</span></span></span>
-        </div>
-      </div>
-      <!-- Order flags -->
-      <div style="display:flex;gap:14px;margin-bottom:8px;font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t2)">
-        <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="mlLivePostOnly"> POST-ONLY (maker)</label>
-        <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="mlLiveReduceOnly"> REDUCE-ONLY</label>
-      </div>
-      <!-- Submit -->
-      <button id="mlLiveSubmit" onclick="submitManualOrder('live')" class="btn btn-g" style="width:100%;font-size:10px;letter-spacing:2px;padding:11px;font-weight:700">▲ BUY LONG [MARKET]</button>
-      <!-- Open Positions -->
-      <div style="border-top:1px solid var(--border);padding-top:8px;margin-top:10px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
-          <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);letter-spacing:1px">OPEN POSITIONS</div>
-          <button onclick="refreshOpenPositions()" style="font-family:Share Tech Mono,monospace;font-size:6px;background:none;border:1px solid var(--border);color:var(--t3);padding:2px 7px;cursor:pointer;border-radius:2px">⟳ REFRESH</button>
-        </div>
-        <div id="mlLivePositions" style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3)">no open positions</div>
-      </div>
-      <!-- Open Orders -->
-      <div style="border-top:1px solid var(--border);padding-top:8px;margin-top:8px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
-          <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);letter-spacing:1px">OPEN ORDERS</div>
-          <button onclick="refreshOpenOrders()" style="font-family:Share Tech Mono,monospace;font-size:6px;background:none;border:1px solid var(--border);color:var(--t3);padding:2px 7px;cursor:pointer;border-radius:2px">⟳ REFRESH</button>
-        </div>
-        <div id="mlLiveOrders" style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3)">no open orders</div>
       </div>
     </div>
     <!-- Manual price levels panel -->
@@ -549,14 +451,136 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
   </div>
   <!-- CHARTS TAB -->
   <div class="pane" id="tab-chart">
-    <!-- TradingView full widget — same chart as CMC / CoinGecko / Kraken -->
-    <div style="border-radius:4px;overflow:hidden;margin-bottom:8px">
-      <div id="tvWidgetContainer" style="height:520px;width:100%">
-        <div class="tradingview-widget-container" style="height:100%;width:100%">
-          <div id="tradingview_nexus" style="height:100%;width:100%"></div>
-        </div>
+    <!-- ── Timeframe + Indicator toggles ─────────────────────── -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px">
+      <div class="trow" style="flex:1;min-width:180px">
+        <button class="tbtn active" onclick="setCI(1,this)"    style="font-size:7px;padding:4px 5px">1M</button>
+        <button class="tbtn"        onclick="setCI(5,this)"    style="font-size:7px;padding:4px 5px">5M</button>
+        <button class="tbtn"        onclick="setCI(15,this)"   style="font-size:7px;padding:4px 5px">15M</button>
+        <button class="tbtn"        onclick="setCI(60,this)"   style="font-size:7px;padding:4px 5px">1H</button>
+        <button class="tbtn"        onclick="setCI(240,this)"  style="font-size:7px;padding:4px 5px">4H</button>
+        <button class="tbtn"        onclick="setCI(1440,this)" style="font-size:7px;padding:4px 5px">1D</button>
+      </div>
+      <div style="display:flex;gap:3px;flex-wrap:wrap">
+        <button class="tbtn active" onclick="_tvToggle(this,'bb')"   style="font-size:6px;padding:3px 6px">BB</button>
+        <button class="tbtn active" onclick="_tvToggle(this,'ema')"  style="font-size:6px;padding:3px 6px">EMA</button>
+        <button class="tbtn active" onclick="_tvToggle(this,'vwap')" style="font-size:6px;padding:3px 6px">VWAP</button>
+        <button class="tbtn active" onclick="_tvToggle(this,'vol')"  style="font-size:6px;padding:3px 6px">VOL</button>
+        <button class="tbtn active" onclick="_tvToggle(this,'rsi')"  style="font-size:6px;padding:3px 6px">RSI</button>
+        <button class="tbtn active" onclick="_tvToggle(this,'macd')" style="font-size:6px;padding:3px 6px">MACD</button>
       </div>
     </div>
+    <!-- ── Lightweight Charts containers ──────────────────────── -->
+    <div style="background:#0a0a0f;border-radius:4px;overflow:hidden;margin-bottom:4px">
+      <div id="tvMain"   style="height:300px;width:100%"></div>
+      <div id="tvVolume" style="height:60px;width:100%"></div>
+      <div id="tvRSI"    style="height:90px;width:100%"></div>
+      <div id="tvMACD"   style="height:90px;width:100%"></div>
+    </div>
+    <!-- ── Trade marker legend ────────────────────────────────── -->
+    <div style="display:flex;gap:10px;font-family:Share Tech Mono,monospace;font-size:7px;padding:3px 6px;margin-bottom:6px;flex-wrap:wrap;color:var(--t3)">
+      MARKERS:&nbsp;<span style="color:#00ff88">▲ BOT BUY</span>&nbsp;<span style="color:#ff3355">▼ BOT SELL</span>&nbsp;<span style="color:#00d4ff">▲ SIM BUY</span>&nbsp;<span style="color:#8b5cf6">▼ SIM SELL</span>&nbsp;<span style="color:#ffaa00">▲ MANUAL BUY</span>&nbsp;<span style="color:#ff44aa">▼ MANUAL SELL</span>
+    </div>
+    <!-- ══ MANUAL ORDER DESK (Live) ══ -->
+    <div class="card" id="manualDeskLive" style="padding:10px 12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div style="font-family:Orbitron,monospace;font-size:8px;color:var(--green);letter-spacing:2px">ORDER DESK · LIVE</div>
+        <div style="font-family:Share Tech Mono,monospace;font-size:7px"><span style="color:var(--t3)">SPOT</span> <span style="color:var(--cyan)" id="mlLiveBal">--</span> &nbsp;<span style="color:var(--t3)">MARGIN</span> <span style="color:var(--purple)" id="mlLiveMarginBal">--</span></div>
+      </div>
+      <!-- Bid / Ask / Spread bar -->
+      <div style="background:rgba(0,0,0,0.25);border-radius:3px;padding:5px 10px;margin-bottom:8px;display:flex;justify-content:space-between;font-family:Share Tech Mono,monospace;font-size:8px">
+        <span><span style="color:var(--t3)">BID</span> <b style="color:var(--red)" id="mlLiveBid">--</b></span>
+        <span><span style="color:var(--t3)">SPREAD</span> <span style="color:var(--amber)" id="mlLiveSpread">--</span></span>
+        <span><span style="color:var(--t3)">ASK</span> <b style="color:var(--green)" id="mlLiveAsk">--</b></span>
+      </div>
+      <!-- Trading Mode -->
+      <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);letter-spacing:1px;margin-bottom:3px">TRADING MODE</div>
+      <div class="trow" style="margin-bottom:8px">
+        <button class="tbtn active" id="mlLiveModSpot" onclick="setMLMode('live','spot',this)" style="flex:1">SPOT</button>
+        <button class="tbtn" id="mlLiveModMgn" onclick="setMLMode('live','margin',this)" style="flex:1">MARGIN / LEV</button>
+      </div>
+      <!-- Buy / Sell -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+        <button id="mlLiveBuyBtn" onclick="setMLSide('live','buy',this)" class="btn btn-g" style="font-size:11px;padding:9px;letter-spacing:2px;font-weight:700">▲ BUY / LONG</button>
+        <button id="mlLiveSellBtn" onclick="setMLSide('live','sell',this)" class="btn" style="font-size:11px;padding:9px;letter-spacing:2px;font-weight:700;background:none;border-color:var(--border);color:var(--t2)">▼ SELL / SHORT</button>
+      </div>
+      <!-- Order Type (6 types) -->
+      <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);letter-spacing:1px;margin-bottom:3px">ORDER TYPE</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:8px">
+        <button class="tbtn active" id="mlLiveT-market"      onclick="setMLType('live','market',this)"      style="font-size:7px;padding:5px 2px">MARKET</button>
+        <button class="tbtn"        id="mlLiveT-limit"       onclick="setMLType('live','limit',this)"       style="font-size:7px;padding:5px 2px">LIMIT</button>
+        <button class="tbtn"        id="mlLiveT-stop-loss"   onclick="setMLType('live','stop-loss',this)"   style="font-size:7px;padding:5px 2px">STOP-LOSS</button>
+        <button class="tbtn"        id="mlLiveT-stop-limit"  onclick="setMLType('live','stop-limit',this)"  style="font-size:7px;padding:5px 2px">STOP-LMT</button>
+        <button class="tbtn"        id="mlLiveT-take-profit" onclick="setMLType('live','take-profit',this)" style="font-size:7px;padding:5px 2px">TAKE-PROF</button>
+        <button class="tbtn"        id="mlLiveT-tp-limit"    onclick="setMLType('live','tp-limit',this)"    style="font-size:7px;padding:5px 2px">TP-LIMIT</button>
+      </div>
+      <!-- Trigger price (stop-loss / stop-limit / take-profit / tp-limit) -->
+      <div id="mlLiveRow-trigger" style="display:none;margin-bottom:6px">
+        <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);margin-bottom:2px" id="mlLiveTriggerLbl">TRIGGER PRICE ($)</div>
+        <input type="number" id="mlLiveTriggerPx" class="ti" placeholder="0.0000" step="0.0001" oninput="updateMLQty('live')">
+      </div>
+      <!-- Limit price (limit / stop-limit / tp-limit) -->
+      <div id="mlLiveRow-limit" style="display:none;margin-bottom:6px">
+        <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);margin-bottom:2px">LIMIT PRICE ($)</div>
+        <input type="number" id="mlLiveLimPx" class="ti" placeholder="0.0000" step="0.0001" oninput="updateMLQty('live')">
+      </div>
+      <!-- Leverage (margin mode only) -->
+      <div id="mlLiveLevRow" style="display:none;margin-bottom:8px">
+        <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);letter-spacing:1px;margin-bottom:3px">LEVERAGE</div>
+        <div class="trow">
+          <button class="tbtn active" id="mlLiveLev2" onclick="setMLLev('live',2,this)">2×</button>
+          <button class="tbtn"        id="mlLiveLev3" onclick="setMLLev('live',3,this)">3×</button>
+          <button class="tbtn"        id="mlLiveLev4" onclick="setMLLev('live',4,this)">4×</button>
+          <button class="tbtn"        id="mlLiveLev5" onclick="setMLLev('live',5,this)">5×</button>
+        </div>
+      </div>
+      <!-- Amount -->
+      <div style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+          <div style="display:flex;gap:6px;align-items:center">
+            <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);letter-spacing:1px" id="mlLiveAmtLbl">ORDER SIZE (USD)</div>
+            <button onclick="toggleMLUnit('live')" id="mlLiveUnitBtn" style="font-family:Share Tech Mono,monospace;font-size:6px;background:none;border:1px solid var(--border);color:var(--purple);padding:1px 5px;cursor:pointer;border-radius:2px">↔ COIN</button>
+          </div>
+          <div style="display:flex;gap:3px">
+            <button onclick="setMLPct('live',0.25)" style="font-family:Share Tech Mono,monospace;font-size:6px;background:none;border:1px solid var(--border);color:var(--t3);padding:2px 5px;cursor:pointer;border-radius:2px">25%</button>
+            <button onclick="setMLPct('live',0.50)" style="font-family:Share Tech Mono,monospace;font-size:6px;background:none;border:1px solid var(--border);color:var(--t3);padding:2px 5px;cursor:pointer;border-radius:2px">50%</button>
+            <button onclick="setMLPct('live',0.75)" style="font-family:Share Tech Mono,monospace;font-size:6px;background:none;border:1px solid var(--border);color:var(--t3);padding:2px 5px;cursor:pointer;border-radius:2px">75%</button>
+            <button onclick="setMLPct('live',1.00)" style="font-family:Share Tech Mono,monospace;font-size:6px;background:none;border:1px solid var(--amber);color:var(--amber);padding:2px 5px;cursor:pointer;border-radius:2px">MAX</button>
+          </div>
+        </div>
+        <input type="number" id="mlLiveAmt" class="ti" placeholder="50.00" min="0.0001" step="0.0001" oninput="updateMLQty('live')">
+        <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);margin-top:3px;line-height:1.8">
+          <span style="color:var(--t2)" id="mlLiveQtyLine">--</span>
+          <span id="mlLiveNotional" style="display:none"> · notional: <b style="color:var(--cyan)" id="mlLiveNotionalVal">--</b></span>
+          <span> · fee: <span style="color:var(--amber)" id="mlLiveFeeVal">--</span></span>
+          <span id="mlLiveLiqSpan" style="display:none"> · <span style="color:var(--red)">LIQ $<span id="mlLiveLiqVal">--</span></span></span>
+        </div>
+      </div>
+      <!-- Order flags -->
+      <div style="display:flex;gap:14px;margin-bottom:8px;font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t2)">
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="mlLivePostOnly"> POST-ONLY (maker)</label>
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="mlLiveReduceOnly"> REDUCE-ONLY</label>
+      </div>
+      <!-- Submit -->
+      <button id="mlLiveSubmit" onclick="submitManualOrder('live')" class="btn btn-g" style="width:100%;font-size:10px;letter-spacing:2px;padding:11px;font-weight:700">▲ BUY LONG [MARKET]</button>
+      <!-- Open Positions -->
+      <div style="border-top:1px solid var(--border);padding-top:8px;margin-top:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+          <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);letter-spacing:1px">OPEN POSITIONS</div>
+          <button onclick="refreshOpenPositions()" style="font-family:Share Tech Mono,monospace;font-size:6px;background:none;border:1px solid var(--border);color:var(--t3);padding:2px 7px;cursor:pointer;border-radius:2px">⟳ REFRESH</button>
+        </div>
+        <div id="mlLivePositions" style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3)">no open positions</div>
+      </div>
+      <!-- Open Orders -->
+      <div style="border-top:1px solid var(--border);padding-top:8px;margin-top:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+          <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);letter-spacing:1px">OPEN ORDERS</div>
+          <button onclick="refreshOpenOrders()" style="font-family:Share Tech Mono,monospace;font-size:6px;background:none;border:1px solid var(--border);color:var(--t3);padding:2px 7px;cursor:pointer;border-radius:2px">⟳ REFRESH</button>
+        </div>
+        <div id="mlLiveOrders" style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3)">no open orders</div>
+      </div>
+    </div>
+    <!-- ── Multi-Timeframe Trend Alignment ────────────────────── -->
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
         <div class="clbl" style="margin:0">MULTI-TIMEFRAME TREND ALIGNMENT</div>
@@ -586,7 +610,7 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
       <div class="ind"><div class="indL">VERDICT</div><div class="indV ca" id="c_Verd">--</div><div class="indS ca" id="c_Verds">--</div></div>
     </div>
   </div>
-  <!-- AI BRAIN -->
+    <!-- AI BRAIN -->
   <div class="pane" id="tab-ai">
     <div class="card" style="border-color:rgba(255,68,170,0.3);background:rgba(255,68,170,0.02)">
       <div class="clbl" style="color:var(--pink);margin-bottom:7px">&#x1F9E0; CLAUDE AI &#x2014; FULL INTELLIGENCE ANALYSIS</div>
@@ -2559,7 +2583,7 @@ function initCharts(){
   window.addEventListener("resize",function(){setTimeout(resize,100);});
   setTimeout(resize,400);
 }
-function drawAllCharts(){if(candles.length<2)return;drawPriceChart("dashChart",80);}
+function drawAllCharts(){if(candles.length<2)return;drawPriceChart("dashChart",80);_updateTVCharts(candles);}
 
 function drawPriceChart(id,hpx){
   var cv=document.getElementById(id);if(!cv)return;
@@ -2691,6 +2715,20 @@ function _initTVWidget(pair) {
 var _tvCharts  = null;
 var _tvSeries  = {};
 var _tvInds    = { bb:true, ema:true, vwap:true, vol:true, rsi:true, macd:true, div:true };
+var _chartMarkers=[]; // trade markers overlaid on candles
+
+function _addChartTradeMarker(side,price,source){
+  if(!candles.length)return;
+  var itvSec=candleInt*60;
+  var last=candles[candles.length-1];
+  var cTime=last?last.t:Math.floor(Date.now()/1000/itvSec)*itvSec;
+  var isBuy=side==='buy';
+  var colMap={bot:isBuy?'#00ff88':'#ff3355',sim:isBuy?'#00d4ff':'#8b5cf6',manual:isBuy?'#ffaa00':'#ff44aa'};
+  var c=colMap[source]||colMap.manual;
+  var lbl=(source==='bot'?'BOT ':source==='sim'?'SIM ':'')+( isBuy?'BUY':'SELL')+' $'+price.toFixed(4);
+  _chartMarkers.push({time:cTime,position:isBuy?'belowBar':'aboveBar',color:c,shape:isBuy?'arrowUp':'arrowDown',text:lbl});
+  if(_tvCharts&&candles.length)_updateTVCharts(candles);
+}
 var _tvSyncing = false;
 
 var _C = {
@@ -2846,7 +2884,8 @@ function _updateTVCharts(cdata) {
       if(dv.hiddenBearish)markers.push({time:lt,position:'aboveBar',color:'rgba(255,51,85,0.7)', shape:'circle',text:'Hidden↓'});
     }
   }
-  _tvSeries.candle.setMarkers(markers);
+  var allMarkers=markers.concat(_chartMarkers).sort(function(a,b){return a.time-b.time;});
+  _tvSeries.candle.setMarkers(allMarkers);
 
   _tvApplyVisibility();
 }
@@ -3669,6 +3708,7 @@ async function submitManualOrder(ctx){
       _simBalance-=usdAmt;
       var base=_activeTicker.replace(/USD.*$/,'').replace(/^X{1,2}/,'');
       log('success','SIM MANUAL',side.toUpperCase()+' '+(isUSD?usdAmt/fp:vol).toFixed(4)+' '+base+' @ $'+fp.toFixed(4)+(isMargin?' x'+lev:'')+' | paper $'+usdAmt.toFixed(2));
+      _addChartTradeMarker(side,fp,'manual');
       _renderManualSimPositions();
     } else {
       _manualSimOrders.push({id:id,side:side,type:type,trigPx:trigPx,limPx:limPx,execPx:execPx,usdAmt:usdAmt,vol:vol,leverage:lev,notional:notional,liqPx:liqPx,entryTime:Date.now()});
@@ -3700,6 +3740,7 @@ async function submitManualOrder(ctx){
   if(!r||r.error&&r.error.length&&r.error[0]!=='SIMULATION'){log('error','MANUAL',(r&&r.error&&r.error.join(', '))||'Order failed');return;}
   var txid=r.result&&r.result.txid&&r.result.txid[0]||'sim';
   log('success','MANUAL',side.toUpperCase()+' '+krakenOT+' placed txid: '+txid);
+  _addChartTradeMarker(side,curPx,'manual');
   addAlert('ai2','MANUAL ORDER',side.toUpperCase()+' '+krakenOT+' '+vol+' '+_activeTicker+(isMargin?' x'+lev:''));
   setTimeout(refreshOpenOrders,1500); setTimeout(refreshOpenPositions,2000); setTimeout(getBalance,3000);
 }
@@ -3905,6 +3946,7 @@ async function execSim(){
       log(netPnl>=0?"success":"warning","SIM",exitReason+" | entry:$"+simPos.entryPrice.toFixed(4)+" exit:$"+curBid.toFixed(4)+" | P&L:"+(netPnl>=0?"+":"")+netPnl.toFixed(4));
       var _ts3={time:ts,type:"SIM SELL",price:curBid,entryPrice:simPos.entryPrice,size:simPos.orderSize,pnl:netPnl,exitReason:exitReason,spread:"--",rsi:ind.rsi?ind.rsi.toFixed(1):"--",bbPct:ind.bbPct?(ind.bbPct*100).toFixed(1)+"%":"--",confluence:cfStr,obi:_liveOBI!==null?_liveOBI.toFixed(3):"?",holdMs:Date.now()-simPos.entryTime,rsiAtEntry:simPos.rsiAtEntry};
       addTradeRow(ts,"SIM SELL",curBid,simPos.orderSize,ind.rsi?ind.rsi.toFixed(1):"--",ind.bbPct?(ind.bbPct*100).toFixed(1)+"%":"--",netPnl);
+      _addChartTradeMarker('sell',curBid,'sim');
       tradeHist.push(_ts3);_saveTradeToServer(_ts3);
       simPos=null;_lastTradeAt=Date.now();
       if(cKeySet&&trades%3===0)setTimeout(postTradeCoach,1000);
@@ -3955,6 +3997,7 @@ async function execSim(){
     if(!simNearSup||!simRsiOk||!simObiOk){log("info","SIMGATE","Range detected but entry conditions not met");return;}
     log("info","SIM","RANGE entry @ $"+ask.toFixed(4)+" | range $"+simRange.sup.price.toFixed(4)+"→$"+simRange.res.price.toFixed(4));
     simPos={entryPrice:ask,volume:v,orderSize:os,entryTime:Date.now(),rsiAtEntry:ind.rsi,macdShrinkCount:0,prevMacdHist:ind.hist};
+    _addChartTradeMarker('buy',ask,'sim');
     updatePosWidget();addTradeRow(new Date().toLocaleTimeString(),"SIM BUY",ask,os,ind.rsi?ind.rsi.toFixed(1):"--",ind.bbPct?(ind.bbPct*100).toFixed(1)+"%":"--",0);
     return;
   }
@@ -3965,6 +4008,7 @@ async function execSim(){
   var cfStr=cf.toFixed(0),obiStr=_liveOBI!==null?_liveOBI.toFixed(3):"?";
   log("info","SIM","Entry @ $"+ask.toFixed(4)+" x "+v+" "+_activeTicker+" | conf:"+cfStr+" OBI:"+obiStr);
   simPos={entryPrice:ask,volume:v,orderSize:os,entryTime:Date.now(),rsiAtEntry:ind.rsi,macdShrinkCount:0,prevMacdHist:ind.hist};
+  _addChartTradeMarker('buy',ask,'sim');
   updatePosWidget();
   var ts2=new Date().toLocaleTimeString();
   addTradeRow(ts2,"SIM BUY",ask,os,ind.rsi?ind.rsi.toFixed(1):"--",ind.bbPct?(ind.bbPct*100).toFixed(1)+"%":"--",0);
@@ -4132,6 +4176,7 @@ async function execLive(){
       var ts=new Date().toLocaleTimeString();
       var _tr2={time:ts,type:"SELL",price:curPrice,entryPrice:livePos.entryPrice,size:livePos.orderSize,pnl:netPnl,exitReason:exitReason,rsi:ind.rsi?ind.rsi.toFixed(1):"--",bbPct:ind.bbPct?(ind.bbPct*100).toFixed(1)+"%":"--",confluence:ind.confluence?ind.confluence.toFixed(0):"?",obi:_liveOBI!==null?_liveOBI.toFixed(3):"?",holdMs:Date.now()-livePos.entryTime,rsiAtEntry:livePos.rsiAtEntry};
       addTradeRow(ts,"SELL",curPrice,livePos.orderSize,ind.rsi?ind.rsi.toFixed(1):"--",ind.bbPct?(ind.bbPct*100).toFixed(1)+"%":"--",netPnl);
+      _addChartTradeMarker('sell',curPrice,'bot');
       tradeHist.push(_tr2);_saveTradeToServer(_tr2);
       log(netPnl>=0?"success":"warning","TRADE","Closed: "+(netPnl>=0?"+":"")+"$"+netPnl.toFixed(4)+" | "+exitReason);
       _notifyTrade(netPnl,exitReason);
@@ -4271,6 +4316,7 @@ async function execLive(){
 
   // Track open position for exit management
   livePos={entryPrice:ask,volume:+v,orderSize:os,entryTime:Date.now(),txid:txid,rsiAtEntry:ind.rsi,macdShrinkCount:0,prevMacdHist:ind.hist};
+  _addChartTradeMarker('buy',ask,'bot');
   updatePosWidget();
   vol+=os;updateStats();
   var ts2=new Date().toLocaleTimeString();
@@ -4540,7 +4586,7 @@ function showTab(id,btn){
   document.querySelectorAll(".tnav").forEach(function(b){b.classList.remove("active");});
   document.getElementById("tab-"+id).classList.add("active");
   if(btn)btn.classList.add("active");
-  if(id==='chart'){ _initTVWidget(_activeTicker); }
+  if(id==='chart'){ if(!_tvCharts)initTVChart(); if(candles.length)_updateTVCharts(candles); _updateMLHeaders(); setTimeout(function(){refreshOpenOrders();refreshOpenPositions();},500); }
   if(id==='plans') _renderPlansPage();
   if(id==='telegram') _renderTelegramPage();
   if(id==='notifications') _renderNotificationsPage();
