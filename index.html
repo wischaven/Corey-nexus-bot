@@ -298,6 +298,105 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
         <span id="posStop">SL: --</span><span id="posTP">TP: --</span>
       </div>
     </div>
+    <!-- ══ MANUAL ORDER DESK (Live) ══ -->
+    <div class="card" id="manualDeskLive" style="padding:10px 12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div style="font-family:Orbitron,monospace;font-size:8px;color:var(--green);letter-spacing:2px">ORDER DESK · LIVE</div>
+        <div style="font-family:Share Tech Mono,monospace;font-size:7px"><span style="color:var(--t3)">SPOT</span> <span style="color:var(--cyan)" id="mlLiveBal">--</span> &nbsp;<span style="color:var(--t3)">MARGIN</span> <span style="color:var(--purple)" id="mlLiveMarginBal">--</span></div>
+      </div>
+      <!-- Bid / Ask / Spread bar -->
+      <div style="background:rgba(0,0,0,0.25);border-radius:3px;padding:5px 10px;margin-bottom:8px;display:flex;justify-content:space-between;font-family:Share Tech Mono,monospace;font-size:8px">
+        <span><span style="color:var(--t3)">BID</span> <b style="color:var(--red)" id="mlLiveBid">--</b></span>
+        <span><span style="color:var(--t3)">SPREAD</span> <span style="color:var(--amber)" id="mlLiveSpread">--</span></span>
+        <span><span style="color:var(--t3)">ASK</span> <b style="color:var(--green)" id="mlLiveAsk">--</b></span>
+      </div>
+      <!-- Trading Mode -->
+      <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);letter-spacing:1px;margin-bottom:3px">TRADING MODE</div>
+      <div class="trow" style="margin-bottom:8px">
+        <button class="tbtn active" id="mlLiveModSpot" onclick="setMLMode('live','spot',this)" style="flex:1">SPOT</button>
+        <button class="tbtn" id="mlLiveModMgn" onclick="setMLMode('live','margin',this)" style="flex:1">MARGIN / LEV</button>
+      </div>
+      <!-- Buy / Sell -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+        <button id="mlLiveBuyBtn" onclick="setMLSide('live','buy',this)" class="btn btn-g" style="font-size:11px;padding:9px;letter-spacing:2px;font-weight:700">▲ BUY / LONG</button>
+        <button id="mlLiveSellBtn" onclick="setMLSide('live','sell',this)" class="btn" style="font-size:11px;padding:9px;letter-spacing:2px;font-weight:700;background:none;border-color:var(--border);color:var(--t2)">▼ SELL / SHORT</button>
+      </div>
+      <!-- Order Type (6 types) -->
+      <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);letter-spacing:1px;margin-bottom:3px">ORDER TYPE</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:8px">
+        <button class="tbtn active" id="mlLiveT-market"      onclick="setMLType('live','market',this)"      style="font-size:7px;padding:5px 2px">MARKET</button>
+        <button class="tbtn"        id="mlLiveT-limit"       onclick="setMLType('live','limit',this)"       style="font-size:7px;padding:5px 2px">LIMIT</button>
+        <button class="tbtn"        id="mlLiveT-stop-loss"   onclick="setMLType('live','stop-loss',this)"   style="font-size:7px;padding:5px 2px">STOP-LOSS</button>
+        <button class="tbtn"        id="mlLiveT-stop-limit"  onclick="setMLType('live','stop-limit',this)"  style="font-size:7px;padding:5px 2px">STOP-LMT</button>
+        <button class="tbtn"        id="mlLiveT-take-profit" onclick="setMLType('live','take-profit',this)" style="font-size:7px;padding:5px 2px">TAKE-PROF</button>
+        <button class="tbtn"        id="mlLiveT-tp-limit"    onclick="setMLType('live','tp-limit',this)"    style="font-size:7px;padding:5px 2px">TP-LIMIT</button>
+      </div>
+      <!-- Trigger price (stop-loss / stop-limit / take-profit / tp-limit) -->
+      <div id="mlLiveRow-trigger" style="display:none;margin-bottom:6px">
+        <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);margin-bottom:2px" id="mlLiveTriggerLbl">TRIGGER PRICE ($)</div>
+        <input type="number" id="mlLiveTriggerPx" class="ti" placeholder="0.0000" step="0.0001" oninput="updateMLQty('live')">
+      </div>
+      <!-- Limit price (limit / stop-limit / tp-limit) -->
+      <div id="mlLiveRow-limit" style="display:none;margin-bottom:6px">
+        <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);margin-bottom:2px">LIMIT PRICE ($)</div>
+        <input type="number" id="mlLiveLimPx" class="ti" placeholder="0.0000" step="0.0001" oninput="updateMLQty('live')">
+      </div>
+      <!-- Leverage (margin mode only) -->
+      <div id="mlLiveLevRow" style="display:none;margin-bottom:8px">
+        <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);letter-spacing:1px;margin-bottom:3px">LEVERAGE</div>
+        <div class="trow">
+          <button class="tbtn active" id="mlLiveLev2" onclick="setMLLev('live',2,this)">2×</button>
+          <button class="tbtn"        id="mlLiveLev3" onclick="setMLLev('live',3,this)">3×</button>
+          <button class="tbtn"        id="mlLiveLev4" onclick="setMLLev('live',4,this)">4×</button>
+          <button class="tbtn"        id="mlLiveLev5" onclick="setMLLev('live',5,this)">5×</button>
+        </div>
+      </div>
+      <!-- Amount -->
+      <div style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+          <div style="display:flex;gap:6px;align-items:center">
+            <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);letter-spacing:1px" id="mlLiveAmtLbl">ORDER SIZE (USD)</div>
+            <button onclick="toggleMLUnit('live')" id="mlLiveUnitBtn" style="font-family:Share Tech Mono,monospace;font-size:6px;background:none;border:1px solid var(--border);color:var(--purple);padding:1px 5px;cursor:pointer;border-radius:2px">↔ COIN</button>
+          </div>
+          <div style="display:flex;gap:3px">
+            <button onclick="setMLPct('live',0.25)" style="font-family:Share Tech Mono,monospace;font-size:6px;background:none;border:1px solid var(--border);color:var(--t3);padding:2px 5px;cursor:pointer;border-radius:2px">25%</button>
+            <button onclick="setMLPct('live',0.50)" style="font-family:Share Tech Mono,monospace;font-size:6px;background:none;border:1px solid var(--border);color:var(--t3);padding:2px 5px;cursor:pointer;border-radius:2px">50%</button>
+            <button onclick="setMLPct('live',0.75)" style="font-family:Share Tech Mono,monospace;font-size:6px;background:none;border:1px solid var(--border);color:var(--t3);padding:2px 5px;cursor:pointer;border-radius:2px">75%</button>
+            <button onclick="setMLPct('live',1.00)" style="font-family:Share Tech Mono,monospace;font-size:6px;background:none;border:1px solid var(--amber);color:var(--amber);padding:2px 5px;cursor:pointer;border-radius:2px">MAX</button>
+          </div>
+        </div>
+        <input type="number" id="mlLiveAmt" class="ti" placeholder="50.00" min="0.0001" step="0.0001" oninput="updateMLQty('live')">
+        <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);margin-top:3px;line-height:1.8">
+          <span style="color:var(--t2)" id="mlLiveQtyLine">--</span>
+          <span id="mlLiveNotional" style="display:none"> · notional: <b style="color:var(--cyan)" id="mlLiveNotionalVal">--</b></span>
+          <span> · fee: <span style="color:var(--amber)" id="mlLiveFeeVal">--</span></span>
+          <span id="mlLiveLiqSpan" style="display:none"> · <span style="color:var(--red)">LIQ $<span id="mlLiveLiqVal">--</span></span></span>
+        </div>
+      </div>
+      <!-- Order flags -->
+      <div style="display:flex;gap:14px;margin-bottom:8px;font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t2)">
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="mlLivePostOnly"> POST-ONLY (maker)</label>
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="mlLiveReduceOnly"> REDUCE-ONLY</label>
+      </div>
+      <!-- Submit -->
+      <button id="mlLiveSubmit" onclick="submitManualOrder('live')" class="btn btn-g" style="width:100%;font-size:10px;letter-spacing:2px;padding:11px;font-weight:700">▲ BUY LONG [MARKET]</button>
+      <!-- Open Positions -->
+      <div style="border-top:1px solid var(--border);padding-top:8px;margin-top:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+          <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);letter-spacing:1px">OPEN POSITIONS</div>
+          <button onclick="refreshOpenPositions()" style="font-family:Share Tech Mono,monospace;font-size:6px;background:none;border:1px solid var(--border);color:var(--t3);padding:2px 7px;cursor:pointer;border-radius:2px">⟳ REFRESH</button>
+        </div>
+        <div id="mlLivePositions" style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3)">no open positions</div>
+      </div>
+      <!-- Open Orders -->
+      <div style="border-top:1px solid var(--border);padding-top:8px;margin-top:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+          <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);letter-spacing:1px">OPEN ORDERS</div>
+          <button onclick="refreshOpenOrders()" style="font-family:Share Tech Mono,monospace;font-size:6px;background:none;border:1px solid var(--border);color:var(--t3);padding:2px 7px;cursor:pointer;border-radius:2px">⟳ REFRESH</button>
+        </div>
+        <div id="mlLiveOrders" style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3)">no open orders</div>
+      </div>
+    </div>
     <!-- Manual price levels panel -->
     <div class="card" style="padding:10px 12px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
@@ -776,6 +875,94 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
         <div><div class="clbl">SCORE</div><div style="font-family:Orbitron,monospace;font-size:10px;color:var(--amber)" id="simOpenScore">--</div></div>
       </div>
       <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);margin-top:5px" id="simOpenMeta"></div>
+    </div>
+
+    <!-- ══ MANUAL SIM ORDER DESK ══ -->
+    <!-- ══ MANUAL SIM ORDER DESK ══ -->
+    <div class="card" id="manualDeskSim" style="padding:10px 12px;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div style="font-family:Orbitron,monospace;font-size:8px;color:var(--cyan);letter-spacing:2px">ORDER DESK · PAPER</div>
+        <div style="font-family:Share Tech Mono,monospace;font-size:7px"><span style="color:var(--t3)">BAL</span> <span style="color:var(--cyan)" id="mlSimBal">$1000.00</span> &nbsp;<span style="color:var(--t3)">CLOSED P&amp;L</span> <span id="mlSimPnlTotal" style="color:var(--green)">+$0.00</span></div>
+      </div>
+      <!-- Bid / Ask bar -->
+      <div style="background:rgba(0,0,0,0.25);border-radius:3px;padding:5px 10px;margin-bottom:8px;display:flex;justify-content:space-between;font-family:Share Tech Mono,monospace;font-size:8px">
+        <span><span style="color:var(--t3)">BID</span> <b style="color:var(--red)" id="mlSimBidPx">--</b></span>
+        <span><span style="color:var(--t3)">PRICE</span> <span style="color:var(--t2)" id="mlSimPx">--</span></span>
+        <span><span style="color:var(--t3)">ASK</span> <b style="color:var(--green)" id="mlSimAskPx">--</b></span>
+      </div>
+      <!-- Buy / Sell -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+        <button id="mlSimBuyBtn" onclick="setMLSide('sim','buy',this)" class="btn btn-g" style="font-size:11px;padding:9px;letter-spacing:2px;font-weight:700">▲ BUY / LONG</button>
+        <button id="mlSimSellBtn" onclick="setMLSide('sim','sell',this)" class="btn" style="font-size:11px;padding:9px;letter-spacing:2px;font-weight:700;background:none;border-color:var(--border);color:var(--t2)">▼ SELL / SHORT</button>
+      </div>
+      <!-- Order Type (6 types) -->
+      <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);letter-spacing:1px;margin-bottom:3px">ORDER TYPE</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:8px">
+        <button class="tbtn active" id="mlSimT-market"      onclick="setMLType('sim','market',this)"      style="font-size:7px;padding:5px 2px">MARKET</button>
+        <button class="tbtn"        id="mlSimT-limit"       onclick="setMLType('sim','limit',this)"       style="font-size:7px;padding:5px 2px">LIMIT</button>
+        <button class="tbtn"        id="mlSimT-stop-loss"   onclick="setMLType('sim','stop-loss',this)"   style="font-size:7px;padding:5px 2px">STOP-LOSS</button>
+        <button class="tbtn"        id="mlSimT-stop-limit"  onclick="setMLType('sim','stop-limit',this)"  style="font-size:7px;padding:5px 2px">STOP-LMT</button>
+        <button class="tbtn"        id="mlSimT-take-profit" onclick="setMLType('sim','take-profit',this)" style="font-size:7px;padding:5px 2px">TAKE-PROF</button>
+        <button class="tbtn"        id="mlSimT-tp-limit"    onclick="setMLType('sim','tp-limit',this)"    style="font-size:7px;padding:5px 2px">TP-LIMIT</button>
+      </div>
+      <!-- Trigger price -->
+      <div id="mlSimRow-trigger" style="display:none;margin-bottom:6px">
+        <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);margin-bottom:2px" id="mlSimTriggerLbl">TRIGGER PRICE ($)</div>
+        <input type="number" id="mlSimTriggerPx" class="ti" placeholder="0.0000" step="0.0001" oninput="updateMLQty('sim')">
+      </div>
+      <!-- Limit price -->
+      <div id="mlSimRow-limit" style="display:none;margin-bottom:6px">
+        <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);margin-bottom:2px">LIMIT PRICE ($)</div>
+        <input type="number" id="mlSimLimPx" class="ti" placeholder="0.0000" step="0.0001" oninput="updateMLQty('sim')">
+      </div>
+      <!-- Leverage (1x = spot, 2x-5x = leveraged) -->
+      <div style="margin-bottom:8px">
+        <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);letter-spacing:1px;margin-bottom:3px">LEVERAGE <span style="color:var(--t3);font-weight:normal">(1× = spot, 2-5× = margin/short)</span></div>
+        <div class="trow">
+          <button class="tbtn active" id="mlSimLev1" onclick="setMLLev('sim',1,this)">1×</button>
+          <button class="tbtn"        id="mlSimLev2" onclick="setMLLev('sim',2,this)">2×</button>
+          <button class="tbtn"        id="mlSimLev3" onclick="setMLLev('sim',3,this)">3×</button>
+          <button class="tbtn"        id="mlSimLev4" onclick="setMLLev('sim',4,this)">4×</button>
+          <button class="tbtn"        id="mlSimLev5" onclick="setMLLev('sim',5,this)">5×</button>
+        </div>
+      </div>
+      <!-- Amount -->
+      <div style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+          <div style="display:flex;gap:6px;align-items:center">
+            <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);letter-spacing:1px" id="mlSimAmtLbl">ORDER SIZE (USD)</div>
+            <button onclick="toggleMLUnit('sim')" id="mlSimUnitBtn" style="font-family:Share Tech Mono,monospace;font-size:6px;background:none;border:1px solid var(--border);color:var(--purple);padding:1px 5px;cursor:pointer;border-radius:2px">↔ COIN</button>
+          </div>
+          <div style="display:flex;gap:3px">
+            <button onclick="setMLPct('sim',0.25)" style="font-family:Share Tech Mono,monospace;font-size:6px;background:none;border:1px solid var(--border);color:var(--t3);padding:2px 5px;cursor:pointer;border-radius:2px">25%</button>
+            <button onclick="setMLPct('sim',0.50)" style="font-family:Share Tech Mono,monospace;font-size:6px;background:none;border:1px solid var(--border);color:var(--t3);padding:2px 5px;cursor:pointer;border-radius:2px">50%</button>
+            <button onclick="setMLPct('sim',0.75)" style="font-family:Share Tech Mono,monospace;font-size:6px;background:none;border:1px solid var(--border);color:var(--t3);padding:2px 5px;cursor:pointer;border-radius:2px">75%</button>
+            <button onclick="setMLPct('sim',1.00)" style="font-family:Share Tech Mono,monospace;font-size:6px;background:none;border:1px solid var(--amber);color:var(--amber);padding:2px 5px;cursor:pointer;border-radius:2px">MAX</button>
+          </div>
+        </div>
+        <input type="number" id="mlSimAmt" class="ti" placeholder="50.00" min="0.0001" step="0.0001" oninput="updateMLQty('sim')">
+        <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);margin-top:3px;line-height:1.8">
+          <span style="color:var(--t2)" id="mlSimQtyLine">--</span>
+          <span id="mlSimNotional" style="display:none"> · notional: <b style="color:var(--cyan)" id="mlSimNotionalVal">--</b></span>
+          <span> · fee: <span style="color:var(--amber)" id="mlSimFeeVal">--</span></span>
+          <span id="mlSimLiqSpan" style="display:none"> · <span style="color:var(--red)">LIQ $<span id="mlSimLiqVal">--</span></span></span>
+        </div>
+      </div>
+      <!-- Submit -->
+      <button id="mlSimSubmit" onclick="submitManualOrder('sim')" class="btn btn-g" style="width:100%;font-size:10px;letter-spacing:2px;padding:11px;font-weight:700">▲ PAPER BUY LONG [MARKET]</button>
+      <!-- Open Positions -->
+      <div style="border-top:1px solid var(--border);padding-top:8px;margin-top:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+          <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);letter-spacing:1px">OPEN POSITIONS</div>
+          <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3)">unrealized: <span id="mlSimPnlTotalPos" style="color:var(--green)">$0.00</span></div>
+        </div>
+        <div id="mlSimPositions" style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3)">no open positions</div>
+      </div>
+      <!-- Pending sim orders -->
+      <div style="border-top:1px solid var(--border);padding-top:8px;margin-top:8px">
+        <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);letter-spacing:1px;margin-bottom:5px">PENDING ORDERS</div>
+        <div id="mlSimOrders" style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3)">no pending orders</div>
+      </div>
     </div>
 
     <!-- Row 7: Trade log -->
@@ -1333,7 +1520,7 @@ function _trackDailyLoss(amount){
 var livePos=null; // {entryPrice, volume, orderSize, entryTime, txid}
 var _liveUSDBalance=null; // updated by getBalance(), used for auto order sizing
 var _balFetched=false;
-var price=0,kKey="",kSecret="",live=false,cKey="",cKeySet=false;
+var price=0,_liveBid=0,_liveAsk=0,kKey="",kSecret="",live=false,cKey="",cKeySet=false;
 var mode="maker",aiScore=50,aiPaused=false,masterEnabled=false;
 var macroD={},newsArr=[],candles=[],candleInt=1,_newsFetched=false;
 var mtfData={},mtf={}; // multi-timeframe candles and trend results
@@ -3319,8 +3506,365 @@ async function postSessionReview(){
   if(result){addAlert("acoach","SESSION REVIEW",result);chatHist.push({role:"assistant",content:"[End of session review] "+result});}
 }
 
+// ─── Manual Order Desk ────────────────────────────────────────────────────────
+var _mlLiveMode='spot', _mlSimMode='spot';
+var _mlLiveSide='buy',  _mlSimSide='buy';
+var _mlLiveType='market', _mlSimType='market';
+var _mlLiveLev=2, _mlSimLev=1;
+var _mlLiveUnitUSD=true, _mlSimUnitUSD=true;
+var _manualSimPos=[];    // open paper positions
+var _manualSimOrders=[]; // pending sim orders (limit/stop/tp)
+var _mlSimManualPnl=0, _mlSimManualTrades=0;
+
+function setMLMode(ctx,mode,btn){
+  if(ctx==='live')_mlLiveMode=mode; else _mlSimMode=mode;
+  var p=ctx==='live'?'mlLive':'mlSim';
+  ['ModSpot','ModMgn'].forEach(function(s){var b=document.getElementById(p+s);if(b)b.className='tbtn';});
+  if(btn)btn.className='tbtn active';
+  var lr=document.getElementById(p+'LevRow');if(lr)lr.style.display=mode==='margin'?'block':'none';
+  updateMLQty(ctx);
+}
+
+function setMLLev(ctx,lev,btn){
+  if(ctx==='live')_mlLiveLev=lev; else _mlSimLev=lev;
+  var p=ctx==='live'?'mlLive':'mlSim';
+  [1,2,3,4,5].forEach(function(n){var b=document.getElementById(p+'Lev'+n);if(b)b.className='tbtn';});
+  if(btn)btn.className='tbtn active';
+  updateMLQty(ctx); _updateMLSubmitBtn(ctx);
+}
+
+function setMLSide(ctx,side,btn){
+  if(ctx==='live')_mlLiveSide=side; else _mlSimSide=side;
+  var p=ctx==='live'?'mlLive':'mlSim';
+  var bb=document.getElementById(p+'BuyBtn'),sb=document.getElementById(p+'SellBtn');
+  var cs='font-size:11px;padding:9px;letter-spacing:2px;font-weight:700';
+  if(bb){bb.className=side==='buy'?'btn btn-g':'btn';bb.style.cssText=side==='buy'?cs:cs+';background:none;border-color:var(--border);color:var(--t2)';}
+  if(sb){sb.className=side==='sell'?'btn btn-r':'btn';sb.style.cssText=side==='sell'?cs:cs+';background:none;border-color:var(--border);color:var(--t2)';}
+  _updateMLSubmitBtn(ctx);
+}
+
+function setMLType(ctx,type,btn){
+  if(ctx==='live')_mlLiveType=type; else _mlSimType=type;
+  var p=ctx==='live'?'mlLive':'mlSim';
+  ['market','limit','stop-loss','stop-limit','take-profit','tp-limit'].forEach(function(t){var b=document.getElementById(p+'T-'+t);if(b)b.className='tbtn';});
+  if(btn)btn.className='tbtn active';
+  var needTrig=type!=='market'&&type!=='limit';
+  var needLim=type==='limit'||type==='stop-limit'||type==='tp-limit';
+  var tr=document.getElementById(p+'Row-trigger'),lr=document.getElementById(p+'Row-limit');
+  if(tr)tr.style.display=needTrig?'block':'none';
+  if(lr)lr.style.display=needLim?'block':'none';
+  var tl=document.getElementById(p+'TriggerLbl');
+  if(tl)tl.textContent=(type==='stop-loss'||type==='stop-limit')?'STOP TRIGGER PRICE ($)':'TAKE-PROFIT TRIGGER ($)';
+  _updateMLSubmitBtn(ctx); updateMLQty(ctx);
+}
+
+function _updateMLSubmitBtn(ctx){
+  var p=ctx==='live'?'mlLive':'mlSim';
+  var side=ctx==='live'?_mlLiveSide:_mlSimSide;
+  var type=ctx==='live'?_mlLiveType:_mlSimType;
+  var lev=ctx==='live'?_mlLiveLev:_mlSimLev;
+  var mode=ctx==='live'?_mlLiveMode:_mlSimMode;
+  var sub=document.getElementById(p+'Submit');if(!sub)return;
+  var tl={'market':'MKT','limit':'LMT','stop-loss':'STP','stop-limit':'STP-LMT','take-profit':'TP','tp-limit':'TP-LMT'}[type]||type.toUpperCase();
+  var lv=((ctx==='sim'&&lev>1)||(ctx==='live'&&mode==='margin'))?' x'+lev+'LEV':'';
+  var paper=ctx==='sim'?'PAPER ':'';
+  sub.textContent=paper+(side==='buy'?'BUY LONG':'SELL SHORT')+' ['+tl+']'+lv;
+  sub.className=side==='buy'?'btn btn-g':'btn btn-r';
+  sub.style.cssText='width:100%;font-size:10px;letter-spacing:2px;padding:11px;font-weight:700';
+}
+
+function toggleMLUnit(ctx){
+  if(ctx==='live')_mlLiveUnitUSD=!_mlLiveUnitUSD; else _mlSimUnitUSD=!_mlSimUnitUSD;
+  var p=ctx==='live'?'mlLive':'mlSim';
+  var isUSD=ctx==='live'?_mlLiveUnitUSD:_mlSimUnitUSD;
+  var base=_activeTicker.replace(/USD.*$/,'').replace(/^X{1,2}/,'');
+  var lbl=document.getElementById(p+'AmtLbl'),ub=document.getElementById(p+'UnitBtn'),inp=document.getElementById(p+'Amt');
+  if(lbl)lbl.textContent=isUSD?'ORDER SIZE (USD)':'ORDER SIZE ('+base+')';
+  if(ub)ub.textContent=isUSD?'COIN':'USD';
+  if(inp)inp.value='';
+  updateMLQty(ctx);
+}
+
+function setMLPct(ctx,pct){
+  var p=ctx==='live'?'mlLive':'mlSim';
+  var isUSD=ctx==='live'?_mlLiveUnitUSD:_mlSimUnitUSD;
+  var bal=ctx==='live'?(typeof _liveUSDBalance==='number'?_liveUSDBalance:0):_simBalance;
+  var refPx=(ctx==='live'?(_liveAsk||price):price)||1;
+  var inp=document.getElementById(p+'Amt');if(!inp)return;
+  inp.value=isUSD?+(bal*pct).toFixed(2):+((bal*pct)/refPx).toFixed(4);
+  updateMLQty(ctx);
+}
+
+function updateMLQty(ctx){
+  var p=ctx==='live'?'mlLive':'mlSim';
+  var isUSD=ctx==='live'?_mlLiveUnitUSD:_mlSimUnitUSD;
+  var type=ctx==='live'?_mlLiveType:_mlSimType;
+  var lev=ctx==='live'?_mlLiveLev:_mlSimLev;
+  var mode=ctx==='live'?_mlLiveMode:_mlSimMode;
+  var side=ctx==='live'?_mlLiveSide:_mlSimSide;
+  var amt=parseFloat((document.getElementById(p+'Amt')||{}).value)||0;
+  var limPx=parseFloat((document.getElementById(p+'LimPx')||{}).value)||null;
+  var trigPx=parseFloat((document.getElementById(p+'TriggerPx')||{}).value)||null;
+  var refPx=(ctx==='live'?(_liveAsk||price):price)||0;
+  var execPx=(type==='limit'&&limPx)?limPx:(type==='stop-limit'&&trigPx)?trigPx:refPx;
+  var ql=document.getElementById(p+'QtyLine');if(!ql)return;
+  if(!execPx){ql.textContent='--';return;}
+  var usdAmt=isUSD?amt:amt*execPx;
+  var vol=isUSD?amt/execPx:amt;
+  var base=_activeTicker.replace(/USD.*$/,'').replace(/^X{1,2}/,'');
+  ql.textContent='approx '+vol.toFixed(4)+' '+base;
+  var isMargin=(ctx==='live'&&mode==='margin')||(ctx==='sim'&&lev>1);
+  var notional=usdAmt*(isMargin?lev:1);
+  var ne=document.getElementById(p+'Notional'),nv=document.getElementById(p+'NotionalVal');
+  if(ne)ne.style.display=isMargin?'inline':'none';
+  if(nv&&isMargin)nv.textContent='$'+notional.toFixed(2);
+  var fR=+(document.getElementById('feeSelect')||{value:'0.16'}).value/100;
+  var fv=document.getElementById(p+'FeeVal');if(fv)fv.textContent='$'+(notional*fR).toFixed(4);
+  var ls=document.getElementById(p+'LiqSpan'),lv2=document.getElementById(p+'LiqVal');
+  if(ls)ls.style.display=(isMargin&&lev>1)?'inline':'none';
+  if(lv2&&isMargin&&lev>1&&execPx)lv2.textContent='$'+(side==='buy'?execPx*(1-0.9/lev):execPx*(1+0.9/lev)).toFixed(4);
+}
+
+function _updateMLHeaders(){
+  if(_liveBid){var e=document.getElementById('mlLiveBid');if(e)e.textContent='$'+_liveBid.toFixed(4);}
+  if(_liveAsk){var e=document.getElementById('mlLiveAsk');if(e)e.textContent='$'+_liveAsk.toFixed(4);}
+  if(_liveBid&&_liveAsk){var e=document.getElementById('mlLiveSpread');if(e)e.textContent=((_liveAsk-_liveBid)/_liveAsk*10000).toFixed(1)+' bps';}
+  if(typeof _liveUSDBalance==='number'){var e=document.getElementById('mlLiveBal');if(e)e.textContent='$'+_liveUSDBalance.toFixed(2);}
+  if(price){
+    var e=document.getElementById('mlSimPx');if(e)e.textContent='$'+price.toFixed(4);
+    var e2=document.getElementById('mlSimBidPx');if(e2)e2.textContent='$'+(_liveBid||price*0.9999).toFixed(4);
+    var e3=document.getElementById('mlSimAskPx');if(e3)e3.textContent='$'+(_liveAsk||price*1.0001).toFixed(4);
+  }
+  var sb=document.getElementById('mlSimBal');if(sb)sb.textContent='$'+_simBalance.toFixed(2);
+}
+
+async function submitManualOrder(ctx){
+  var p=ctx==='live'?'mlLive':'mlSim';
+  var side=ctx==='live'?_mlLiveSide:_mlSimSide;
+  var type=ctx==='live'?_mlLiveType:_mlSimType;
+  var mode=ctx==='live'?_mlLiveMode:_mlSimMode;
+  var lev=ctx==='live'?_mlLiveLev:_mlSimLev;
+  var isUSD=ctx==='live'?_mlLiveUnitUSD:_mlSimUnitUSD;
+  var amt=parseFloat((document.getElementById(p+'Amt')||{}).value)||0;
+  var limPx=parseFloat((document.getElementById(p+'LimPx')||{}).value)||null;
+  var trigPx=parseFloat((document.getElementById(p+'TriggerPx')||{}).value)||null;
+  var curPx=ctx==='live'?(_liveAsk||price):price;
+  if(!curPx){log('error','MANUAL','No price data yet');return;}
+  var execPx=(type==='limit'&&limPx)?limPx:(type==='stop-limit'&&trigPx)?trigPx:curPx;
+  var usdAmt=isUSD?amt:amt*execPx;
+  var vol=isUSD?+(amt/execPx).toFixed(4):+amt.toFixed(4);
+  if(usdAmt<1){log('error','MANUAL','Size must be at least $1');return;}
+  var isMargin=(ctx==='live'&&mode==='margin')||(ctx==='sim'&&lev>1);
+  var notional=usdAmt*(isMargin?lev:1);
+
+  if(ctx==='sim'){
+    if(usdAmt>_simBalance){log('error','SIM MANUAL','Insufficient paper balance ($'+_simBalance.toFixed(2)+')');return;}
+    var id=Date.now();
+    var liqPx=isMargin&&lev>1?(side==='buy'?execPx*(1-0.9/lev):execPx*(1+0.9/lev)):null;
+    var fillNow=type==='market'||
+      (type==='limit'&&((side==='buy'&&curPx<=limPx)||(side==='sell'&&curPx>=limPx)));
+    if(fillNow){
+      var fp=type==='market'?curPx:(limPx||curPx);
+      _manualSimPos.push({id:id,side:side,entryPrice:fp,volume:isUSD?usdAmt/fp:vol,orderSize:usdAmt,leverage:lev,notional:notional,liqPx:liqPx,entryTime:Date.now()});
+      _simBalance-=usdAmt;
+      var base=_activeTicker.replace(/USD.*$/,'').replace(/^X{1,2}/,'');
+      log('success','SIM MANUAL',side.toUpperCase()+' '+(isUSD?usdAmt/fp:vol).toFixed(4)+' '+base+' @ $'+fp.toFixed(4)+(isMargin?' x'+lev:'')+' | paper $'+usdAmt.toFixed(2));
+      _renderManualSimPositions();
+    } else {
+      _manualSimOrders.push({id:id,side:side,type:type,trigPx:trigPx,limPx:limPx,execPx:execPx,usdAmt:usdAmt,vol:vol,leverage:lev,notional:notional,liqPx:liqPx,entryTime:Date.now()});
+      log('info','SIM MANUAL','Pending '+type.toUpperCase()+' '+side.toUpperCase()+' @ $'+(trigPx||limPx||execPx).toFixed(4));
+      _renderSimPendingOrders();
+    }
+    var sb=document.getElementById('mlSimBal');if(sb)sb.textContent='$'+_simBalance.toFixed(2);
+    return;
+  }
+
+  if(!_isPro()){showUpgradeModal('Live Manual Trading','pro');return;}
+  var postOnly=document.getElementById('mlLivePostOnly')&&document.getElementById('mlLivePostOnly').checked;
+  var krakenOT={'market':'market','limit':'limit','stop-loss':'stop-loss','stop-limit':'stop-loss-limit','take-profit':'take-profit','tp-limit':'take-profit-limit'}[type]||type;
+  var params={pair:_activeTicker,type:side,ordertype:krakenOT,volume:vol.toString()};
+  if(type==='limit'){
+    if(!limPx){log('error','MANUAL','Limit price required');return;}
+    params.price=limPx.toFixed(5);
+    if(postOnly)params.oflags='post';
+  } else if(type==='stop-loss'||type==='take-profit'){
+    if(!trigPx){log('error','MANUAL','Trigger price required');return;}
+    params.price=trigPx.toFixed(5);
+  } else if(type==='stop-limit'||type==='tp-limit'){
+    if(!trigPx||!limPx){log('error','MANUAL','Both trigger and limit price required');return;}
+    params.price=trigPx.toFixed(5); params.price2=limPx.toFixed(5);
+  }
+  if(mode==='margin')params.leverage=lev+':1';
+  log('info','MANUAL','Placing '+side.toUpperCase()+' '+krakenOT+' '+vol+' '+_activeTicker+(isMargin?' x'+lev:'')+'...');
+  var r=await kPriv('/0/private/AddOrder',params);
+  if(!r||r.error&&r.error.length&&r.error[0]!=='SIMULATION'){log('error','MANUAL',(r&&r.error&&r.error.join(', '))||'Order failed');return;}
+  var txid=r.result&&r.result.txid&&r.result.txid[0]||'sim';
+  log('success','MANUAL',side.toUpperCase()+' '+krakenOT+' placed txid: '+txid);
+  addAlert('ai2','MANUAL ORDER',side.toUpperCase()+' '+krakenOT+' '+vol+' '+_activeTicker+(isMargin?' x'+lev:''));
+  setTimeout(refreshOpenOrders,1500); setTimeout(refreshOpenPositions,2000); setTimeout(getBalance,3000);
+}
+
+async function refreshOpenPositions(){
+  var el=document.getElementById('mlLivePositions');if(!el)return;
+  if(!_isPro()){el.innerHTML='<span style="color:var(--t3)">Pro plan required</span>';return;}
+  var r=await kPriv('/0/private/OpenPositions',{docalcs:'true'});
+  if(!r||r.error&&r.error.length){el.textContent='error loading positions';return;}
+  var pos=r.result||{},keys=Object.keys(pos);
+  if(!keys.length){el.innerHTML='<span style="color:var(--t3)">no open positions</span>';return;}
+  el.innerHTML=keys.map(function(txid){
+    var p=pos[txid],side=p.type||'?',vol=parseFloat(p.vol)||0,cost=parseFloat(p.cost)||0;
+    var entryPx=vol>0?cost/vol:0,curVal=parseFloat(p.value)||0,net=parseFloat(p.net)||0,lev=p.leverage||'?';
+    var sc=side==='buy'?'var(--green)':'var(--red)',nc=net>=0?'var(--green)':'var(--red)';
+    return '<div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:3px;padding:6px 8px;margin-bottom:4px">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">'+
+        '<span style="color:'+sc+';font-family:Orbitron,monospace;font-size:8px;font-weight:700">'+(side==='buy'?'LONG':'SHORT')+' x'+lev+'</span>'+
+        '<span style="color:'+nc+';font-family:Orbitron,monospace;font-size:9px;font-weight:700">'+(net>=0?'+':'')+net.toFixed(4)+' USD</span>'+
+        '<button onclick="closePosition(\''+txid+'\','+vol+',\''+side+'\',\''+lev+'\')" style="font-family:Share Tech Mono,monospace;font-size:7px;background:none;border:1px solid var(--amber);color:var(--amber);padding:2px 8px;cursor:pointer;border-radius:2px">CLOSE MKT</button>'+
+      '</div>'+
+      '<div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3)">'+vol.toFixed(4)+' '+_activeTicker+' entry ~$'+entryPx.toFixed(4)+' val $'+curVal.toFixed(2)+'</div>'+
+    '</div>';
+  }).join('');
+}
+
+async function closePosition(txid,vol,side,lev){
+  var closeSide=side==='buy'?'sell':'buy';
+  log('info','MANUAL','Closing position '+txid+'...');
+  var levStr=typeof lev==='string'?lev.split(':')[0]:lev.toString();
+  var r=await kPriv('/0/private/AddOrder',{pair:_activeTicker,type:closeSide,ordertype:'market',volume:vol.toString(),leverage:levStr+':1'});
+  if(!r||r.error&&r.error.length&&r.error[0]!=='SIMULATION'){log('error','MANUAL',(r&&r.error&&r.error.join(', '))||'Close failed');return;}
+  log('success','MANUAL','Closed: '+(r.result&&r.result.txid&&r.result.txid[0]||'OK'));
+  setTimeout(refreshOpenPositions,1500); setTimeout(getBalance,2500);
+}
+
+async function refreshOpenOrders(){
+  var el=document.getElementById('mlLiveOrders');if(!el)return;
+  if(!_isPro()){el.innerHTML='<span style="color:var(--t3)">Pro plan required</span>';return;}
+  var r=await kPriv('/0/private/OpenOrders',{});
+  if(!r||r.error&&r.error.length){el.textContent='error loading orders';return;}
+  var orders=(r.result&&r.result.open)||{},keys=Object.keys(orders);
+  if(!keys.length){el.innerHTML='<span style="color:var(--t3)">no open orders</span>';return;}
+  el.innerHTML=keys.map(function(txid){
+    var o=orders[txid],side=(o.descr&&o.descr.type)||'?',otype=(o.descr&&o.descr.ordertype)||'?';
+    var px=(o.descr&&o.descr.price)||'mkt',px2=(o.descr&&o.descr.price2),vol=o.vol||'?';
+    var sc=side==='buy'?'var(--green)':'var(--red)';
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04)">'+
+      '<span style="color:'+sc+';font-size:7px">'+side.toUpperCase()+' '+otype.toUpperCase()+'</span>'+
+      '<span style="color:var(--t2);font-size:7px">'+vol+' '+_activeTicker+'</span>'+
+      '<span style="color:var(--t3);font-size:7px">$'+px+(px2?' / $'+px2:'')+'</span>'+
+      '<button onclick="cancelLiveOrder(\''+txid+'\')" style="font-family:Share Tech Mono,monospace;font-size:6px;background:none;border:1px solid var(--red);color:var(--red);padding:2px 6px;cursor:pointer;border-radius:2px">CANCEL</button>'+
+    '</div>';
+  }).join('');
+}
+
+async function cancelLiveOrder(txid){
+  log('info','MANUAL','Cancelling '+txid+'...');
+  var r=await kPriv('/0/private/CancelOrder',{txid:txid});
+  if(r&&r.result&&r.result.count>0)log('success','MANUAL','Cancelled: '+txid);
+  else log('error','MANUAL','Cancel failed: '+(r&&r.error&&r.error.join(', ')||'unknown'));
+  setTimeout(refreshOpenOrders,600);
+}
+
+function _renderManualSimPositions(){
+  var el=document.getElementById('mlSimPositions');if(!el)return;
+  var curPx=price||0;
+  _manualSimPos=_manualSimPos.filter(function(p){
+    if(!p.liqPx)return true;
+    var hit=p.side==='buy'?curPx<=p.liqPx:curPx>=p.liqPx;
+    if(hit){
+      var loss=-p.orderSize*0.9;
+      _simBalance+=p.orderSize+loss; _mlSimManualPnl+=loss; _mlSimManualTrades++;
+      log('error','SIM MANUAL','LIQUIDATED '+p.side.toUpperCase()+' @ $'+curPx.toFixed(4)+' loss $'+loss.toFixed(2));
+      tradeHist.push({time:new Date().toLocaleTimeString(),type:'SIM LIQUIDATION',price:curPx,entryPrice:p.entryPrice,size:p.notional,pnl:loss,exitReason:'LIQUIDATED'});
+      return false;
+    }
+    return true;
+  });
+  var totalUnreal=0;
+  if(!_manualSimPos.length){el.innerHTML='<span style="color:var(--t3)">no open positions</span>';}
+  else{
+    el.innerHTML=_manualSimPos.map(function(p,i){
+      var pct=(curPx-p.entryPrice)/p.entryPrice;
+      var pnl=p.side==='buy'?pct*p.notional:-pct*p.notional;
+      totalUnreal+=pnl;
+      var pc=pnl>=0?'var(--green)':'var(--red)';
+      var hold=Math.round((Date.now()-p.entryTime)/1000);
+      var hs=hold>3600?Math.floor(hold/3600)+'h '+(Math.floor((hold%3600)/60))+'m':hold>60?Math.floor(hold/60)+'m '+hold%60+'s':hold+'s';
+      var lv=p.leverage>1?' x'+p.leverage:'';
+      var lq=p.liqPx?'<span style="color:var(--red)"> LIQ $'+p.liqPx.toFixed(4)+'</span>':'';
+      return '<div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:3px;padding:6px 8px;margin-bottom:4px">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">'+
+          '<span style="color:'+(p.side==='buy'?'var(--green)':'var(--red)')+';font-family:Orbitron,monospace;font-size:8px;font-weight:700">'+(p.side==='buy'?'LONG':'SHORT')+lv+' $'+p.notional.toFixed(0)+'</span>'+
+          '<span style="color:'+pc+';font-family:Orbitron,monospace;font-size:9px;font-weight:700">'+(pnl>=0?'+':'')+'$'+pnl.toFixed(3)+'</span>'+
+          '<button onclick="closeManualSimPos('+i+')" style="font-family:Share Tech Mono,monospace;font-size:7px;background:none;border:1px solid var(--amber);color:var(--amber);padding:2px 8px;cursor:pointer;border-radius:2px">CLOSE</button>'+
+        '</div>'+
+        '<div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3)">entry $'+p.entryPrice.toFixed(4)+' now $'+(curPx?curPx.toFixed(4):'?')+' held '+hs+lq+'</div>'+
+      '</div>';
+    }).join('');
+  }
+  var upr=document.getElementById('mlSimPnlTotalPos');
+  if(upr){upr.textContent=(totalUnreal>=0?'+':'')+'$'+totalUnreal.toFixed(2);upr.style.color=totalUnreal>=0?'var(--green)':'var(--red)';}
+  var cpr=document.getElementById('mlSimPnlTotal');
+  if(cpr){cpr.textContent=(_mlSimManualPnl>=0?'+':'')+'$'+_mlSimManualPnl.toFixed(2);cpr.style.color=_mlSimManualPnl>=0?'var(--green)':'var(--red)';}
+}
+
+function closeManualSimPos(idx){
+  var p=_manualSimPos[idx];if(!p)return;
+  var curPx=price||p.entryPrice;
+  var pct=(curPx-p.entryPrice)/p.entryPrice;
+  var pnl=p.side==='buy'?pct*p.notional:-pct*p.notional;
+  _simBalance+=p.orderSize+pnl; _mlSimManualPnl+=pnl; _mlSimManualTrades++;
+  log(pnl>=0?'success':'warning','SIM MANUAL',
+    p.side.toUpperCase()+' closed @ $'+curPx.toFixed(4)+' entry $'+p.entryPrice.toFixed(4)+
+    (p.leverage>1?' x'+p.leverage:'')+' PnL '+(pnl>=0?'+':'')+'$'+pnl.toFixed(4));
+  var tr={time:new Date().toLocaleTimeString(),type:'SIM MANUAL '+(p.side==='buy'?'SELL':'BUY'),
+    price:curPx,entryPrice:p.entryPrice,size:p.notional,pnl:pnl,exitReason:'MANUAL CLOSE'+(p.leverage>1?' x'+p.leverage:'')};
+  tradeHist.push(tr);_saveTradeToServer(tr);
+  _manualSimPos.splice(idx,1);
+  _renderManualSimPositions();
+  var sb=document.getElementById('mlSimBal');if(sb)sb.textContent='$'+_simBalance.toFixed(2);
+}
+
+function _renderSimPendingOrders(){
+  var el=document.getElementById('mlSimOrders');if(!el)return;
+  if(!_manualSimOrders.length){el.innerHTML='<span style="color:var(--t3)">no pending orders</span>';return;}
+  el.innerHTML=_manualSimOrders.map(function(o,i){
+    var sc=o.side==='buy'?'var(--green)':'var(--red)';
+    var px=o.trigPx||o.limPx||o.execPx;
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04)">'+
+      '<span style="color:'+sc+';font-size:7px">'+o.side.toUpperCase()+' '+o.type.toUpperCase()+'</span>'+
+      '<span style="color:var(--t2);font-size:7px">$'+o.usdAmt.toFixed(0)+(o.leverage>1?' x'+o.leverage:'')+'</span>'+
+      '<span style="color:var(--t3);font-size:7px">@ $'+px.toFixed(4)+'</span>'+
+      '<button onclick="cancelSimOrder('+i+')" style="font-family:Share Tech Mono,monospace;font-size:6px;background:none;border:1px solid var(--border);color:var(--t3);padding:2px 6px;cursor:pointer;border-radius:2px">X</button>'+
+    '</div>';
+  }).join('');
+}
+
+function cancelSimOrder(idx){_manualSimOrders.splice(idx,1);_renderSimPendingOrders();}
+
+function _checkSimPendingOrders(){
+  if(!_manualSimOrders.length||!price)return;
+  var filled=false;
+  _manualSimOrders=_manualSimOrders.filter(function(o){
+    var px=price,hit=false,fp=px;
+    if(o.type==='limit'){hit=o.side==='buy'?px<=o.limPx:px>=o.limPx;fp=o.limPx;}
+    else if(o.type==='stop-loss'){hit=o.side==='buy'?px>=o.trigPx:px<=o.trigPx;}
+    else if(o.type==='stop-limit'){if(o.side==='buy'?px>=o.trigPx:px<=o.trigPx){hit=o.side==='buy'?px<=o.limPx:px>=o.limPx;fp=o.limPx||px;}}
+    else if(o.type==='take-profit'){hit=o.side==='buy'?px<=o.trigPx:px>=o.trigPx;}
+    else if(o.type==='tp-limit'){if(o.side==='buy'?px<=o.trigPx:px>=o.trigPx){hit=true;fp=o.limPx||px;}}
+    if(hit){
+      var lq=o.leverage>1?(o.side==='buy'?fp*(1-0.9/o.leverage):fp*(1+0.9/o.leverage)):null;
+      _manualSimPos.push({id:o.id,side:o.side,entryPrice:fp,volume:o.usdAmt/fp,orderSize:o.usdAmt,leverage:o.leverage,notional:o.notional,liqPx:lq,entryTime:Date.now()});
+      _simBalance-=o.usdAmt; filled=true;
+      log('success','SIM ORDER','Filled '+o.type.toUpperCase()+' '+o.side.toUpperCase()+' @ $'+fp.toFixed(4));
+      return false;
+    }
+    return true;
+  });
+  if(filled){_renderManualSimPositions();_renderSimPendingOrders();}
+}
 // Sim uses same directional logic as execLive() but with paper P&L
 var simPos=null; // {entryPrice, volume, orderSize, entryTime}
+var _simBalance=1000; // virtual paper-trade balance, updated after each sim exit
 async function execSim(){
   var fR=+document.getElementById("feeSelect").value/100;
   if(pnl<-+document.getElementById("ml").value){stopBot();return;}
@@ -3329,7 +3873,7 @@ async function execSim(){
   if(simPos){
     var rt=await kPub("/0/public/Ticker",{pair:_activeTicker});
     if(!rt||rt.error&&rt.error.length)return;
-    var rtkKey=Object.keys(rt.result||{}).find(function(k){return k.includes("XRP");})||Object.keys(rt.result||{})[0];
+    var rtkKey=Object.keys(rt.result||{})[0];
     var rtk=rt.result&&rt.result[rtkKey];if(!rtk)return;
     var curBid=+rtk.b[0];
     var pctChg=(curBid-simPos.entryPrice)/simPos.entryPrice*100;
@@ -3352,6 +3896,7 @@ async function execSim(){
       var feeCost=simPos.orderSize*fR*2;
       var netPnl=grossPnl-feeCost;
       pnl+=netPnl;fees+=feeCost;trades++;vol+=simPos.orderSize;
+      _simBalance+=netPnl;
       if(netPnl>=0)wins++;
       if(netPnl>bestPnl)bestPnl=netPnl;
       updateStats();
@@ -3382,18 +3927,18 @@ async function execSim(){
 
   var r=await kPub("/0/public/Ticker",{pair:_activeTicker});
   if(!r||r.error&&r.error.length)return;
-  var tkKey2=Object.keys(r.result||{}).find(function(k){return k.includes("XRP");});
-  if(!tkKey2)tkKey2=Object.keys(r.result||{})[0];
+  var tkKey2=Object.keys(r.result||{})[0];
   var tk=r.result&&r.result[tkKey2];if(!tk)return;
   var ask=+tk.a[0];
   if(ask<0.5||ask>100){log("error","SIMORDER","Suspicious price $"+ask+" — aborting");return;}
 
-  // Confluence-scaled sizing (same as live, $100 sim balance)
+  // Confluence-scaled sizing — same Kelly logic as execLive()
   var cf=ind.confluence||50;
-  var simBal=100;
-  var sizeFrac=cf>=80?0.85:cf>=65?0.65:cf>=58?0.25:0.15;
-  var os=Math.floor(simBal*sizeFrac);
-  var v=Math.max(10,+(os/ask).toFixed(2));
+  var maxRiskPct=(+document.getElementById("maxRiskPct").value||10)/100;
+  var kellyFrac=(_simData&&_simData.kellyFrac)?_simData.kellyFrac:0.05;
+  var effectiveFrac=Math.min(kellyFrac,maxRiskPct);
+  var os=Math.max(10,Math.floor(_simBalance*effectiveFrac));
+  var v=Math.max(1,+(os/ask).toFixed(4));
   os=+(v*ask).toFixed(2);
 
   // Room to resistance check
@@ -3418,7 +3963,7 @@ async function execSim(){
   if(useTech&&ind.mtfBonus<-8){log("info","SIMGATE","MTF bearish — skip");return;}
 
   var cfStr=cf.toFixed(0),obiStr=_liveOBI!==null?_liveOBI.toFixed(3):"?";
-  log("info","SIM","Entry @ $"+ask.toFixed(4)+" x "+v+" XRP | conf:"+cfStr+" OBI:"+obiStr);
+  log("info","SIM","Entry @ $"+ask.toFixed(4)+" x "+v+" "+_activeTicker+" | conf:"+cfStr+" OBI:"+obiStr);
   simPos={entryPrice:ask,volume:v,orderSize:os,entryTime:Date.now(),rsiAtEntry:ind.rsi,macdShrinkCount:0,prevMacdHist:ind.hist};
   updatePosWidget();
   var ts2=new Date().toLocaleTimeString();
@@ -3464,7 +4009,7 @@ async function execLive(){
     // Check if live price is within 0.1% of limit — cancel and market buy instead
     var curTk=await kPub("/0/public/Ticker",{pair:_activeTicker});
     if(curTk&&curTk.result){
-      var _tkKey=Object.keys(curTk.result).find(function(k){return k.includes("XRP");})||Object.keys(curTk.result)[0];
+      var _tkKey=Object.keys(curTk.result)[0];
       var _tk=curTk.result&&curTk.result[_tkKey];
       if(_tk){
         var _curAsk=+_tk.a[0];
@@ -3491,7 +4036,7 @@ async function execLive(){
   if(livePos){
     var rt=await kPub("/0/public/Ticker",{pair:_activeTicker});
     if(!rt||rt.error&&rt.error.length)return;
-    var rtkKey=Object.keys(rt.result||{}).find(function(k){return k.includes("XRP");})||Object.keys(rt.result||{})[0];var rtk=rt.result&&rt.result[rtkKey];if(!rtk)return;
+    var rtkKey=Object.keys(rt.result||{})[0];var rtk=rt.result&&rt.result[rtkKey];if(!rtk)return;
     var curBid=+rtk.b[0],curAsk=+rtk.a[0];
     var curPrice=curBid; // sell at bid
     var pctChg=(curPrice-livePos.entryPrice)/livePos.entryPrice*100;
@@ -3632,24 +4177,23 @@ async function execLive(){
 
   var r=await kPub("/0/public/Ticker",{pair:_activeTicker});
   if(!r||r.error&&r.error.length)return;
-  var tkKey=Object.keys(r.result||{}).find(function(k){return k.includes("XRP");});
-  if(!tkKey)tkKey=Object.keys(r.result||{})[0];
+  var tkKey=Object.keys(r.result||{})[0];
   var tk=r.result&&r.result[tkKey];if(!tk)return;
   var bid=+tk.b[0],ask=+tk.a[0];
+  _liveBid=bid;_liveAsk=ask;
   // Safety check — if price looks wrong, abort
   if(ask<0.5||ask>100){log("error","ORDER","Suspicious price $"+ask+" — aborting order");return;}
 
-  var xrpP=ask;
-  var KRAKEN_MIN_XRP=10; // Kraken hard minimum for XRP orders
-  var v=Math.max(KRAKEN_MIN_XRP, +(os/xrpP).toFixed(2)); // always at least 10 XRP
-  var minXrp=Math.max(KRAKEN_MIN_XRP,+document.getElementById("minShx").value);
-  // If minimum XRP costs more than balance, skip
-  var minCost=v*xrpP;
+  var entryP=ask;
+  var minOrderQty=+document.getElementById("minShx").value||10;
+  var v=Math.max(minOrderQty, +(os/entryP).toFixed(4));
+  // If minimum order costs more than balance, skip
+  var minCost=v*entryP;
   if(typeof _liveUSDBalance==="number"&&minCost>_liveUSDBalance*0.95){
-    log("warning","ORDER","Insufficient balance for min XRP order ($"+minCost.toFixed(2)+" needed, $"+_liveUSDBalance.toFixed(2)+" available).");return;
+    log("warning","ORDER","Insufficient balance for min order ($"+minCost.toFixed(2)+" needed, $"+_liveUSDBalance.toFixed(2)+" available).");return;
   }
-  // Recalculate order size based on actual XRP volume (may have bumped up to meet minimum)
-  os=+(v*xrpP).toFixed(2);
+  // Recalculate order size based on actual volume (may have bumped up to meet minimum)
+  os=+(v*entryP).toFixed(2);
 
   var cfStr=ind.confluence?ind.confluence.toFixed(0):"?";
   var obiStr=_liveOBI!==null?_liveOBI.toFixed(3):"?";
@@ -3745,6 +4289,9 @@ function updateStats(){
   var pe=document.getElementById("statPnL");pe.textContent=(pnl>=0?"+":"")+"$"+pnl.toFixed(4);pe.className="cval "+(pnl>=0?"cg":"cr");
   document.getElementById("avgSpread").textContent=avg+" bps";
   document.getElementById("bestTrade").textContent="+$"+bestPnl.toFixed(4);
+  // Keep manual order desk headers + open sim positions current
+  _updateMLHeaders();
+  if(_manualSimPos.length) _renderManualSimPositions();
 }
 
 // ─── PUSH BOT STATE TO PROXY (for remote viewing on any device) ──────────
@@ -4002,6 +4549,8 @@ function showTab(id,btn){
   if(id==='news' && !_newsFetched) { _newsFetched=true; fetchNews(); }
   if(id==='trades') _renderTradesTab();
   if(id==='alerts') _renderAlertsEmptyState();
+  if(id==='dash') { _updateMLHeaders(); refreshOpenOrders(); }
+  if(id==='sim')  { _updateMLHeaders(); _renderManualSimPositions(); }
   if(id==='scanner') { _runScanner(false); clearInterval(_scannerTimer); _scannerTimer=setInterval(function(){ _runScanner(true); },60000); }
 }
 
