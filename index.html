@@ -1338,7 +1338,7 @@ var _liveUSDBalance=null; // updated by getBalance(), used for auto order sizing
 var _balFetched=false;
 var price=0,kKey="",kSecret="",live=false,cKey="",cKeySet=false;
 var mode="maker",aiScore=50,aiPaused=false,masterEnabled=false;
-var macroD={},newsArr=[],candles=[],candleInt=1;
+var macroD={},newsArr=[],candles=[],candleInt=1,_newsFetched=false;
 var mtfData={},mtf={}; // multi-timeframe candles and trend results
 var MTF_INTERVALS=[{v:1,l:"1M"},{v:5,l:"5M"},{v:15,l:"15M"},{v:60,l:"1H"},{v:240,l:"4H"},{v:1440,l:"1D"},{v:10080,l:"1W"}];
 var ind={rsi:null,bbU:null,bbM:null,bbL:null,bbPct:null,bbW:null,macd:null,sig:null,hist:null,volR:null,verdict:"LOADING",mtfBonus:0};
@@ -3963,6 +3963,32 @@ function setMode(m,btn){mode=m;btn.closest(".trow").querySelectorAll(".tbtn").fo
 function setTech(on,btn){useTech=on;btn.closest(".trow").querySelectorAll(".tbtn").forEach(function(b){b.classList.remove("active");});btn.classList.add("active");log("info","TECH","Tech signal gate "+(on?"ON - RSI/BB/MACD will block bad entries":"OFF"));}
 function setAP(on,btn){autoPause=on;btn.closest(".trow").querySelectorAll(".tbtn").forEach(function(b){b.classList.remove("active");});btn.classList.add("active");log("info","AI","Auto-pause "+(on?"ON":"OFF"));}
 function setCoach(on,btn){coachMode=on;btn.closest(".trow").querySelectorAll(".tbtn").forEach(function(b){b.classList.remove("active");});btn.classList.add("active");}
+function _renderTradesTab(){
+  // Reload from server then rebuild the table
+  _loadHistoryFromServer().then(function(){
+    var tb=document.getElementById("tradeBody");
+    if(!tb)return;
+    if(!tradeHist||!tradeHist.length){
+      tb.innerHTML='<tr><td colspan="7" style="color:var(--t3);font-size:7px;padding:24px 5px;letter-spacing:2px;text-align:center">NO TRADES YET — start the sim or live bot to see trades here</td></tr>';
+      return;
+    }
+    tb.innerHTML="";
+    var sorted=tradeHist.slice().reverse().slice(0,100);
+    sorted.forEach(function(t){
+      var r=document.createElement("tr");
+      var pnlV=parseFloat(t.pnl||0);
+      r.innerHTML='<td>'+(t.time||t.traded_at||"--")+'</td><td class="'+(String(t.type||"").startsWith("BUY")?'tb2':'ts2')+'" style="font-size:6px">'+(t.type||"--")+'</td><td>'+(t.price?parseFloat(t.price).toFixed(5):"--")+'</td><td>$'+(t.size||t.orderSize||"--")+'</td><td style="color:'+(parseFloat(t.rsi||50)<30?'var(--green)':parseFloat(t.rsi||50)>70?'var(--red)':'var(--t2)')+'">'+( t.rsi||"--")+'</td><td>'+(t.bbPct||t.bbp||"--")+'</td><td class="'+(pnlV>=0?'tb2':'ts2')+'">'+(pnlV>=0?"+":"")+"$"+pnlV.toFixed(4)+'</td>';
+      tb.appendChild(r);
+    });
+  });
+}
+
+function _renderAlertsEmptyState(){
+  var cont=document.getElementById("alertsCont");
+  if(!cont||cont.children.length)return;
+  cont.innerHTML='<div style="text-align:center;padding:40px 20px;color:var(--t3);font-family:Share Tech Mono,monospace;font-size:8px;letter-spacing:1px;line-height:2.2">NO ALERTS YET<br><span style="font-size:7px">Alerts appear here when the bot fires signals,<br>RSI hits extremes, or regime changes</span></div>';
+}
+
 function showTab(id,btn){
   document.querySelectorAll(".pane").forEach(function(p){p.classList.remove("active");});
   document.querySelectorAll(".tnav").forEach(function(b){b.classList.remove("active");});
@@ -3974,6 +4000,9 @@ function showTab(id,btn){
   if(id==='notifications') _renderNotificationsPage();
   if(id==='config') renderTickerList();
   if(id==='brain') renderBrainTab();
+  if(id==='news' && !_newsFetched) { _newsFetched=true; fetchNews(); }
+  if(id==='trades') _renderTradesTab();
+  if(id==='alerts') _renderAlertsEmptyState();
   if(id==='scanner') { _runScanner(false); clearInterval(_scannerTimer); _scannerTimer=setInterval(function(){ _runScanner(true); },60000); }
 }
 
