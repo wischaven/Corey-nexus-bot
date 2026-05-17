@@ -365,6 +365,132 @@ app.all(/^\/api\/(.*)/, (req, res) => {
   proxyReq.end();
 });
 
+// ─── Backtester endpoints (Pro/Elite) ────────────────────────────────────────
+
+let _backtestEngine = null;
+function getBacktestEngine() {
+  if (!_backtestEngine) _backtestEngine = require('./trading_engine/backtest_engine');
+  return _backtestEngine;
+}
+
+// Run a single backtest
+app.post('/backtest', requireAuth, async (req, res) => {
+  const settings = await getUserPlan(req.user.id);
+  const plan = isOwner(req.user) ? 'elite' : settings.plan;
+  if (plan === 'free') return res.status(403).json({ error: 'Backtesting requires Pro or Elite plan' });
+
+  const { pair = 'XRPUSD', interval = 60, daysBack = 90, slippage = 0.0005, feePct = 0.0016, params = {}, walkForward = false } = req.body;
+
+  try {
+    const eng = getBacktestEngine();
+    const candles = await eng.fetchDeepHistory(pair, interval, daysBack);
+    if (!candles || candles.length < 50) return res.status(400).json({ error: 'Not enough historical data' });
+
+    let result;
+    if (walkForward) {
+      result = eng.runWalkForward(candles, params, slippage, feePct);
+    } else {
+      const { trades, equity } = eng.runBacktestOnCandles(candles, params, slippage, feePct);
+      const metrics = eng.calcMetrics(trades, equity, 10000);
+      result = { trades, equity, metrics, candles: candles.map(c => ({ t: c.t, o: c.o, h: c.h, l: c.l, c: c.c, v: c.v })) };
+    }
+    res.json({ ok: true, pair, interval, daysBack, candleCount: candles.length, ...result });
+  } catch (e) {
+    console.error('Backtest error:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Run walk-forward grid optimizer (Elite only)
+app.post('/backtest/optimize', requireAuth, async (req, res) => {
+  const settings = await getUserPlan(req.user.id);
+  const plan = isOwner(req.user) ? 'elite' : settings.plan;
+  if (plan !== 'elite') return res.status(403).json({ error: 'Optimizer requires Elite plan', upgrade: true });
+
+  const { pair = 'XRPUSD', interval = 60, daysBack = 180, slippage = 0.0005, feePct = 0.0016, maxCombos = 500 } = req.body;
+
+  try {
+    const eng = getBacktestEngine();
+    const candles = await eng.fetchDeepHistory(pair, interval, daysBack);
+    if (!candles || candles.length < 100) return res.status(400).json({ error: 'Not enough data for optimization' });
+
+    const results = eng.runOptimizer(candles, slippage, feePct, maxCombos);
+    res.json({ ok: true, pair, interval, daysBack, candleCount: candles.length, results });
+  } catch (e) {
+    console.error('Optimizer error:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ─── Webhook signal endpoints ─────────────────────────────────────────────
+
+// External POST /signal — authenticated with user's webhook token
+app.post('/signal', async (req, res) => {
+  const auth = req.headers['authorization'] || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+  if (!token) return res.status(401).json({ error: 'Bearer token required' });
+
+  // Look up user by webhook token
+  const { data: settings, error } = await supabase
+    .from('user_settings')
+    .select('user_id, webhook_token')
+    .eq('webhook_token', token)
+    .single();
+
+  if (error || !settings) return res.status(401).json({ error: 'Invalid webhook token' });
+
+  const { action, pair, price, confidence, source } = req.body;
+  if (!action || !['buy', 'sell', 'close'].includes(action)) return res.status(400).json({ error: 'action must be buy|sell|close' });
+
+  const signal = {
+    user_id: settings.user_id,
+    action,
+    pair: pair || null,
+    price: price || null,
+    confidence: confidence || null,
+    source: source || 'webhook',
+    consumed: false,
+    created_at: new Date().toISOString(),
+  };
+
+  const { error: insertErr } = await supabase.from('webhook_signals').insert(signal);
+  if (insertErr) return res.status(500).json({ error: insertErr.message });
+
+  res.json({ ok: true, queued: true });
+});
+
+// Client polls for pending signals (executed using client's own Kraken keys)
+app.get('/signal/pending', requireAuth, async (req, res) => {
+  const { data, error } = await supabase
+    .from('webhook_signals')
+    .select('*')
+    .eq('user_id', req.user.id)
+    .eq('consumed', false)
+    .order('created_at', { ascending: true })
+    .limit(10);
+
+  if (error) return res.status(500).json({ error: error.message });
+
+  // Mark all returned signals as consumed
+  if (data && data.length > 0) {
+    const ids = data.map(s => s.id);
+    await supabase.from('webhook_signals').update({ consumed: true }).in('id', ids);
+  }
+
+  res.json({ signals: data || [] });
+});
+
+// Generate or rotate user's webhook token
+app.post('/signal/token', requireAuth, async (req, res) => {
+  const crypto = require('crypto');
+  const token = crypto.randomBytes(32).toString('hex');
+  await supabase.from('user_settings').upsert(
+    { user_id: req.user.id, webhook_token: token },
+    { onConflict: 'user_id' }
+  );
+  res.json({ ok: true, token });
+});
+
 // ─── Start ─────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
