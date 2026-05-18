@@ -7,22 +7,28 @@ const SUPABASE_URL      = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 const SERVICE_KEY       = process.env.SUPABASE_SERVICE_KEY;
 
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  console.error('Missing SUPABASE_URL or SUPABASE_ANON_KEY in .env');
-  process.exit(1);
+const _supabaseReady = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
+if (!_supabaseReady) {
+  console.warn('[supabase] SUPABASE_URL / SUPABASE_ANON_KEY not set — auth disabled, running in open mode');
 }
 
+// No-op stub so proxy.js calls never throw when Supabase is unconfigured
+const _noop = { data: null, error: null };
+const _noopChain = { select:()=>_noopChain, insert:()=>Promise.resolve(_noop), upsert:()=>Promise.resolve(_noop), update:()=>Promise.resolve(_noop), eq:()=>_noopChain, in:()=>_noopChain, order:()=>_noopChain, limit:()=>_noopChain, single:()=>Promise.resolve(_noop) };
+const _supabaseStub = { from:()=>_noopChain, auth:{ signUp:()=>Promise.resolve(_noop), signInWithPassword:()=>Promise.resolve(_noop), getUser:()=>Promise.resolve(_noop) } };
+
 // Public client — respects Row Level Security (use for user requests)
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabase = _supabaseReady ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : _supabaseStub;
 
 // Admin client — bypasses RLS (use only in server-side trusted code)
-const supabaseAdmin = SERVICE_KEY
+const supabaseAdmin = (SERVICE_KEY && _supabaseReady)
   ? createClient(SUPABASE_URL, SERVICE_KEY, { auth: { autoRefreshToken: false, persistSession: false } })
-  : null;
+  : _supabaseStub;
 
 // ─── Verify JWT from Authorization header ─────────────────────────────────
 // Returns { user, error }
 async function verifyToken(req) {
+  if (!_supabaseReady) return { user: { id: 'local', email: process.env.OWNER_EMAIL || 'local' }, error: null };
   const authHeader = req.headers['authorization'];
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return { user: null, error: 'Missing token' };
@@ -43,6 +49,7 @@ async function requireAuth(req, res, next) {
 
 // ─── Get user plan from user_settings ─────────────────────────────────────
 async function getUserPlan(userId) {
+  if (!_supabaseReady) return { plan: 'elite', ticker: 'XRPUSD' };
   const { data } = await supabase
     .from('user_settings')
     .select('plan, ticker')
