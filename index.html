@@ -72,6 +72,8 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
 .tnav.active{color:var(--cyan);border-bottom-color:var(--cyan)}
 .pane{display:none;padding:12px;padding-bottom:calc(20px + var(--sb));flex-direction:column;gap:10px;animation:fadeUp .2s ease}
 .pane.active{display:flex}
+.pane-rz{height:5px;background:var(--border);cursor:ns-resize;width:100%;position:relative;z-index:50;flex-shrink:0;transition:background .15s}
+.pane-rz:hover,.pane-rz.rz-active{background:var(--cyan);opacity:.7}
 .card{background:var(--card);border:1px solid var(--border);padding:12px 14px}
 .clbl{font-family:'Share Tech Mono',monospace;font-size:7px;color:var(--t3);letter-spacing:2px;text-transform:uppercase;margin-bottom:5px}
 .cval{font-family:'Orbitron',monospace;font-size:19px;font-weight:700}
@@ -601,16 +603,18 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
       <div id="indPanelBody"></div>
     </div>
     <!-- ── Lightweight Charts containers ──────────────────────── -->
-    <div style="background:#0a0a0f;border-radius:4px;overflow:hidden;margin-bottom:4px;position:relative">
+    <div id="chartWrapper" style="background:#0a0a0f;border-radius:4px;overflow:hidden;margin-bottom:4px;position:relative">
       <div id="tvMain"   style="height:320px;width:100%"></div>
+      <div class="pane-rz" id="rz-vol"  title="Drag to resize pane"></div>
       <div id="tvVolume" style="height:55px;width:100%"></div>
+      <div class="pane-rz" id="rz-oscA" title="Drag to resize pane"></div>
       <div id="tvOscA"   style="height:90px;width:100%"></div>
+      <div class="pane-rz" id="rz-oscB" title="Drag to resize pane"></div>
       <div id="tvOscB"   style="height:80px;width:100%"></div>
-      <!-- Pane name labels — sit inside the position:relative container -->
-      <!-- tvMain=320px, tvVolume=55px (at 320), tvOscA=90px (at 375), tvOscB=80px (at 465) -->
-      <div style="position:absolute;top:322px;left:5px;z-index:8;pointer-events:none;font-family:Share Tech Mono,monospace;font-size:7px;color:rgba(255,255,255,0.3);letter-spacing:.5px">VOLUME</div>
-      <div id="paneLabelOscA" style="position:absolute;top:377px;left:5px;z-index:8;pointer-events:none;font-family:Share Tech Mono,monospace;font-size:7px;color:rgba(0,212,255,0.55);letter-spacing:.5px">RSI (14)</div>
-      <div id="paneLabelOscB" style="position:absolute;top:467px;left:5px;z-index:8;pointer-events:none;font-family:Share Tech Mono,monospace;font-size:7px;color:rgba(0,212,255,0.55);letter-spacing:.5px">MACD (12,26,9)</div>
+      <!-- Pane name labels — positions updated dynamically by _updatePaneLabels() -->
+      <div id="paneLabelVol"  data-lbl="vol"  style="position:absolute;top:322px;left:5px;z-index:8;pointer-events:none;font-family:Share Tech Mono,monospace;font-size:7px;color:rgba(255,255,255,0.3);letter-spacing:.5px">VOLUME</div>
+      <div id="paneLabelOscA" data-lbl="oscA" style="position:absolute;top:379px;left:5px;z-index:8;pointer-events:none;font-family:Share Tech Mono,monospace;font-size:7px;color:rgba(0,212,255,0.55);letter-spacing:.5px">RSI (14)</div>
+      <div id="paneLabelOscB" data-lbl="oscB" style="position:absolute;top:473px;left:5px;z-index:8;pointer-events:none;font-family:Share Tech Mono,monospace;font-size:7px;color:rgba(0,212,255,0.55);letter-spacing:.5px">MACD (12,26,9)</div>
       <!-- OHLC crosshair tooltip — top-left of chart -->
       <div id="chartTooltip" style="display:none;position:absolute;top:6px;left:6px;z-index:20;background:rgba(10,10,18,0.88);border:1px solid rgba(0,212,255,0.25);border-radius:4px;padding:5px 9px;pointer-events:none;backdrop-filter:blur(4px)">
         <span id="ctDate" style="font-family:Share Tech Mono,monospace;font-size:7.5px;color:#666;display:block;margin-bottom:3px;letter-spacing:.5px"></span>
@@ -1109,7 +1113,7 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
 
   <!-- STRATEGY TAB -->
   <div class="pane" id="tab-strategy">
-    <div style="display:grid;grid-template-columns:1fr 340px;gap:10px;height:100%;min-height:0">
+    <div style="display:grid;grid-template-columns:1fr 340px;gap:10px;min-height:600px">
       <!-- Monaco Editor -->
       <div style="display:flex;flex-direction:column;gap:6px;min-height:0">
         <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
@@ -1121,7 +1125,7 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
             <button onclick="_stratLoad()" style="background:rgba(255,170,0,0.08);border:1px solid var(--amber);color:var(--amber);font-family:Share Tech Mono,monospace;font-size:9px;padding:4px 10px;cursor:pointer">&#x1F4C2; LOAD</button>
           </div>
         </div>
-        <div id="stratEditor" style="flex:1;min-height:0;border:1px solid rgba(0,212,255,0.2);border-radius:4px;overflow:hidden"></div>
+        <div id="stratEditor" style="flex:1;min-height:420px;border:1px solid rgba(0,212,255,0.2);border-radius:4px;overflow:hidden"></div>
         <div id="strat_status" style="font-family:Share Tech Mono,monospace;font-size:9px;color:var(--t3);min-height:16px"></div>
       </div>
       <!-- Docs + Webhook Panel -->
@@ -2163,7 +2167,7 @@ var _liveUSDBalance=null; // updated by getBalance(), used for auto order sizing
 var _balFetched=false;
 var price=0,_liveBid=0,_liveAsk=0,kKey="",kSecret="",live=false,cKey="",cKeySet=false;
 var mode="maker",aiScore=50,aiPaused=false,masterEnabled=false;
-var macroD={},newsArr=[],candles=[],candleInt=1,_newsFetched=false;
+var macroD={},newsArr=[],candles=[],candleInt=1,_loadedTF=0,_newsFetched=false;
 var mtfData={},mtf={}; // multi-timeframe candles and trend results
 var MTF_INTERVALS=[{v:1,l:"1m"},{v:3,l:"3m"},{v:5,l:"5m"},{v:15,l:"15m"},{v:30,l:"30m"},{v:60,l:"1H"},{v:120,l:"2H"},{v:240,l:"4H"},{v:360,l:"6H"},{v:480,l:"8H"},{v:720,l:"12H"},{v:1440,l:"1D"},{v:4320,l:"3D"},{v:10080,l:"1W"},{v:43200,l:"1M"}];
 var ind={rsi:null,bbU:null,bbM:null,bbL:null,bbPct:null,bbW:null,macd:null,sig:null,hist:null,volR:null,verdict:"LOADING",mtfBonus:0};
@@ -2614,7 +2618,7 @@ function init(){
   if(_authToken)fetch('/sim/pair',{method:'POST',headers:_authHeaders(),body:JSON.stringify({pair:_activeTicker})}).catch(function(){});
   setInterval(fetchAllMacro,300000);
   setInterval(fetchOHLC,120000);
-  setInterval(fetchAllTF,10000); // refresh all TFs every 10s
+  setInterval(fetchAllTF,60000); // refresh MTF data every 60s
   setInterval(fetchNews,600000);
   setInterval(function(){if((botRunning||aiPaused)&&cKeySet)runFullAI(true);},120000);
   setInterval(function(){if(live)getBalance();},120000);
@@ -2691,12 +2695,13 @@ async function fetchOHLC(){
     if(myId!==_ohlcFetchId)return; // superseded by a newer fetch
     if(!result.length)throw new Error('empty response');
     candles=result;
+    _loadedTF=candleInt; // mark which TF is actually loaded
     price=candles[candles.length-1].c;
     document.getElementById("livePrice").textContent="$"+price.toFixed(6);
     document.getElementById("priceSrc").textContent="BINANCE "+candleInt+"m · "+candles.length+" bars";
     calcAllInd();drawAllCharts();
     log("success","OHLC",candles.length+" candles loaded.");
-    fetchAllTF();
+    setTimeout(fetchAllTF,3000); // delay MTF fetch to avoid hammering Binance right after main fetch
   }catch(e){
     if(myId!==_ohlcFetchId)return;
     log("warn","OHLC","Binance failed ("+e.message+") — trying Kraken…");
@@ -2707,16 +2712,17 @@ async function fetchOHLC(){
       if(d.error&&d.error.length)throw new Error(d.error[0]);
       var key=Object.keys(d.result).find(function(k){return k!=="last";});
       candles=d.result[key].map(function(c){return{t:+c[0],o:+c[1],h:+c[2],l:+c[3],c:+c[4],v:+c[6]};});
-      if(candles.length){price=candles[candles.length-1].c;document.getElementById("livePrice").textContent="$"+price.toFixed(6);document.getElementById("priceSrc").textContent="KRAKEN "+candleInt+"m · "+candles.length+" bars";}
+      if(candles.length){_loadedTF=candleInt;price=candles[candles.length-1].c;document.getElementById("livePrice").textContent="$"+price.toFixed(6);document.getElementById("priceSrc").textContent="KRAKEN "+candleInt+"m · "+candles.length+" bars";}
       calcAllInd();drawAllCharts();
       log("success","OHLC",candles.length+" candles (Kraken).");
-      fetchAllTF();
+      setTimeout(fetchAllTF,5000);
     }catch(e2){if(myId!==_ohlcFetchId)return;log("error","OHLC",e2.message);}
   }
 }
 
 function _setTF(min,btn){
-  if(candleInt===min&&candles.length)return; // already on this TF with data
+  // Only skip if this exact TF is already loaded with data — not just "candleInt was set to it"
+  if(candleInt===min&&_loadedTF===min&&candles.length)return;
   candleInt=min;
   document.querySelectorAll('[id^="tf-"]').forEach(function(b){b.classList.remove("active");});
   if(btn)btn.classList.add("active");
@@ -3009,25 +3015,30 @@ function updateMTFUI(){
 }
 
 async function fetchAllTF(){
-  // Fetch all timeframes except the current active one (already in candles[])
-  await Promise.all(MTF_INTERVALS.filter(function(tf){return tf.v!==candleInt;}).map(async function(tf){
+  // Fetch MTF data sequentially with small delays to avoid rate limits
+  // Only fetch the key timeframes needed for confluence scoring
+  var _keyTFs=[{v:1,l:"1m"},{v:5,l:"5m"},{v:15,l:"15m"},{v:60,l:"1H"},{v:240,l:"4H"},{v:1440,l:"1D"}];
+  for(var _i=0;_i<_keyTFs.length;_i++){
+    var tf=_keyTFs[_i];
+    if(tf.v===candleInt)continue; // already have this one
     try{
       mtfData[tf.v]=await _fetchBinanceCandles(_activeTicker,tf.v,100);
     }catch(e){
       try{
         var r=await fetch("https://api.kraken.com/0/public/OHLC?pair="+_activeTicker+"&interval="+tf.v);
         var d=await r.json();
-        if(d.error&&d.error.length)return;
+        if(d.error&&d.error.length)continue;
         var key=Object.keys(d.result).find(function(k){return k!=="last";});
         if(key)mtfData[tf.v]=d.result[key].slice(-100).map(function(c){return{t:+c[0],o:+c[1],h:+c[2],l:+c[3],c:+c[4],v:+c[6]};});
       }catch(e2){}
     }
-  }));
+    await new Promise(function(res){setTimeout(res,400);}); // 400ms between requests
+  }
   calcMTF();
   updateMTFUI();
-  calcAutoLevels(); // derive S/R from 1H + 15M swing highs/lows
-  calcAllInd(); // recalc confluence with new MTF bonus + auto levels now ready
-  log("info","MTF","All timeframes updated | MTF bonus: "+(ind.mtfBonus>0?"+":"")+ind.mtfBonus);
+  calcAutoLevels();
+  calcAllInd();
+  log("info","MTF","Key timeframes updated | MTF bonus: "+(ind.mtfBonus>0?"+":"")+ind.mtfBonus);
 }
 
 function calcConfluenceScore(rsi,bb,macd,obi,stochRsi,vwap,emaCross,volR,price,divergence){
@@ -3468,8 +3479,16 @@ var _OSC_LABELS={
   obv:'OBV', cmf:'CMF (20)', force:'Force Index', ppo:'PPO', kst:'KST', none:'—'
 };
 function _setPaneLabel(id,v){var el=document.getElementById(id);if(el)el.textContent=_OSC_LABELS[v]||v.toUpperCase();}
-function _setOscA(v){ _oscAType=v; _setPaneLabel('paneLabelOscA',v); if(candles.length)_updateTVCharts(candles); }
-function _setOscB(v){ _oscBType=v; _setPaneLabel('paneLabelOscB',v); if(candles.length)_updateTVCharts(candles); }
+function _setOscA(v){
+  _oscAType=v; _setPaneLabel('paneLabelOscA',v);
+  var sel=document.getElementById('oscA_sel'); if(sel)sel.value=v;
+  if(candles.length)_updateTVCharts(candles);
+}
+function _setOscB(v){
+  _oscBType=v; _setPaneLabel('paneLabelOscB',v);
+  var sel=document.getElementById('oscB_sel'); if(sel)sel.value=v;
+  if(candles.length)_updateTVCharts(candles);
+}
 
 function initTVChart() {
   if (typeof LightweightCharts === 'undefined') return;
@@ -3595,13 +3614,15 @@ function initTVChart() {
     });
   });
 
-  // ── Auto-resize ────────────────────────────────────────────────
+  // ── Auto-resize on container width changes ────────────────────
   var ro = new ResizeObserver(function() {
-    [[mEl,MC,320],[vEl,VC,55],[aEl,AC,90],[bEl,BC,80]].forEach(function(t){
-      if(t[0].clientWidth>10) t[1].resize(t[0].clientWidth, t[2]);
+    [[mEl,MC],[vEl,VC],[aEl,AC],[bEl,BC]].forEach(function(t){
+      if(t[0].clientWidth>10) t[1].resize(t[0].clientWidth, t[0].offsetHeight);
     });
+    _updatePaneLabels();
   });
   ro.observe(mEl.parentElement);
+  setTimeout(_updatePaneLabels, 100);
 }
 
 // ── EMA helper (single value at end) ──────────────────────────
@@ -3760,6 +3781,7 @@ function _updateTVCharts(cdata) {
   _tvSeries.candle.setMarkers(markers.concat(_chartMarkers).sort(function(a,b){return a.time-b.time;}));
 
   _tvApplyVisibility();
+  setTimeout(_updatePaneLabels, 50); // labels reposition after pane show/hide
 }
 
 // ── Parabolic SAR (pure JS) ───────────────────────────────────
@@ -3786,9 +3808,11 @@ function _calcPSAR(cdata, step, max) {
 function _renderOscA(cdata, cl) {
   var s=_tvSeries, n=cdata.length;
   var aEl=document.getElementById('tvOscA');
-  // Hide if 'none'
-  if(aEl) aEl.style.display=_oscAType==='none'?'none':'';
-  if(_oscAType==='none'){s.oscALine.setData([]);s.oscALine2.setData([]);s.oscAHist.setData([]);return;}
+  var rzA=document.getElementById('rz-oscA');
+  var hidden=_oscAType==='none';
+  if(aEl) aEl.style.display=hidden?'none':'';
+  if(rzA) rzA.style.display=hidden?'none':'';
+  if(hidden){s.oscALine.setData([]);s.oscALine2.setData([]);s.oscAHist.setData([]);return;}
 
   if(_tvCharts && _tvCharts.oscA) {
     // Reset scale per oscillator type
@@ -3822,7 +3846,12 @@ function _renderOscA(cdata, cl) {
     var mfd=[];
     for(var i=14;i<n;i++){
       var sl=cdata.slice(i-13,i+1); var posF=0,negF=0;
-      for(var j=1;j<sl.length;j++){var tp=(sl[j].h||sl[j].high+sl[j].l||sl[j].low+sl[j].c||sl[j].close)/3,ptp=(sl[j-1].h||sl[j-1].high+sl[j-1].l||sl[j-1].low+sl[j-1].c||sl[j-1].close)/3,mf=tp*(sl[j].v||sl[j].volume||1);if(tp>ptp)posF+=mf;else negF+=mf;}
+      for(var j=1;j<sl.length;j++){
+        var mh=sl[j].h||sl[j].high, ml=sl[j].l||sl[j].low, mc=sl[j].c||sl[j].close;
+        var ph=sl[j-1].h||sl[j-1].high, pl=sl[j-1].l||sl[j-1].low, pc=sl[j-1].c||sl[j-1].close;
+        var tp=(mh+ml+mc)/3, ptp=(ph+pl+pc)/3, mf=tp*(sl[j].v||sl[j].volume||1);
+        if(tp>ptp)posF+=mf; else negF+=mf;
+      }
       var mfv=negF===0?100:100-(100/(1+posF/negF)); mfd.push({time:cdata[i].t,value:mfv});
     }
     s.oscALine.applyOptions({color:'#4488ff',title:'MFI'}); s.oscALine.setData(mfd);
@@ -3869,8 +3898,11 @@ function _renderOscA(cdata, cl) {
 function _renderOscB(cdata, cl) {
   var s=_tvSeries, n=cdata.length;
   var bEl=document.getElementById('tvOscB');
-  if(bEl) bEl.style.display=_oscBType==='none'?'none':'';
-  if(_oscBType==='none'){s.oscBLine.setData([]);s.oscBLine2.setData([]);s.oscBHist.setData([]);return;}
+  var rzB=document.getElementById('rz-oscB');
+  var hiddenB=_oscBType==='none';
+  if(bEl) bEl.style.display=hiddenB?'none':'';
+  if(rzB) rzB.style.display=hiddenB?'none':'';
+  if(hiddenB){s.oscBLine.setData([]);s.oscBLine2.setData([]);s.oscBHist.setData([]);return;}
 
   if(_oscBType==='macd'){
     var fE=calcEMAArr(cl,12),sE=calcEMAArr(cl,26);
@@ -4082,26 +4114,51 @@ function _buildIndPanel(){
   var body=document.getElementById('indPanelBody');
   if(!body)return;
   var html='';
-  _IND_CATALOG.forEach(function(cat){
-    html+='<div style="margin-bottom:12px"><div style="color:var(--cyan);font-size:8px;letter-spacing:2px;margin-bottom:6px;border-bottom:1px solid rgba(0,212,255,0.2);padding-bottom:3px">'+cat.cat.toUpperCase()+'</div>';
-    cat.items.forEach(function(item){
-      if(item.osc){
-        var sel=item.osc==='A'?_oscAType:_oscBType;
-        var active=sel===item.oval;
-        html+='<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.03)">';
-        html+='<span style="color:'+(active?'var(--cyan)':'var(--t2)')+'">'+item.label+'</span>';
-        html+='<button onclick="_setOsc'+item.osc+'(\''+item.oval+'\');_buildIndPanel()" style="background:'+(active?'rgba(0,212,255,0.2)':'rgba(255,255,255,0.05)')+';border:1px solid '+(active?'var(--cyan)':'rgba(255,255,255,0.15)')+';color:'+(active?'var(--cyan)':'var(--t3)')+';font-family:Share Tech Mono,monospace;font-size:8px;padding:2px 8px;cursor:pointer">Osc'+item.osc+'</button>';
-        html+='</div>';
-      } else {
-        var on=!!_tvInds[item.key];
-        html+='<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.03)">';
-        html+='<span style="color:'+(on?'#e0e0e0':'var(--t3)')+'">'+item.label+'<br><span style="font-size:7px;color:var(--t3)">'+(item.desc||'')+'</span></span>';
-        html+='<button onclick="_tvInds[\''+item.key+'\']=!'+'_tvInds[\''+item.key+'\'];_buildIndPanel();if(candles.length)_updateTVCharts(candles);" style="background:'+(on?'rgba(0,212,255,0.2)':'rgba(255,255,255,0.05)')+';border:1px solid '+(on?'var(--cyan)':'rgba(255,255,255,0.15)')+';color:'+(on?'var(--cyan)':'var(--t3)')+';font-family:Share Tech Mono,monospace;font-size:8px;padding:2px 8px;cursor:pointer">'+(on?'ON':'OFF')+'</button>';
-        html+='</div>';
-      }
-    });
+  // ── Overlays section (multi-select: any/all can be ON simultaneously)
+  html+='<div style="margin-bottom:14px">';
+  html+='<div style="color:var(--cyan);font-size:8px;letter-spacing:2px;margin-bottom:2px;border-bottom:1px solid rgba(0,212,255,0.2);padding-bottom:3px">OVERLAYS <span style="color:var(--t3);font-size:7px;letter-spacing:0;font-family:Rajdhani,sans-serif">— any combination</span></div>';
+  var overlayItems=_IND_CATALOG[0].items;
+  overlayItems.forEach(function(item){
+    var on=!!_tvInds[item.key];
+    html+='<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03)">';
+    html+='<span style="color:'+(on?'#e0e0e0':'var(--t3)')+';font-size:9px">'+item.label+'<br><span style="font-size:7px;color:var(--t3)">'+(item.desc||'')+'</span></span>';
+    html+='<button onclick="_tvInds[\''+item.key+'\']=!_tvInds[\''+item.key+'\'];_buildIndPanel();if(candles.length)_updateTVCharts(candles);" style="min-width:42px;background:'+(on?'rgba(0,212,255,0.2)':'rgba(255,255,255,0.05)')+';border:1px solid '+(on?'var(--cyan)':'rgba(255,255,255,0.15)')+';color:'+(on?'var(--cyan)':'var(--t3)')+';font-family:Share Tech Mono,monospace;font-size:8px;padding:3px 8px;cursor:pointer">'+(on?'● ON':'○ OFF')+'</button>';
     html+='</div>';
   });
+  html+='</div>';
+  // ── OscA slot (radio: pick ONE for pane A)
+  html+='<div style="margin-bottom:14px">';
+  html+='<div style="color:var(--amber);font-size:8px;letter-spacing:2px;margin-bottom:2px;border-bottom:1px solid rgba(255,170,0,0.3);padding-bottom:3px">PANE A — OSCILLATOR <span style="color:var(--t3);font-size:7px;letter-spacing:0;font-family:Rajdhani,sans-serif">pick one</span></div>';
+  _IND_CATALOG[1].items.concat([{key:'oscA:none',label:'— Hide Pane A —',osc:'A',oval:'none'}]).forEach(function(item){
+    var sel=_oscAType; var active=sel===item.oval;
+    html+='<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.03)">';
+    html+='<span style="color:'+(active?'var(--amber)':'var(--t2)')+';font-size:9px">'+item.label+'</span>';
+    html+='<button onclick="_setOscA(\''+item.oval+'\');_buildIndPanel()" style="min-width:42px;background:'+(active?'rgba(255,170,0,0.2)':'rgba(255,255,255,0.05)')+';border:1px solid '+(active?'var(--amber)':'rgba(255,255,255,0.15)')+';color:'+(active?'var(--amber)':'var(--t3)')+';font-family:Share Tech Mono,monospace;font-size:8px;padding:3px 8px;cursor:pointer">'+(active?'● ACTIVE':'SELECT')+'</button>';
+    html+='</div>';
+  });
+  html+='</div>';
+  // ── OscB slot (radio: pick ONE for pane B)
+  html+='<div style="margin-bottom:14px">';
+  html+='<div style="color:var(--purple);font-size:8px;letter-spacing:2px;margin-bottom:2px;border-bottom:1px solid rgba(153,69,255,0.3);padding-bottom:3px">PANE B — OSCILLATOR <span style="color:var(--t3);font-size:7px;letter-spacing:0;font-family:Rajdhani,sans-serif">pick one</span></div>';
+  _IND_CATALOG[2].items.concat([{key:'oscB:none',label:'— Hide Pane B —',osc:'B',oval:'none'}]).forEach(function(item){
+    var sel=_oscBType; var active=sel===item.oval;
+    html+='<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.03)">';
+    html+='<span style="color:'+(active?'var(--purple)':'var(--t2)')+';font-size:9px">'+item.label+'</span>';
+    html+='<button onclick="_setOscB(\''+item.oval+'\');_buildIndPanel()" style="min-width:42px;background:'+(active?'rgba(153,69,255,0.2)':'rgba(255,255,255,0.05)')+';border:1px solid '+(active?'var(--purple)':'rgba(255,255,255,0.15)')+';color:'+(active?'var(--purple)':'var(--t3)')+';font-family:Share Tech Mono,monospace;font-size:8px;padding:3px 8px;cursor:pointer">'+(active?'● ACTIVE':'SELECT')+'</button>';
+    html+='</div>';
+  });
+  html+='</div>';
+  // ── Volume + Divergence
+  html+='<div style="margin-bottom:14px">';
+  html+='<div style="color:var(--cyan);font-size:8px;letter-spacing:2px;margin-bottom:2px;border-bottom:1px solid rgba(0,212,255,0.2);padding-bottom:3px">OTHER</div>';
+  [_IND_CATALOG[3].items[0],_IND_CATALOG[4].items[0]].forEach(function(item){
+    var on=!!_tvInds[item.key];
+    html+='<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03)">';
+    html+='<span style="color:'+(on?'#e0e0e0':'var(--t3)')+';font-size:9px">'+item.label+'<br><span style="font-size:7px;color:var(--t3)">'+(item.desc||'')+'</span></span>';
+    html+='<button onclick="_tvInds[\''+item.key+'\']=!_tvInds[\''+item.key+'\'];_buildIndPanel();if(candles.length)_updateTVCharts(candles);" style="min-width:42px;background:'+(on?'rgba(0,212,255,0.2)':'rgba(255,255,255,0.05)')+';border:1px solid '+(on?'var(--cyan)':'rgba(255,255,255,0.15)')+';color:'+(on?'var(--cyan)':'var(--t3)')+';font-family:Share Tech Mono,monospace;font-size:8px;padding:3px 8px;cursor:pointer">'+(on?'● ON':'○ OFF')+'</button>';
+    html+='</div>';
+  });
+  html+='</div>';
   body.innerHTML=html;
 }
 
@@ -4418,6 +4475,91 @@ function _redrawAll(){
 }
 
 // ── Canvas initialisation ────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// PANE RESIZE — drag handles between chart panes
+// ═══════════════════════════════════════════════════════════════
+var _rzInited=false;
+function _updatePaneLabels(){
+  var mEl=document.getElementById('tvMain');
+  var vEl=document.getElementById('tvVolume');
+  var aEl=document.getElementById('tvOscA');
+  if(!mEl||!vEl||!aEl)return;
+  var mh=mEl.offsetHeight, vh=vEl.offsetHeight, ah=aEl.offsetHeight;
+  var lv=document.getElementById('paneLabelVol');
+  var la=document.getElementById('paneLabelOscA');
+  var lb=document.getElementById('paneLabelOscB');
+  if(lv)lv.style.top=(mh+2)+'px';
+  if(la)la.style.top=(mh+vh+8)+'px';
+  if(lb)lb.style.top=(mh+vh+ah+8)+'px';
+}
+
+function _initPaneResize(){
+  if(_rzInited)return; _rzInited=true;
+  var configs=[
+    {rzId:'rz-vol',  topId:'tvMain',   topKey:'main',  botId:'tvVolume', botKey:'vol',  minTop:150, minBot:35},
+    {rzId:'rz-oscA', topId:'tvVolume', topKey:'vol',   botId:'tvOscA',   botKey:'oscA', minTop:35,  minBot:55},
+    {rzId:'rz-oscB', topId:'tvOscA',   topKey:'oscA',  botId:'tvOscB',   botKey:'oscB', minTop:55,  minBot:50},
+  ];
+  configs.forEach(function(cfg){
+    var rz=document.getElementById(cfg.rzId); if(!rz)return;
+    var dragging=false,startY=0,topH=0,botH=0;
+    rz.addEventListener('mousedown',function(e){
+      e.preventDefault();
+      dragging=true; startY=e.clientY;
+      topH=document.getElementById(cfg.topId).offsetHeight;
+      botH=document.getElementById(cfg.botId).offsetHeight;
+      rz.classList.add('rz-active');
+      document.body.style.cursor='ns-resize';
+      document.body.style.userSelect='none';
+    });
+    document.addEventListener('mousemove',function(e){
+      if(!dragging)return;
+      var dy=e.clientY-startY;
+      var nt=Math.max(cfg.minTop,topH+dy);
+      var nb=Math.max(cfg.minBot,botH-dy);
+      var tEl=document.getElementById(cfg.topId);
+      var bEl=document.getElementById(cfg.botId);
+      tEl.style.height=nt+'px';
+      bEl.style.height=nb+'px';
+      if(_tvCharts){
+        if(_tvCharts[cfg.topKey])_tvCharts[cfg.topKey].applyOptions({height:nt});
+        if(_tvCharts[cfg.botKey])_tvCharts[cfg.botKey].applyOptions({height:nb});
+      }
+      _updatePaneLabels();
+    });
+    document.addEventListener('mouseup',function(){
+      if(!dragging)return;
+      dragging=false;
+      rz.classList.remove('rz-active');
+      document.body.style.cursor='';
+      document.body.style.userSelect='';
+    });
+    // Touch support
+    rz.addEventListener('touchstart',function(e){
+      e.preventDefault();
+      dragging=true; startY=e.touches[0].clientY;
+      topH=document.getElementById(cfg.topId).offsetHeight;
+      botH=document.getElementById(cfg.botId).offsetHeight;
+      rz.classList.add('rz-active');
+    },{passive:false});
+    rz.addEventListener('touchmove',function(e){
+      if(!dragging)return; e.preventDefault();
+      var dy=e.touches[0].clientY-startY;
+      var nt=Math.max(cfg.minTop,topH+dy);
+      var nb=Math.max(cfg.minBot,botH-dy);
+      document.getElementById(cfg.topId).style.height=nt+'px';
+      document.getElementById(cfg.botId).style.height=nb+'px';
+      if(_tvCharts){
+        if(_tvCharts[cfg.topKey])_tvCharts[cfg.topKey].applyOptions({height:nt});
+        if(_tvCharts[cfg.botKey])_tvCharts[cfg.botKey].applyOptions({height:nb});
+      }
+      _updatePaneLabels();
+    },{passive:false});
+    rz.addEventListener('touchend',function(){dragging=false;rz.classList.remove('rz-active');});
+  });
+  _updatePaneLabels();
+}
+
 function _initDrawCanvas(){
   var c=document.getElementById('drawCanvas');
   if(!c||c._drawInited)return;
@@ -6826,7 +6968,7 @@ function showTab(id,btn){
   document.querySelectorAll(".tnav").forEach(function(b){b.classList.remove("active");});
   document.getElementById("tab-"+id).classList.add("active");
   if(btn)btn.classList.add("active");
-  if(id==='chart'){ if(!_tvCharts)initTVChart(); if(candles.length)_updateTVCharts(candles); _updateMLHeaders(); setTimeout(function(){refreshOpenOrders();refreshOpenPositions();},500); setTimeout(_initDrawCanvas,200); }
+  if(id==='chart'){ if(!_tvCharts)initTVChart(); if(candles.length)_updateTVCharts(candles); _updateMLHeaders(); setTimeout(function(){refreshOpenOrders();refreshOpenPositions();},500); setTimeout(_initDrawCanvas,200); setTimeout(_initPaneResize,250); }
   if(id==='plans') _renderPlansPage();
   if(id==='telegram') { _renderTelegramPage(); _tgLoadSettings(); }
   if(id==='notifications') _renderNotificationsPage();
