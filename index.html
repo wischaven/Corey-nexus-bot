@@ -1643,19 +1643,19 @@ Content-Type: application/json
       <div style="display:flex;flex-direction:column;gap:8px">
         <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
           <span style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t2);letter-spacing:1px">Trade Entry Signals</span>
-          <input type="checkbox" id="tgEntry" checked style="accent-color:var(--cyan)">
+          <input type="checkbox" id="tgEntry" checked onchange="_tgSaveSettings()" style="accent-color:var(--cyan)">
         </label>
         <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
           <span style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t2);letter-spacing:1px">Trade Exit Alerts</span>
-          <input type="checkbox" id="tgExit" checked style="accent-color:var(--cyan)">
+          <input type="checkbox" id="tgExit" checked onchange="_tgSaveSettings()" style="accent-color:var(--cyan)">
         </label>
         <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
           <span style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t2);letter-spacing:1px">Daily Summary</span>
-          <input type="checkbox" id="tgDaily" checked style="accent-color:var(--cyan)">
+          <input type="checkbox" id="tgDaily" checked onchange="_tgSaveSettings()" style="accent-color:var(--cyan)">
         </label>
         <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
-          <span style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t2);letter-spacing:1px">High Confluence Alerts (75+)</span>
-          <input type="checkbox" id="tgHighConf" checked style="accent-color:var(--cyan)">
+          <span style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t2);letter-spacing:1px">High Confluence Alerts (80+)</span>
+          <input type="checkbox" id="tgHighConf" checked onchange="_tgSaveSettings()" style="accent-color:var(--cyan)">
         </label>
       </div>
     </div>
@@ -2595,6 +2595,12 @@ function calcAllInd(){
   var _mtfPts=ind.mtfBonus||0;
   log("info","CONF",ind.confluence.toFixed(0)+"/100 | OBI:"+(ind.rsi!==null?(_obiPts>0?"+":"")+_obiPts:"?")+" RSI:"+(_rsiPts>0?"+":"")+_rsiPts+(ind.rsi?" ("+ind.rsi.toFixed(0)+")":" (?)")+" BB:"+(_bbPts>0?"+":"")+_bbPts+" MACD:"+(_macdPts>0?"+":"")+_macdPts+" MTF:"+(_mtfPts>0?"+":"")+_mtfPts);
   updateIndUI();updateBadges();
+  // Telegram: high-confluence signal alert (fires once per threshold cross, not every tick)
+  if(_tgAlertEnabled('signals')&&ind.confluence>=80&&!window._tgLastSignalConf){
+    window._tgLastSignalConf=true;
+    _sendTelegramAlert('🚀 <b>HIGH CONFLUENCE SIGNAL</b>\n📊 '+_activeTickerLabel+'\n🎯 Confluence: <b>'+ind.confluence.toFixed(0)+'/100</b>\n📈 RSI: <code>'+(ind.rsi?ind.rsi.toFixed(1):'?')+'</code>\n🧭 Verdict: <b>'+ind.verdict+'</b>\n💲 Price: <code>$'+(price?price.toFixed(5):'?')+'</code>');
+  }
+  if(ind.confluence<75)window._tgLastSignalConf=false;
   if(aiPaused&&ind.confluence>=65){aiPaused=false;addAlert("ai2","AUTO-RESUME","Confluence "+ind.confluence.toFixed(0)+"/100 recovered. Restarting bot.");if(!botRunning)startBot();}
   // Master arm: auto-start when conditions are right, auto-stop when they're not
   if(masterEnabled&&!botRunning&&!aiPaused&&ind.confluence>=65&&(!autoPause||aiScore>=40)&&(_dailyLoss<+document.getElementById("ml").value)){
@@ -5513,6 +5519,21 @@ function addTradeRow(time,type,p,size,rsi,bbp,tp){
   var r=document.createElement("tr");
   r.innerHTML='<td>'+time+'</td><td class="'+(type.startsWith('BUY')?'tb2':'ts2')+'" style="font-size:6px">'+type+'</td><td>'+parseFloat(p).toFixed(5)+'</td><td>$'+size+'</td><td style="color:'+(parseFloat(rsi)<30?'var(--green)':parseFloat(rsi)>70?'var(--red)':'var(--t2)')+'">'+rsi+'</td><td>'+bbp+'</td><td class="'+(tp>=0?'tb2':'ts2')+'">'+( tp>=0?'+':'')+'$'+tp.toFixed(4)+'</td>';
   tb.insertBefore(r,tb.firstChild);while(tb.children.length>50)tb.removeChild(tb.lastChild);
+  // Telegram alerts — live trades only (skip SIM)
+  if(!type.startsWith('SIM')&&_tgAlertEnabled('trades')){
+    var isBuy=type.startsWith('BUY');
+    var emoji=isBuy?'🟢':'🔴';
+    var pnlStr=(tp&&!isBuy)?(tp>=0?' | P&L: <b>+$'+Math.abs(tp).toFixed(2)+'</b>':' | P&L: <b>-$'+Math.abs(tp).toFixed(2)+'</b>'):'';
+    var msg=emoji+' <b>NEXUS '+type+'</b>\n'+
+      '📊 Pair: <code>'+_activeTickerLabel+'</code>\n'+
+      '💲 Price: <code>$'+parseFloat(p).toFixed(5)+'</code>\n'+
+      '📦 Size: <code>$'+size+'</code>\n'+
+      (rsi&&rsi!=='--'?'📈 RSI: <code>'+rsi+'</code>\n':'')+
+      (ind.confluence!=null?'🎯 Confluence: <code>'+ind.confluence.toFixed(0)+'/100</code>\n':'')+
+      pnlStr+'\n'+
+      '🕐 '+time;
+    _sendTelegramAlert(msg);
+  }
 }
 
 async function kSign(path,params){
@@ -5678,7 +5699,7 @@ function showTab(id,btn){
   if(btn)btn.classList.add("active");
   if(id==='chart'){ if(!_tvCharts)initTVChart(); if(candles.length)_updateTVCharts(candles); _updateMLHeaders(); setTimeout(function(){refreshOpenOrders();refreshOpenPositions();},500); setTimeout(_initDrawCanvas,200); }
   if(id==='plans') _renderPlansPage();
-  if(id==='telegram') _renderTelegramPage();
+  if(id==='telegram') { _renderTelegramPage(); _tgLoadSettings(); }
   if(id==='notifications') _renderNotificationsPage();
   if(id==='config') renderTickerList();
   if(id==='brain') renderBrainTab();
@@ -5750,7 +5771,8 @@ function saveTelegram(){
   var chatId = document.getElementById('tgChatId').value.trim();
   var stat = document.getElementById('tgStatus');
   if(!token||!chatId){stat.textContent='Enter both token and chat ID';stat.style.color='var(--red)';return;}
-  localStorage.setItem('nexus_tg', JSON.stringify({token, chatId}));
+  localStorage.setItem('nexus_tg', JSON.stringify({token:token, chatId:chatId}));
+  _tgSaveSettings();
   stat.textContent='SENDING TEST MESSAGE...';stat.style.color='var(--cyan)';
   // Send test via Telegram API directly
   var url = 'https://api.telegram.org/bot'+token+'/sendMessage';
@@ -5854,6 +5876,59 @@ function _syncTickerLabels(){
   var chip=document.getElementById('tickerChip');if(chip)chip.textContent=label+' ▾';
   var disp=document.getElementById('selectedTickerDisplay');if(disp)disp.textContent=label;
   var pairEl=document.getElementById('selectedTickerPair');if(pairEl)pairEl.textContent=_activeTicker;
+}
+
+// ── Fire-and-forget Telegram alert (called after any trade event) ─
+function _sendTelegramAlert(msg) {
+  try {
+    var tg = JSON.parse(localStorage.getItem('nexus_tg') || 'null');
+    if (!tg || !tg.token || !tg.chatId) return;
+    fetch('https://api.telegram.org/bot' + tg.token + '/sendMessage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: tg.chatId, text: msg, parse_mode: 'HTML' })
+    }).catch(function(){});
+  } catch(e) {}
+}
+
+function _tgAlertEnabled(type) {
+  try {
+    var s = JSON.parse(localStorage.getItem('nexus_tg_settings') || '{}');
+    if (type === 'trades')  return s.entry !== false && s.exit !== false;
+    if (type === 'signals') return s.highConf !== false;
+    if (type === 'daily')   return s.daily !== false;
+    return true;
+  } catch(e) { return true; }
+}
+
+function _tgSaveSettings() {
+  try {
+    var s = {
+      entry:    !!(document.getElementById('tgEntry')    || {checked:true}).checked,
+      exit:     !!(document.getElementById('tgExit')     || {checked:true}).checked,
+      daily:    !!(document.getElementById('tgDaily')    || {checked:true}).checked,
+      highConf: !!(document.getElementById('tgHighConf') || {checked:true}).checked,
+    };
+    localStorage.setItem('nexus_tg_settings', JSON.stringify(s));
+  } catch(e) {}
+}
+
+function _tgLoadSettings() {
+  try {
+    var s = JSON.parse(localStorage.getItem('nexus_tg_settings') || '{}');
+    ['entry','exit','daily','highConf'].forEach(function(k) {
+      var id = 'tg' + k.charAt(0).toUpperCase() + k.slice(1);
+      var el = document.getElementById(id);
+      if (el && s[k] !== undefined) el.checked = !!s[k];
+    });
+    var tg = JSON.parse(localStorage.getItem('nexus_tg') || 'null');
+    if (tg) {
+      var tokEl = document.getElementById('tgToken');
+      var cidEl = document.getElementById('tgChatId');
+      if (tokEl) tokEl.value = tg.token || '';
+      if (cidEl) cidEl.value = tg.chatId || '';
+    }
+  } catch(e) {}
 }
 
 function clearTelegram(){
@@ -7018,6 +7093,7 @@ async function _pollSignals() {
 
 // Start webhook signal polling once logged in
 window.addEventListener('DOMContentLoaded', function() {
+  _tgLoadSettings();
   setTimeout(function() {
     if (_authToken) _startSignalPoll();
   }, 5000);
