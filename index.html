@@ -555,14 +555,38 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
       </select>
     </div>
     <!-- ── Drawing tools bar ──────────────────────────────────── -->
-    <div style="display:flex;align-items:center;gap:3px;margin-bottom:5px" id="drawToolbar">
-      <span style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3)">DRAW:</span>
-      <button class="tbtn active" id="dt-cursor"  onclick="_setDrawTool('cursor',this)"  style="font-size:8px;padding:3px 7px" title="Cursor">⊹</button>
-      <button class="tbtn"        id="dt-hline"   onclick="_setDrawTool('hline',this)"   style="font-size:8px;padding:3px 7px" title="Horizontal Line">—</button>
-      <button class="tbtn"        id="dt-tline"   onclick="_setDrawTool('tline',this)"   style="font-size:8px;padding:3px 7px" title="Trend Line">╱</button>
-      <button class="tbtn"        id="dt-fib"     onclick="_setDrawTool('fib',this)"     style="font-size:8px;padding:3px 7px" title="Fibonacci Retracement">Φ</button>
-      <button class="tbtn"        id="dt-rect"    onclick="_setDrawTool('rect',this)"    style="font-size:8px;padding:3px 7px" title="Rectangle">▭</button>
-      <button onclick="_clearDrawings()" style="background:rgba(255,51,85,0.1);border:1px solid var(--red);color:var(--red);font-family:Share Tech Mono,monospace;font-size:7px;padding:3px 8px;cursor:pointer;margin-left:4px">CLEAR</button>
+    <div style="display:flex;align-items:center;gap:2px;margin-bottom:5px;flex-wrap:wrap" id="drawToolbar">
+      <span style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);margin-right:2px">DRAW:</span>
+      <button class="tbtn active" id="dt-cursor" onclick="_setDrawTool('cursor',this)"  style="font-size:10px;padding:2px 6px" title="Select / Move (V)">⊹</button>
+      <span style="color:var(--border);font-size:10px;margin:0 1px">│</span>
+      <button class="tbtn" id="dt-hline"   onclick="_setDrawTool('hline',this)"   style="font-size:10px;padding:2px 6px" title="Horizontal Line (H)">—</button>
+      <button class="tbtn" id="dt-ray"     onclick="_setDrawTool('ray',this)"     style="font-size:10px;padding:2px 6px" title="Ray (R)">→</button>
+      <button class="tbtn" id="dt-eline"   onclick="_setDrawTool('eline',this)"   style="font-size:10px;padding:2px 6px" title="Extended Line">↔</button>
+      <button class="tbtn" id="dt-tline"   onclick="_setDrawTool('tline',this)"   style="font-size:10px;padding:2px 6px" title="Trend Line (T)">╱</button>
+      <span style="color:var(--border);font-size:10px;margin:0 1px">│</span>
+      <button class="tbtn" id="dt-fib"     onclick="_setDrawTool('fib',this)"     style="font-size:10px;padding:2px 6px" title="Fibonacci Retracement (F)">Φ</button>
+      <button class="tbtn" id="dt-rect"    onclick="_setDrawTool('rect',this)"    style="font-size:10px;padding:2px 6px" title="Rectangle (B)">▭</button>
+      <button class="tbtn" id="dt-channel" onclick="_setDrawTool('channel',this)" style="font-size:10px;padding:2px 6px" title="Parallel Channel">⫼</button>
+      <button class="tbtn" id="dt-pitch"   onclick="_setDrawTool('pitch',this)"   style="font-size:10px;padding:2px 6px" title="Pitchfork">⑂</button>
+      <span style="color:var(--border);font-size:10px;margin:0 1px">│</span>
+      <button class="tbtn" id="dt-arrow"   onclick="_setDrawTool('arrow',this)"   style="font-size:10px;padding:2px 6px" title="Arrow">⇒</button>
+      <button class="tbtn" id="dt-text"    onclick="_setDrawTool('text',this)"    style="font-size:10px;padding:2px 6px;font-weight:bold" title="Text Label">T</button>
+      <span style="color:var(--border);font-size:10px;margin:0 1px">│</span>
+      <input type="color" id="drawColor" value="#00d4ff" onchange="_drawColorChange(this.value)" style="width:20px;height:20px;border:1px solid var(--border);background:none;cursor:pointer;padding:1px;vertical-align:middle" title="Line Color">
+      <select id="drawWidth" onchange="_drawWidthChange(this.value)" style="background:var(--bg2);border:1px solid var(--border);color:var(--t2);font-family:Share Tech Mono,monospace;font-size:7px;padding:2px 3px;cursor:pointer" title="Line Width">
+        <option value="1">Thin</option>
+        <option value="2" selected>Normal</option>
+        <option value="3">Thick</option>
+        <option value="4">Bold</option>
+      </select>
+      <select id="drawStyle" onchange="_drawStyleChange(this.value)" style="background:var(--bg2);border:1px solid var(--border);color:var(--t2);font-family:Share Tech Mono,monospace;font-size:7px;padding:2px 3px;cursor:pointer" title="Line Style">
+        <option value="solid">Solid</option>
+        <option value="dashed">Dashed</option>
+        <option value="dotted">Dotted</option>
+      </select>
+      <span style="color:var(--border);font-size:10px;margin:0 1px">│</span>
+      <button onclick="_clearDrawings()" style="background:rgba(255,51,85,0.1);border:1px solid var(--red);color:var(--red);font-family:Share Tech Mono,monospace;font-size:7px;padding:2px 7px;cursor:pointer" title="Clear All Drawings">CLEAR</button>
+      <span id="drawHint" style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--cyan);margin-left:4px;opacity:0.8"></span>
     </div>
     <!-- ── Full Indicator Side Panel ──────────────────────────── -->
     <div id="indPanel" style="display:none;position:fixed;top:0;right:0;width:310px;height:100vh;background:var(--bg2);border-left:1px solid var(--border);z-index:9999;overflow-y:auto;padding:12px">
@@ -579,7 +603,7 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
       <div id="tvOscA"   style="height:90px;width:100%"></div>
       <div id="tvOscB"   style="height:80px;width:100%"></div>
       <!-- Drawing canvas overlay — sits on top of tvMain -->
-      <canvas id="drawCanvas" style="position:absolute;top:0;left:0;pointer-events:none;z-index:10"></canvas>
+      <canvas id="drawCanvas" style="position:absolute;top:0;left:0;pointer-events:auto;z-index:10;cursor:default"></canvas>
     </div>
     <!-- ── Trade marker legend ────────────────────────────────── -->
     <div style="display:flex;gap:10px;font-family:Share Tech Mono,monospace;font-size:7px;padding:3px 6px;margin-bottom:6px;flex-wrap:wrap;color:var(--t3)">
@@ -3962,110 +3986,551 @@ function _buildIndPanel(){
 }
 
 // ═══════════════════════════════════════════════════════════════
-// DRAWING TOOLS — canvas overlay on chart
+// DRAWING TOOLS — professional TradingView-grade canvas overlay
 // ═══════════════════════════════════════════════════════════════
 var _drawTool='cursor';
 var _drawings=[];
-var _drawStart=null;
-var _drawCanvas=null;
+var _selectedIdx=-1;
+var _hoverIdx=-1;
+var _drawColor='#00d4ff';
+var _drawWidth=2;
+var _drawStyle='solid';
+var _drawIdCtr=0;
+var _drawState=null;  // {phase:'drawing'|'channel2'|'pitch2', start, end, cur}
+var _dragState=null;  // {type:'move'|'handle', dIdx, hIdx, lx, ly}
+var _forwarding=false;
 
-function _setDrawTool(tool,btn){
-  _drawTool=tool;
-  document.querySelectorAll('[id^="dt-"]').forEach(function(b){b.classList.remove('active');});
-  if(btn)btn.classList.add('active');
-  var c=document.getElementById('drawCanvas');
-  if(c)c.style.pointerEvents=(tool==='cursor'?'none':'all');
-}
-
-function _clearDrawings(){
-  _drawings=[];
-  var c=document.getElementById('drawCanvas');
-  if(c){var ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);}
-}
-
-function _initDrawCanvas(){
-  var c=document.getElementById('drawCanvas');
-  if(!c||c._drawInited)return;
-  c._drawInited=true;
-  var chartDiv=document.getElementById('tvMain');
-  function _resize(){
-    c.width=chartDiv.offsetWidth;c.height=chartDiv.offsetHeight;
-    c.style.width=chartDiv.offsetWidth+'px';c.style.height=chartDiv.offsetHeight+'px';
-    _redrawAll();
-  }
-  new ResizeObserver(_resize).observe(chartDiv);
-  _resize();
-
-  c.addEventListener('mousedown',function(e){
-    if(_drawTool==='cursor')return;
-    var rect=c.getBoundingClientRect();
-    _drawStart={x:e.clientX-rect.left,y:e.clientY-rect.top};
-  });
-  c.addEventListener('mousemove',function(e){
-    if(!_drawStart)return;
-    var rect=c.getBoundingClientRect();
-    var cur={x:e.clientX-rect.left,y:e.clientY-rect.top};
-    _redrawAll();_drawPreview(_drawStart,cur);
-  });
-  c.addEventListener('mouseup',function(e){
-    if(!_drawStart)return;
-    var rect=c.getBoundingClientRect();
-    var end={x:e.clientX-rect.left,y:e.clientY-rect.top};
-    _drawings.push({tool:_drawTool,start:{x:_drawStart.x,y:_drawStart.y},end:{x:end.x,y:end.y}});
-    _drawStart=null;
-    _redrawAll();
-  });
-  c.addEventListener('mouseleave',function(){_drawStart=null;_redrawAll();});
-}
-
-function _redrawAll(){
-  var c=document.getElementById('drawCanvas');
-  if(!c)return;
-  var ctx=c.getContext('2d');
-  ctx.clearRect(0,0,c.width,c.height);
-  _drawings.forEach(function(d){_drawShape(ctx,d.tool,d.start,d.end,false);});
-}
-
-function _drawPreview(s,e){
-  var c=document.getElementById('drawCanvas');
-  if(!c)return;
-  var ctx=c.getContext('2d');
-  _drawShape(ctx,_drawTool,s,e,true);
-}
-
-function _drawShape(ctx,tool,s,e,preview){
-  ctx.save();
-  ctx.strokeStyle=preview?'rgba(0,212,255,0.5)':'rgba(0,212,255,0.85)';
-  ctx.fillStyle='rgba(0,212,255,0.08)';
-  ctx.lineWidth=preview?1.5:2;
-  ctx.setLineDash(preview?[4,4]:[]);
-  if(tool==='hline'){
-    ctx.beginPath();ctx.moveTo(0,s.y);ctx.lineTo(ctx.canvas.width,s.y);ctx.stroke();
-    ctx.fillStyle='rgba(0,212,255,0.7)';ctx.font='9px Share Tech Mono,monospace';
-    ctx.fillText('—',4,s.y-3);
-  } else if(tool==='tline'){
-    ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(e.x,e.y);ctx.stroke();
-  } else if(tool==='rect'){
-    ctx.strokeRect(s.x,s.y,e.x-s.x,e.y-s.y);
-    ctx.fillRect(s.x,s.y,e.x-s.x,e.y-s.y);
-  } else if(tool==='fib'){
-    var dy=e.y-s.y;
-    var levels=[0,0.236,0.382,0.5,0.618,0.786,1];
-    var colors=['#ff3355','#f59e0b','#00ff88','#00d4ff','#00ff88','#f59e0b','#ff3355'];
-    levels.forEach(function(lv,i){
-      var y=e.y-dy*lv;
-      ctx.strokeStyle=preview?'rgba('+hexToRgb(colors[i]||'#00d4ff')+',0.4)':'rgba('+hexToRgb(colors[i]||'#00d4ff')+',0.8)';
-      ctx.beginPath();ctx.moveTo(s.x,y);ctx.lineTo(e.x,y);ctx.stroke();
-      if(!preview){ctx.fillStyle=ctx.strokeStyle;ctx.font='8px Share Tech Mono,monospace';ctx.fillText((lv*100).toFixed(1)+'%',e.x+4,y+3);}
-    });
-  }
-  ctx.restore();
-}
+function _newDrawId(){return ++_drawIdCtr;}
 
 function hexToRgb(hex){
   var r=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return r?parseInt(r[1],16)+','+parseInt(r[2],16)+','+parseInt(r[3],16):'0,212,255';
 }
+
+function _setDrawHint(msg){var h=document.getElementById('drawHint');if(h)h.textContent=msg||'';}
+
+function _setDrawTool(tool,btn){
+  _drawTool=tool;
+  _drawState=null;
+  document.querySelectorAll('[id^="dt-"]').forEach(function(b){b.classList.remove('active');});
+  if(btn)btn.classList.add('active');
+  var c=document.getElementById('drawCanvas');
+  if(c)c.style.cursor=(tool==='cursor'?'default':'crosshair');
+  _hideCtxMenu();
+  if(tool!=='cursor')_hidePropsPanel();
+  _setDrawHint(tool==='channel'?'Drag to set main line, then click to set width':tool==='pitch'?'Drag to set handle line, then click to set fork':'');
+}
+
+function _drawColorChange(v){
+  _drawColor=v;
+  if(_selectedIdx>=0&&_drawings[_selectedIdx]){_drawings[_selectedIdx].color=v;_redrawAll();_updatePropsPanel();}
+}
+function _drawWidthChange(v){
+  _drawWidth=parseInt(v)||2;
+  if(_selectedIdx>=0&&_drawings[_selectedIdx]){_drawings[_selectedIdx].width=_drawWidth;_redrawAll();_updatePropsPanel();}
+}
+function _drawStyleChange(v){
+  _drawStyle=v;
+  if(_selectedIdx>=0&&_drawings[_selectedIdx]){_drawings[_selectedIdx].style=v;_redrawAll();_updatePropsPanel();}
+}
+
+function _clearDrawings(){
+  _drawings=[];_selectedIdx=-1;_drawState=null;_dragState=null;_forwarding=false;
+  _hidePropsPanel();_hideCtxMenu();_setDrawHint('');_redrawAll();
+}
+
+function _selectDrawing(idx){
+  _selectedIdx=idx;
+  if(idx>=0&&_drawings[idx]){
+    var d=_drawings[idx];
+    var dc=document.getElementById('drawColor');if(dc)dc.value=d.color||'#00d4ff';
+    var dw=document.getElementById('drawWidth');if(dw)dw.value=d.width||2;
+    var ds=document.getElementById('drawStyle');if(ds)ds.value=d.style||'solid';
+    _showPropsPanel(d);
+  } else {
+    _hidePropsPanel();
+  }
+  _redrawAll();
+}
+
+function _deleteSelected(){
+  if(_selectedIdx<0||!_drawings[_selectedIdx])return;
+  _drawings.splice(_selectedIdx,1);
+  _selectedIdx=-1;
+  _hidePropsPanel();_hideCtxMenu();_redrawAll();
+}
+
+function _duplicateSelected(){
+  if(_selectedIdx<0||!_drawings[_selectedIdx])return;
+  var d=_drawings[_selectedIdx];
+  var nd=JSON.parse(JSON.stringify(d));
+  nd.id=_newDrawId();nd.start={x:d.start.x+16,y:d.start.y+16};nd.end={x:d.end.x+16,y:d.end.y+16};
+  if(nd.p3)nd.p3={x:nd.p3.x+16,y:nd.p3.y+16};
+  _drawings.push(nd);_selectedIdx=_drawings.length-1;
+  _hideCtxMenu();_redrawAll();_showPropsPanel(nd);
+}
+
+function _toggleLockSelected(){
+  if(_selectedIdx<0||!_drawings[_selectedIdx])return;
+  _drawings[_selectedIdx].locked=!_drawings[_selectedIdx].locked;
+  _hideCtxMenu();_redrawAll();
+}
+
+function _editSelected(){_hideCtxMenu();if(_selectedIdx>=0)_showPropsPanel(_drawings[_selectedIdx]);}
+
+// ── Geometry helpers ─────────────────────────────────────────
+function _ptSegDist(px,py,ax,ay,bx,by){
+  var dx=bx-ax,dy=by-ay,t=dx*dx+dy*dy;
+  if(!t)return Math.hypot(px-ax,py-ay);
+  t=Math.max(0,Math.min(1,((px-ax)*dx+(py-ay)*dy)/t));
+  return Math.hypot(px-ax-t*dx,py-ay-t*dy);
+}
+function _rayExt(s,e,cw,ch){
+  var dx=e.x-s.x,dy=e.y-s.y,mag=Math.sqrt(dx*dx+dy*dy);
+  if(!mag)return e;
+  var len=Math.max(cw,ch)*4;
+  return {x:s.x+dx/mag*len,y:s.y+dy/mag*len};
+}
+function _elineExts(s,e,cw,ch){
+  var dx=e.x-s.x,dy=e.y-s.y,mag=Math.sqrt(dx*dx+dy*dy);
+  if(!mag)return [s,e];
+  var len=Math.max(cw,ch)*4;
+  return [{x:s.x-dx/mag*len,y:s.y-dy/mag*len},{x:s.x+dx/mag*len,y:s.y+dy/mag*len}];
+}
+
+// ── Hit testing ──────────────────────────────────────────────
+function _hitTest(d,x,y,cw,ch){
+  var T=7;
+  var s=d.start,e=d.end;
+  if(d.tool==='hline')return Math.abs(y-s.y)<T;
+  if(d.tool==='tline'||d.tool==='arrow')return _ptSegDist(x,y,s.x,s.y,e.x,e.y)<T;
+  if(d.tool==='ray'){var ep=_rayExt(s,e,cw,ch);return _ptSegDist(x,y,s.x,s.y,ep.x,ep.y)<T;}
+  if(d.tool==='eline'){var pts=_elineExts(s,e,cw,ch);return _ptSegDist(x,y,pts[0].x,pts[0].y,pts[1].x,pts[1].y)<T;}
+  if(d.tool==='rect'){
+    var x1=Math.min(s.x,e.x),y1=Math.min(s.y,e.y),x2=Math.max(s.x,e.x),y2=Math.max(s.y,e.y);
+    if(x<x1-T||x>x2+T||y<y1-T||y>y2+T)return false;
+    return x<=x1+T||x>=x2-T||y<=y1+T||y>=y2-T||(x>=x1&&x<=x2&&y>=y1&&y<=y2);
+  }
+  if(d.tool==='fib'){
+    var lvs=[0,0.236,0.382,0.5,0.618,0.786,1],dy=e.y-s.y;
+    var xmn=Math.min(s.x,e.x)-T,xmx=Math.max(s.x,e.x)+T;
+    for(var i=0;i<lvs.length;i++){if(Math.abs(y-(e.y-dy*lvs[i]))<T&&x>=xmn&&x<=xmx)return true;}
+    return false;
+  }
+  if(d.tool==='channel'){
+    var off=d.offset||0;
+    return _ptSegDist(x,y,s.x,s.y,e.x,e.y)<T||_ptSegDist(x,y,s.x,s.y+off,e.x,e.y+off)<T;
+  }
+  if(d.tool==='pitch'){
+    var p3=d.p3||e,mid={x:(e.x+p3.x)/2,y:(e.y+p3.y)/2};
+    return _ptSegDist(x,y,s.x,s.y,mid.x,mid.y)<T||_ptSegDist(x,y,s.x,s.y,e.x,e.y)<T||_ptSegDist(x,y,s.x,s.y,p3.x,p3.y)<T;
+  }
+  if(d.tool==='text')return Math.hypot(x-s.x,y-s.y)<22;
+  return false;
+}
+function _hitTestAll(x,y,cw,ch){
+  for(var i=_drawings.length-1;i>=0;i--){if(_hitTest(_drawings[i],x,y,cw,ch))return i;}
+  return -1;
+}
+
+// ── Handles ──────────────────────────────────────────────────
+var _HR=5;
+function _getHandles(d,cw){
+  var s=d.start,e=d.end;
+  if(d.tool==='hline')return [{x:cw*0.2,y:s.y,hi:0},{x:cw/2,y:s.y,hi:1},{x:cw*0.8,y:s.y,hi:2}];
+  if(d.tool==='tline'||d.tool==='arrow'||d.tool==='fib')return [{x:s.x,y:s.y,hi:0},{x:(s.x+e.x)/2,y:(s.y+e.y)/2,hi:1},{x:e.x,y:e.y,hi:2}];
+  if(d.tool==='ray'||d.tool==='eline')return [{x:s.x,y:s.y,hi:0},{x:e.x,y:e.y,hi:1}];
+  if(d.tool==='rect')return [
+    {x:s.x,y:s.y,hi:0},{x:e.x,y:s.y,hi:1},{x:e.x,y:e.y,hi:2},{x:s.x,y:e.y,hi:3},
+    {x:(s.x+e.x)/2,y:s.y,hi:4},{x:e.x,y:(s.y+e.y)/2,hi:5},{x:(s.x+e.x)/2,y:e.y,hi:6},{x:s.x,y:(s.y+e.y)/2,hi:7}
+  ];
+  if(d.tool==='channel'){var off=d.offset||0;return [{x:s.x,y:s.y,hi:0},{x:e.x,y:e.y,hi:1},{x:(s.x+e.x)/2,y:(s.y+e.y)/2+off,hi:2}];}
+  if(d.tool==='pitch'){var p3=d.p3||e;return [{x:s.x,y:s.y,hi:0},{x:e.x,y:e.y,hi:1},{x:p3.x,y:p3.y,hi:2}];}
+  if(d.tool==='text')return [{x:s.x,y:s.y,hi:0}];
+  return [];
+}
+function _hitHandle(d,x,y,cw){
+  var hs=_getHandles(d,cw);
+  for(var i=0;i<hs.length;i++){if(Math.hypot(x-hs[i].x,y-hs[i].y)<=_HR+3)return hs[i].hi;}
+  return -1;
+}
+function _applyHandleDrag(d,hi,dx,dy){
+  var s=d.start,e=d.end;
+  if(d.tool==='hline'){s.y+=dy;e.y+=dy;}
+  else if(d.tool==='tline'||d.tool==='arrow'||d.tool==='fib'){
+    if(hi===0){s.x+=dx;s.y+=dy;}else if(hi===1){s.x+=dx;s.y+=dy;e.x+=dx;e.y+=dy;}else{e.x+=dx;e.y+=dy;}
+  } else if(d.tool==='ray'||d.tool==='eline'){
+    if(hi===0){s.x+=dx;s.y+=dy;}else{e.x+=dx;e.y+=dy;}
+  } else if(d.tool==='rect'){
+    if(hi===0){s.x+=dx;s.y+=dy;}else if(hi===1){e.x+=dx;s.y+=dy;}else if(hi===2){e.x+=dx;e.y+=dy;}
+    else if(hi===3){s.x+=dx;e.y+=dy;}else if(hi===4){s.y+=dy;}else if(hi===5){e.x+=dx;}
+    else if(hi===6){e.y+=dy;}else if(hi===7){s.x+=dx;}
+  } else if(d.tool==='channel'){
+    if(hi===0){s.x+=dx;s.y+=dy;}else if(hi===1){e.x+=dx;e.y+=dy;}else{d.offset=(d.offset||0)+dy;}
+  } else if(d.tool==='pitch'){
+    var p3=d.p3||(d.p3=JSON.parse(JSON.stringify(e)));
+    if(hi===0){s.x+=dx;s.y+=dy;}else if(hi===1){e.x+=dx;e.y+=dy;}else{p3.x+=dx;p3.y+=dy;}
+  } else if(d.tool==='text'){s.x+=dx;s.y+=dy;e.x+=dx;e.y+=dy;}
+}
+
+// ── Rendering ─────────────────────────────────────────────────
+function _lineDash(style,w){
+  if(style==='dashed')return [w*5,w*3];
+  if(style==='dotted')return [w,w*2];
+  return [];
+}
+function _drawArrowHead(ctx,x1,y1,x2,y2,sz){
+  var a=Math.atan2(y2-y1,x2-x1);
+  ctx.save();ctx.setLineDash([]);
+  ctx.beginPath();ctx.moveTo(x2,y2);
+  ctx.lineTo(x2-sz*Math.cos(a-Math.PI/6),y2-sz*Math.sin(a-Math.PI/6));
+  ctx.moveTo(x2,y2);
+  ctx.lineTo(x2-sz*Math.cos(a+Math.PI/6),y2-sz*Math.sin(a+Math.PI/6));
+  ctx.stroke();ctx.restore();
+}
+
+function _drawShape(ctx,d,cw,ch,preview){
+  var col=preview?'rgba(0,212,255,0.55)':(d.color||'#00d4ff');
+  var w=preview?1.5:(d.width||2);
+  var st=preview?'dashed':(d.style||'solid');
+  var s=d.start,e=d.end;
+  ctx.save();
+  ctx.strokeStyle=col;ctx.lineWidth=w;ctx.setLineDash(_lineDash(st,w));ctx.lineCap='round';ctx.lineJoin='round';
+
+  if(d.tool==='hline'){
+    ctx.beginPath();ctx.moveTo(0,s.y);ctx.lineTo(cw,s.y);ctx.stroke();
+    if(!preview&&d.label){ctx.setLineDash([]);ctx.fillStyle=col;ctx.font='8px Share Tech Mono,monospace';ctx.fillText(d.label,4,s.y-4);}
+  } else if(d.tool==='tline'){
+    ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(e.x,e.y);ctx.stroke();
+  } else if(d.tool==='ray'){
+    var ep=_rayExt(s,e,cw,ch);
+    ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(ep.x,ep.y);ctx.stroke();
+  } else if(d.tool==='eline'){
+    var pts=_elineExts(s,e,cw,ch);
+    ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);ctx.lineTo(pts[1].x,pts[1].y);ctx.stroke();
+  } else if(d.tool==='rect'){
+    var rx=Math.min(s.x,e.x),ry=Math.min(s.y,e.y),rw=Math.abs(e.x-s.x),rh=Math.abs(e.y-s.y);
+    ctx.strokeRect(rx,ry,rw,rh);
+    ctx.fillStyle='rgba('+hexToRgb(d.color||'#00d4ff')+',0.06)';ctx.fillRect(rx,ry,rw,rh);
+  } else if(d.tool==='fib'){
+    var lvs=[0,0.236,0.382,0.5,0.618,0.786,1];
+    var fibC=['#ff3355','#f59e0b','#00ff88','#00d4ff','#00ff88','#f59e0b','#ff3355'];
+    var fdy=e.y-s.y;
+    lvs.forEach(function(lv,i){
+      var ly=e.y-fdy*lv,fc=fibC[i]||col;
+      ctx.strokeStyle=preview?'rgba('+hexToRgb(fc)+',0.4)':'rgba('+hexToRgb(fc)+',0.85)';
+      ctx.beginPath();ctx.moveTo(s.x,ly);ctx.lineTo(e.x,ly);ctx.stroke();
+      if(!preview){ctx.setLineDash([]);ctx.fillStyle=ctx.strokeStyle;ctx.font='8px Share Tech Mono,monospace';ctx.fillText((lv*100).toFixed(1)+'%',Math.max(s.x,e.x)+4,ly+3);}
+    });
+  } else if(d.tool==='channel'){
+    var off=d.offset||0;
+    ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(e.x,e.y);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(s.x,s.y+off);ctx.lineTo(e.x,e.y+off);ctx.stroke();
+    if(!preview){
+      ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(e.x,e.y);ctx.lineTo(e.x,e.y+off);ctx.lineTo(s.x,s.y+off);ctx.closePath();
+      ctx.fillStyle='rgba('+hexToRgb(d.color||'#00d4ff')+',0.05)';ctx.fill();
+    }
+  } else if(d.tool==='pitch'){
+    var p3=d.p3||e;
+    var mid={x:(e.x+p3.x)/2,y:(e.y+p3.y)/2};
+    ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(mid.x,mid.y);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(e.x,e.y);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(p3.x,p3.y);ctx.stroke();
+    ctx.save();ctx.setLineDash([2,4]);ctx.globalAlpha=0.5;
+    ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(p3.x,p3.y);ctx.stroke();
+    ctx.restore();
+  } else if(d.tool==='arrow'){
+    ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(e.x,e.y);ctx.stroke();
+    _drawArrowHead(ctx,s.x,s.y,e.x,e.y,10+w*2);
+  } else if(d.tool==='text'){
+    ctx.setLineDash([]);ctx.fillStyle=col;
+    ctx.font='bold '+(10+w*2)+'px Share Tech Mono,monospace';
+    ctx.fillText(d.label||'TEXT',s.x,s.y);
+    ctx.beginPath();ctx.arc(s.x,s.y+3,2,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();
+  }
+  ctx.restore();
+}
+
+function _drawHandles(ctx,d,cw){
+  var hs=_getHandles(d,cw);
+  ctx.save();
+  hs.forEach(function(h){
+    ctx.beginPath();ctx.arc(h.x,h.y,_HR,0,Math.PI*2);
+    ctx.fillStyle='#0d1117';ctx.fill();
+    ctx.strokeStyle='#00d4ff';ctx.lineWidth=1.5;ctx.setLineDash([]);ctx.stroke();
+  });
+  ctx.restore();
+}
+
+function _drawSelectionGlow(ctx,d,cw,ch){
+  ctx.save();ctx.globalAlpha=0.25;ctx.filter='blur(3px)';
+  ctx.strokeStyle='#00d4ff';ctx.lineWidth=(d.width||2)+5;ctx.setLineDash([]);
+  var s=d.start,e=d.end;
+  if(d.tool==='hline'){ctx.beginPath();ctx.moveTo(0,s.y);ctx.lineTo(cw,s.y);ctx.stroke();}
+  else if(d.tool==='tline'||d.tool==='arrow'){ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(e.x,e.y);ctx.stroke();}
+  ctx.restore();
+}
+
+function _redrawAll(){
+  var c=document.getElementById('drawCanvas');if(!c)return;
+  var ctx=c.getContext('2d');
+  var cw=c.width,ch=c.height;
+  ctx.clearRect(0,0,cw,ch);
+
+  _drawings.forEach(function(d,i){
+    if(i===_selectedIdx)_drawSelectionGlow(ctx,d,cw,ch);
+    _drawShape(ctx,d,cw,ch,false);
+    if(i===_selectedIdx)_drawHandles(ctx,d,cw);
+  });
+
+  // In-progress previews
+  if(_drawState&&_drawState.cur){
+    var pd={tool:_drawTool,start:_drawState.start,end:_drawState.cur,p3:null,color:_drawColor,width:_drawWidth,style:_drawStyle,offset:0,label:''};
+    if(_drawState.phase==='drawing'){
+      _drawShape(ctx,pd,cw,ch,true);
+    } else if(_drawState.phase==='channel2'){
+      var off=_drawState.cur.y-(_drawState.start.y+_drawState.end.y)/2;
+      _drawShape(ctx,{tool:'channel',start:_drawState.start,end:_drawState.end,offset:off,color:_drawColor,width:_drawWidth,style:_drawStyle},cw,ch,true);
+    } else if(_drawState.phase==='pitch2'){
+      _drawShape(ctx,{tool:'pitch',start:_drawState.start,end:_drawState.end,p3:_drawState.cur,color:_drawColor,width:_drawWidth,style:_drawStyle},cw,ch,true);
+    }
+  }
+}
+
+// ── Canvas initialisation ────────────────────────────────────
+function _initDrawCanvas(){
+  var c=document.getElementById('drawCanvas');
+  if(!c||c._drawInited)return;
+  c._drawInited=true;
+
+  var container=c.parentElement;
+  function _resize(){
+    c.width=container.offsetWidth;c.height=container.offsetHeight;
+    c.style.width=container.offsetWidth+'px';c.style.height=container.offsetHeight+'px';
+    _redrawAll();
+  }
+  new ResizeObserver(_resize).observe(container);
+  _resize();
+
+  function _fwd(e,type){
+    c.style.pointerEvents='none';
+    var el=document.elementFromPoint(e.clientX,e.clientY);
+    c.style.pointerEvents='auto';
+    if(el&&el!==c)el.dispatchEvent(new MouseEvent(type||e.type,{bubbles:true,cancelable:true,clientX:e.clientX,clientY:e.clientY,button:e.button||0,buttons:e.buttons||0,screenX:e.screenX,screenY:e.screenY}));
+  }
+
+  // Clear forwarding if mouse released outside canvas
+  window.addEventListener('mouseup',function(){if(_forwarding){_forwarding=false;}});
+
+  c.addEventListener('mousedown',function(e){
+    e.preventDefault();
+    _forwarding=false; // always reset on new press
+    var rect=c.getBoundingClientRect();
+    var mx=e.clientX-rect.left,my=e.clientY-rect.top;
+    _hideCtxMenu();
+
+    // ── Cursor / select mode ──────────────────────────────
+    if(_drawTool==='cursor'){
+      // Phase 2 completions (shouldn't happen in cursor mode, but guard)
+      if(_drawState&&(_drawState.phase==='channel2'||_drawState.phase==='pitch2')){
+        _finishPhase2(mx,my);return;
+      }
+      // Hit handle of selected drawing
+      if(_selectedIdx>=0&&_drawings[_selectedIdx]&&!_drawings[_selectedIdx].locked){
+        var hIdx=_hitHandle(_drawings[_selectedIdx],mx,my,c.width);
+        if(hIdx>=0){_dragState={type:'handle',dIdx:_selectedIdx,hIdx:hIdx,lx:mx,ly:my};return;}
+      }
+      // Hit any drawing
+      var hit=_hitTestAll(mx,my,c.width,c.height);
+      if(hit>=0){
+        _selectDrawing(hit);
+        if(!_drawings[hit].locked)_dragState={type:'move',dIdx:hit,lx:mx,ly:my};
+        return;
+      }
+      // Miss — deselect + forward to chart
+      _selectDrawing(-1);
+      _forwarding=true;_fwd(e);
+      return;
+    }
+
+    // ── Drawing mode ──────────────────────────────────────
+    // Phase 2 completion (channel, pitch)
+    if(_drawState&&_drawState.phase==='channel2'){_finishPhase2(mx,my);return;}
+    if(_drawState&&_drawState.phase==='pitch2'){_finishPhase2(mx,my);return;}
+
+    if(!_drawState){
+      if(_drawTool==='hline'){
+        var nd={id:_newDrawId(),tool:'hline',start:{x:0,y:my},end:{x:c.width,y:my},color:_drawColor,width:_drawWidth,style:_drawStyle,locked:false,label:''};
+        _drawings.push(nd);_selectedIdx=_drawings.length-1;
+        _redrawAll();_showPropsPanel(nd);
+        _setDrawTool('cursor',document.getElementById('dt-cursor'));
+      } else if(_drawTool==='text'){
+        _showTextInput(e.clientX,e.clientY,mx,my,c);
+      } else {
+        _drawState={phase:'drawing',start:{x:mx,y:my},cur:{x:mx,y:my}};
+      }
+    }
+  });
+
+  c.addEventListener('mousemove',function(e){
+    var rect=c.getBoundingClientRect();
+    var mx=e.clientX-rect.left,my=e.clientY-rect.top;
+
+    if(_forwarding){_fwd(e);return;}
+
+    if(_dragState){
+      var dx=mx-_dragState.lx,dy=my-_dragState.ly;
+      _dragState.lx=mx;_dragState.ly=my;
+      var d=_drawings[_dragState.dIdx];if(!d)return;
+      if(_dragState.type==='move'){d.start.x+=dx;d.start.y+=dy;d.end.x+=dx;d.end.y+=dy;if(d.p3){d.p3.x+=dx;d.p3.y+=dy;}}
+      else _applyHandleDrag(d,_dragState.hIdx,dx,dy);
+      _redrawAll();return;
+    }
+
+    if(_drawState){_drawState.cur={x:mx,y:my};_redrawAll();return;}
+
+    if(_drawTool==='cursor'){
+      var nh=_hitTestAll(mx,my,c.width,c.height);
+      var wantCursor='default';
+      if(nh>=0){wantCursor='move';}
+      else if(_selectedIdx>=0&&_drawings[_selectedIdx]){
+        if(_hitHandle(_drawings[_selectedIdx],mx,my,c.width)>=0)wantCursor='nwse-resize';
+      }
+      if(c.style.cursor!==wantCursor)c.style.cursor=wantCursor;
+      if(nh!==_hoverIdx){_hoverIdx=nh;_redrawAll();}
+    }
+  });
+
+  c.addEventListener('mouseup',function(e){
+    var rect=c.getBoundingClientRect();
+    var mx=e.clientX-rect.left,my=e.clientY-rect.top;
+
+    if(_forwarding){_forwarding=false;_fwd(e);return;}
+    if(_dragState){_dragState=null;_redrawAll();return;}
+
+    if(_drawState&&_drawState.phase==='drawing'){
+      var tool=_drawTool,start=_drawState.start,end={x:mx,y:my};
+      if(tool==='channel'||tool==='pitch'){
+        _drawState={phase:tool==='channel'?'channel2':'pitch2',start:JSON.parse(JSON.stringify(start)),end:JSON.parse(JSON.stringify(end)),cur:{x:mx,y:my}};
+        _setDrawHint('Click to set '+(tool==='channel'?'channel width':'fork position'));
+        return;
+      }
+      var nd={id:_newDrawId(),tool:tool,start:JSON.parse(JSON.stringify(start)),end:JSON.parse(JSON.stringify(end)),p3:null,color:_drawColor,width:_drawWidth,style:_drawStyle,locked:false,label:''};
+      _drawings.push(nd);_selectedIdx=_drawings.length-1;
+      _drawState=null;_redrawAll();_showPropsPanel(nd);
+      _setDrawTool('cursor',document.getElementById('dt-cursor'));
+    }
+  });
+
+  c.addEventListener('mouseleave',function(){
+    if(_drawState)_drawState.cur=null;
+    if(_dragState){_dragState=null;}
+    _hoverIdx=-1;_redrawAll();
+  });
+
+  c.addEventListener('contextmenu',function(e){
+    e.preventDefault();
+    var rect=c.getBoundingClientRect();
+    var mx=e.clientX-rect.left,my=e.clientY-rect.top;
+    var hit=_hitTestAll(mx,my,c.width,c.height);
+    if(hit>=0){_selectDrawing(hit);_showCtxMenu(e.clientX,e.clientY,_drawings[hit]);}
+    else{_selectDrawing(-1);_hideCtxMenu();}
+  });
+
+  c.addEventListener('wheel',function(e){
+    c.style.pointerEvents='none';
+    var el=document.elementFromPoint(e.clientX,e.clientY);
+    c.style.pointerEvents='auto';
+    if(el&&el!==c)el.dispatchEvent(new WheelEvent('wheel',{bubbles:true,cancelable:true,deltaX:e.deltaX,deltaY:e.deltaY,deltaZ:e.deltaZ,deltaMode:e.deltaMode,clientX:e.clientX,clientY:e.clientY}));
+  },{passive:false});
+
+  document.addEventListener('keydown',function(e){
+    if(document.activeElement&&['INPUT','TEXTAREA','SELECT'].indexOf(document.activeElement.tagName)>=0)return;
+    if(e.key==='Delete'||e.key==='Backspace'){if(_selectedIdx>=0)_deleteSelected();}
+    if(e.key==='Escape'){_drawState=null;_selectDrawing(-1);_hideCtxMenu();_hidePropsPanel();_setDrawHint('');_setDrawTool('cursor',document.getElementById('dt-cursor'));_redrawAll();}
+    if(e.key==='d'||e.key==='D'){if(_selectedIdx>=0)_duplicateSelected();}
+  });
+}
+
+function _finishPhase2(mx,my){
+  if(!_drawState)return;
+  var nd;
+  if(_drawState.phase==='channel2'){
+    var off=my-(_drawState.start.y+_drawState.end.y)/2;
+    nd={id:_newDrawId(),tool:'channel',start:JSON.parse(JSON.stringify(_drawState.start)),end:JSON.parse(JSON.stringify(_drawState.end)),offset:off,p3:null,color:_drawColor,width:_drawWidth,style:_drawStyle,locked:false,label:''};
+  } else {
+    nd={id:_newDrawId(),tool:'pitch',start:JSON.parse(JSON.stringify(_drawState.start)),end:JSON.parse(JSON.stringify(_drawState.end)),p3:{x:mx,y:my},color:_drawColor,width:_drawWidth,style:_drawStyle,locked:false,label:''};
+  }
+  _drawings.push(nd);_selectedIdx=_drawings.length-1;
+  _drawState=null;_setDrawHint('');_redrawAll();_showPropsPanel(nd);
+  _setDrawTool('cursor',document.getElementById('dt-cursor'));
+}
+
+// ── Text tool input ──────────────────────────────────────────
+function _showTextInput(cx,cy,mx,my,canvas){
+  var inp=document.getElementById('drawTextInput'),val=document.getElementById('drawTextVal');
+  if(!inp||!val)return;
+  inp.style.cssText='display:block;position:fixed;left:'+cx+'px;top:'+cy+'px;z-index:10002';
+  val.value='';val.focus();
+  function _commit(){
+    var txt=val.value.trim();
+    inp.style.display='none';
+    val.removeEventListener('keydown',_k);val.removeEventListener('blur',_commit);
+    if(!txt)return;
+    var nd={id:_newDrawId(),tool:'text',start:{x:mx,y:my},end:{x:mx,y:my},color:_drawColor,width:_drawWidth,style:'solid',locked:false,label:txt};
+    _drawings.push(nd);_selectedIdx=_drawings.length-1;
+    _redrawAll();_showPropsPanel(nd);
+    _setDrawTool('cursor',document.getElementById('dt-cursor'));
+  }
+  function _k(e){if(e.key==='Enter')_commit();if(e.key==='Escape'){inp.style.display='none';val.removeEventListener('keydown',_k);val.removeEventListener('blur',_commit);}}
+  val.addEventListener('keydown',_k);val.addEventListener('blur',_commit);
+}
+
+// ── Properties panel ─────────────────────────────────────────
+function _showPropsPanel(d){
+  var p=document.getElementById('drawPropsPanel');if(!p)return;
+  document.getElementById('dpColor').value=d.color||'#00d4ff';
+  var dpw=document.getElementById('dpWidth');if(dpw)dpw.value=d.width||2;
+  var dpwv=document.getElementById('dpWidthVal');if(dpwv)dpwv.textContent=(d.width||2)+'px';
+  var dps=document.getElementById('dpStyle');if(dps)dps.value=d.style||'solid';
+  var lr=document.getElementById('dpLabelRow');
+  if(lr)lr.style.display=(d.tool==='text'||d.tool==='hline')?'block':'none';
+  var dl=document.getElementById('dpLabel');if(dl)dl.value=d.label||'';
+  // Position: top-right of chart area
+  var chart=document.getElementById('tvMain');
+  if(chart){var cr=chart.getBoundingClientRect();p.style.right=(window.innerWidth-cr.right+8)+'px';p.style.top=Math.max(cr.top,56)+'px';}
+  p.style.display='block';
+}
+function _hidePropsPanel(){var p=document.getElementById('drawPropsPanel');if(p)p.style.display='none';}
+function _updatePropsPanel(){if(_selectedIdx>=0&&_drawings[_selectedIdx])_showPropsPanel(_drawings[_selectedIdx]);}
+function _dpApply(){
+  if(_selectedIdx<0||!_drawings[_selectedIdx])return;
+  var d=_drawings[_selectedIdx];
+  d.color=document.getElementById('dpColor').value;
+  d.width=parseInt(document.getElementById('dpWidth').value)||2;
+  var dpwv=document.getElementById('dpWidthVal');if(dpwv)dpwv.textContent=d.width+'px';
+  d.style=document.getElementById('dpStyle').value;
+  var dl=document.getElementById('dpLabel');if(dl&&(d.tool==='text'||d.tool==='hline'))d.label=dl.value;
+  var dc=document.getElementById('drawColor');if(dc)dc.value=d.color;
+  var dw=document.getElementById('drawWidth');if(dw)dw.value=d.width;
+  var ds=document.getElementById('drawStyle');if(ds)ds.value=d.style;
+  _drawColor=d.color;_drawWidth=d.width;_drawStyle=d.style;
+  _redrawAll();
+}
+function _dpClose(){_hidePropsPanel();}
+
+// ── Context menu ─────────────────────────────────────────────
+function _showCtxMenu(cx,cy,d){
+  var m=document.getElementById('drawCtxMenu');if(!m)return;
+  m.style.cssText='display:block;position:fixed;left:'+cx+'px;top:'+cy+'px;z-index:10001;background:var(--bg2);border:1px solid var(--border);border-radius:4px;min-width:148px;box-shadow:0 4px 20px rgba(0,0,0,0.6)';
+  var lk=document.getElementById('ctxMenuLock');if(lk)lk.textContent=d.locked?'🔓 Unlock':'🔒 Lock';
+  var del=document.getElementById('ctxMenuDel');if(del)del.style.display=d.locked?'none':'block';
+}
+function _hideCtxMenu(){var m=document.getElementById('drawCtxMenu');if(m)m.style.display='none';}
+document.addEventListener('click',function(e){
+  var m=document.getElementById('drawCtxMenu');
+  if(m&&m.style.display!=='none'&&!m.contains(e.target))_hideCtxMenu();
+});
 
 async function fetchAllMacro(){
   await Promise.all([fetchKrakenTickers(),fetchFearGreed(),fetchCG()]);
@@ -7950,6 +8415,52 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 else _sbInit();
 })();
 </script>
+
+<!-- ── DRAWING: Text Input ────────────────────────────────────────────────── -->
+<div id="drawTextInput" style="display:none;position:fixed;z-index:10002">
+  <input id="drawTextVal" type="text" placeholder="Enter label, press Enter…"
+    style="background:#0d1117;border:1px solid #00d4ff;color:#e0e0e0;font-family:Share Tech Mono,monospace;font-size:11px;padding:5px 10px;min-width:150px;outline:none;border-radius:3px;box-shadow:0 2px 12px rgba(0,212,255,0.25)">
+</div>
+
+<!-- ── DRAWING: Properties Panel ─────────────────────────────────────────── -->
+<div id="drawPropsPanel" style="display:none;position:fixed;z-index:10000;background:#0d1117;border:1px solid rgba(0,212,255,0.35);border-radius:6px;padding:12px 14px;min-width:186px;box-shadow:0 6px 24px rgba(0,0,0,0.65)">
+  <div style="font-family:Orbitron,monospace;font-size:8px;color:#00d4ff;letter-spacing:1.5px;margin-bottom:10px">DRAWING PROPERTIES</div>
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
+    <span style="font-family:Share Tech Mono,monospace;font-size:8px;color:#666;width:38px">Color</span>
+    <input type="color" id="dpColor" oninput="_dpApply()" style="width:28px;height:20px;border:1px solid #333;background:none;cursor:pointer;padding:1px;border-radius:2px">
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
+    <span style="font-family:Share Tech Mono,monospace;font-size:8px;color:#666;width:38px">Width</span>
+    <input type="range" id="dpWidth" min="1" max="5" value="2" oninput="_dpApply()" style="width:72px;accent-color:#00d4ff">
+    <span id="dpWidthVal" style="font-family:Share Tech Mono,monospace;font-size:8px;color:#aaa">2px</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
+    <span style="font-family:Share Tech Mono,monospace;font-size:8px;color:#666;width:38px">Style</span>
+    <select id="dpStyle" onchange="_dpApply()" style="background:#111;border:1px solid #333;color:#ccc;font-family:Share Tech Mono,monospace;font-size:7px;padding:3px 4px;border-radius:2px;cursor:pointer">
+      <option value="solid">─── Solid</option>
+      <option value="dashed">- - Dashed</option>
+      <option value="dotted">··· Dotted</option>
+    </select>
+  </div>
+  <div id="dpLabelRow" style="display:none;margin-bottom:8px">
+    <div style="font-family:Share Tech Mono,monospace;font-size:8px;color:#666;margin-bottom:4px">Label</div>
+    <input type="text" id="dpLabel" oninput="_dpApply()" placeholder="optional label…"
+      style="width:100%;background:#0a0a0f;border:1px solid #333;color:#e0e0e0;font-family:Share Tech Mono,monospace;font-size:9px;padding:4px 6px;border-radius:2px;box-sizing:border-box">
+  </div>
+  <div style="display:flex;gap:6px;margin-top:4px">
+    <button onclick="_dpClose()" style="flex:1;background:rgba(0,212,255,0.1);border:1px solid #00d4ff;color:#00d4ff;font-family:Share Tech Mono,monospace;font-size:7px;padding:4px;cursor:pointer;border-radius:3px;letter-spacing:1px">DONE</button>
+    <button onclick="_duplicateSelected()" style="flex:1;background:rgba(255,170,0,0.08);border:1px solid #ffaa00;color:#ffaa00;font-family:Share Tech Mono,monospace;font-size:7px;padding:4px;cursor:pointer;border-radius:3px;letter-spacing:1px">DUP</button>
+    <button onclick="_deleteSelected()" style="flex:1;background:rgba(255,51,85,0.1);border:1px solid #ff3355;color:#ff3355;font-family:Share Tech Mono,monospace;font-size:7px;padding:4px;cursor:pointer;border-radius:3px;letter-spacing:1px">DEL</button>
+  </div>
+</div>
+
+<!-- ── DRAWING: Context Menu ──────────────────────────────────────────────── -->
+<div id="drawCtxMenu" style="display:none">
+  <div onclick="_editSelected()"      onmouseenter="this.style.background='rgba(0,212,255,0.08)'" onmouseleave="this.style.background=''" style="padding:8px 14px;font-family:Share Tech Mono,monospace;font-size:8px;color:#ccc;cursor:pointer;border-bottom:1px solid #1e2130">✎ Edit Properties</div>
+  <div onclick="_duplicateSelected()" onmouseenter="this.style.background='rgba(0,212,255,0.08)'" onmouseleave="this.style.background=''" style="padding:8px 14px;font-family:Share Tech Mono,monospace;font-size:8px;color:#ccc;cursor:pointer;border-bottom:1px solid #1e2130">⊕ Duplicate</div>
+  <div id="ctxMenuLock" onclick="_toggleLockSelected()" onmouseenter="this.style.background='rgba(0,212,255,0.08)'" onmouseleave="this.style.background=''" style="padding:8px 14px;font-family:Share Tech Mono,monospace;font-size:8px;color:#ccc;cursor:pointer;border-bottom:1px solid #1e2130">🔒 Lock</div>
+  <div id="ctxMenuDel"  onclick="_deleteSelected()"    onmouseenter="this.style.background='rgba(255,51,85,0.1)'" onmouseleave="this.style.background=''" style="padding:8px 14px;font-family:Share Tech Mono,monospace;font-size:8px;color:#ff3355;cursor:pointer">✕ Delete</div>
+</div>
 
 <!-- ── ONBOARDING MODAL ──────────────────────────────────────────────────── -->
 <div id="onboardingModal" style="display:none;position:fixed;inset:0;background:rgba(2,6,9,0.95);z-index:9500;align-items:center;justify-content:center;padding:20px">
