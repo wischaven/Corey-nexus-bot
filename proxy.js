@@ -327,7 +327,7 @@ app.post('/push/test', requireAuth, async (req, res) => {
   res.json({ ok: true });
 });
 
-// ─── Multi-ticker scanner (Elite) ────────────────────────────────────────
+// ─── Multi-ticker scanner (Elite — live) ─────────────────────────────────
 app.get('/scanner/results', requireAuth, async (req, res) => {
   const settings = await getUserPlan(req.user.id);
   const plan = isOwner(req.user) ? 'elite' : settings.plan;
@@ -336,6 +336,52 @@ app.get('/scanner/results', requireAuth, async (req, res) => {
     const data = await runScan();
     if (!data) return res.json({ scanning: true, results: [], top3: [] });
     res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ─── Public signal feed (no auth — 15-min delayed cache) ─────────────────
+const PUBLIC_DELAY_MS = 15 * 60 * 1000;
+let _publicCache = null;
+let _publicCacheTime = 0;
+
+app.get('/scanner/public', async (req, res) => {
+  const now = Date.now();
+  // Return cached public snapshot if fresh enough (refresh every 60s server-side)
+  if (_publicCache && (now - _publicCacheTime) < 60_000) {
+    return res.json(_publicCache);
+  }
+  try {
+    const data = await runScan();
+    if (!data) return res.json({ scanning: true, results: [], top3: [], delayed: true, delayMinutes: 15 });
+    // Only expose data that is at least 15 minutes old — if the scan itself
+    // is fresher than that, we hold back the top signals and redact scores.
+    const ageMs = now - data.scannedAt;
+    const isDelayed = ageMs >= PUBLIC_DELAY_MS;
+    const payload = {
+      delayed: true,
+      delayMinutes: 15,
+      scannedAt: isDelayed ? data.scannedAt : now - PUBLIC_DELAY_MS,
+      count: data.count,
+      // Show all pairs but redact score precision and hide top signal details if too fresh
+      results: (data.results || []).map(r => ({
+        pair:     r.pair,
+        label:    r.label,
+        price:    r.price,
+        change24h: r.change24h,
+        score:    isDelayed ? r.score : Math.round(r.score / 10) * 10, // round to nearest 10 when fresh
+        verdict:  isDelayed ? r.verdict : (r.score >= 65 ? 'BULLISH' : r.score <= 40 ? 'BEARISH' : 'NEUTRAL'),
+        regime:   r.regime,
+        rsi:      isDelayed ? r.rsi : '--',
+        volRatio: isDelayed ? r.volRatio : '--',
+        divergence: null,
+      })),
+      top3: isDelayed ? data.top3 : [],
+    };
+    _publicCache = payload;
+    _publicCacheTime = now;
+    res.json(payload);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

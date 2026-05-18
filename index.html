@@ -270,6 +270,14 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
   </div>
   <!-- DASHBOARD -->
   <div class="pane active" id="tab-dash">
+    <!-- Setup progress bar — hidden once all steps done -->
+    <div id="obProgressBar" style="display:none;background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.2);padding:10px 14px;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-family:Orbitron,monospace;font-size:8px;color:var(--cyan);letter-spacing:2px">SETUP PROGRESS</div>
+        <button onclick="_obDismissForever()" style="background:none;border:none;color:var(--t3);font-family:Share Tech Mono,monospace;font-size:7px;cursor:pointer;letter-spacing:1px">dismiss</button>
+      </div>
+      <div style="display:flex;gap:8px" id="obStepChips"></div>
+    </div>
     <div class="g2">
       <div class="card"><div class="clbl" id="dashTickerLabel">XRP/USD</div><div class="cval cc" id="livePrice">---</div><div class="csub" id="priceSrc">loading...</div></div>
       <div class="card"><div class="clbl">SPREAD</div><div class="cval ca" id="spreadVal">-- bps</div><div class="fbadge fw" id="spreadBadge">CHECKING</div></div>
@@ -2570,6 +2578,7 @@ function init(){
   setInterval(_saveAll,60000);
   _loadAIKeys();
   _initAIModelUI();
+  setTimeout(_obInit, 800);
   calcFees();
   setTimeout(seedAlerts,800);
   log("info","SYS","NEXUS v4.0 — RSI + Bollinger Bands + MACD + Multi-AI Memory + Coaching");
@@ -5761,6 +5770,7 @@ function addTradeRow(time,type,p,size,rsi,bbp,tp){
   var r=document.createElement("tr");
   r.innerHTML='<td>'+time+'</td><td class="'+(type.startsWith('BUY')?'tb2':'ts2')+'" style="font-size:6px">'+type+'</td><td>'+parseFloat(p).toFixed(5)+'</td><td>$'+size+'</td><td style="color:'+(parseFloat(rsi)<30?'var(--green)':parseFloat(rsi)>70?'var(--red)':'var(--t2)')+'">'+rsi+'</td><td>'+bbp+'</td><td class="'+(tp>=0?'tb2':'ts2')+'">'+( tp>=0?'+':'')+'$'+tp.toFixed(4)+'</td>';
   tb.insertBefore(r,tb.firstChild);while(tb.children.length>50)tb.removeChild(tb.lastChild);
+  if(typeof _obCheck==='function') setTimeout(_obCheck,300);
   // Telegram alerts — live trades only (skip SIM)
   if(!type.startsWith('SIM')&&_tgAlertEnabled('trades')){
     var isBuy=type.startsWith('BUY');
@@ -5854,6 +5864,90 @@ async function checkOpenOrders(){
     }
   }
 }
+// ── Onboarding flow ──────────────────────────────────────────────────────
+var _OB_STEPS = [
+  { id:1, label:'Add AI Key',       done: function(){ return cKeySet||!!_openaiKey||!!_grokKey||!!_geminiKey; }, tab:'config' },
+  { id:2, label:'Start Sim Bot',    done: function(){ return tradeHist.length > 0 || botRunning; },             tab:'sim'    },
+  { id:3, label:'Link Telegram',    done: function(){ try{ var t=JSON.parse(localStorage.getItem('nexus_tg')||'null'); return !!(t&&t.token&&t.chatId); }catch(e){ return false; } }, tab:'telegram' },
+];
+
+function _obCheck() {
+  if (localStorage.getItem('nexus_ob_dismissed')) return;
+  var allDone = _OB_STEPS.every(function(s){ return s.done(); });
+  if (allDone) { _obDismissForever(); return; }
+  _obRenderProgress();
+}
+
+function _obRenderProgress() {
+  var bar = document.getElementById('obProgressBar');
+  var chips = document.getElementById('obStepChips');
+  if (!bar || !chips) return;
+  if (localStorage.getItem('nexus_ob_dismissed')) { bar.style.display='none'; return; }
+  bar.style.display = 'block';
+  chips.innerHTML = _OB_STEPS.map(function(s) {
+    var done = s.done();
+    var col = done ? 'var(--green)' : 'var(--t3)';
+    var bg  = done ? 'rgba(0,255,136,0.1)' : 'rgba(255,255,255,0.03)';
+    var bdr = done ? 'rgba(0,255,136,0.4)' : 'var(--border)';
+    return '<div onclick="' + (done ? '' : '_obGo(' + s.id + ')') + '" style="flex:1;padding:6px 8px;background:' + bg + ';border:1px solid ' + bdr + ';cursor:' + (done?'default':'pointer') + '">' +
+      '<div style="font-family:Share Tech Mono,monospace;font-size:8px;color:' + col + '">' + (done ? '✓ ' : '') + s.label + '</div>' +
+    '</div>';
+  }).join('');
+  // Also sync modal checkmarks if open
+  _OB_STEPS.forEach(function(s) {
+    var el = document.getElementById('ob-check-' + s.id);
+    var step = document.getElementById('ob-step-' + s.id);
+    if (!el) return;
+    if (s.done()) {
+      el.textContent = '✓'; el.style.borderColor = 'var(--green)'; el.style.color = 'var(--green)';
+      if (step) step.style.borderColor = 'rgba(0,255,136,0.3)';
+    } else {
+      el.textContent = s.id; el.style.borderColor = 'var(--t3)'; el.style.color = 'var(--t3)';
+      if (step) step.style.borderColor = 'var(--border)';
+    }
+  });
+}
+
+function _obGo(stepId) {
+  var step = _OB_STEPS.find(function(s){ return s.id === stepId; });
+  if (!step) return;
+  _obDismiss();
+  var navBtns = document.querySelectorAll('.tnav');
+  var tabMap = { config: navBtns.length-1, sim: 4, telegram: -1 };
+  // Find the right nav button by tab name
+  var target = step.tab;
+  navBtns.forEach(function(b) {
+    if (b.getAttribute('onclick') && b.getAttribute('onclick').includes("'"+target+"'")) b.click();
+  });
+}
+
+function _obShowModal() {
+  var modal = document.getElementById('onboardingModal');
+  if (!modal || localStorage.getItem('nexus_ob_dismissed')) return;
+  modal.style.display = 'flex';
+  _obRenderProgress();
+}
+
+function _obDismiss() {
+  var modal = document.getElementById('onboardingModal');
+  if (modal) modal.style.display = 'none';
+}
+
+function _obDismissForever() {
+  localStorage.setItem('nexus_ob_dismissed', '1');
+  _obDismiss();
+  var bar = document.getElementById('obProgressBar');
+  if (bar) bar.style.display = 'none';
+}
+
+function _obInit() {
+  if (localStorage.getItem('nexus_ob_dismissed')) return;
+  var isFirstVisit = !localStorage.getItem('nexus_ob_seen');
+  localStorage.setItem('nexus_ob_seen', '1');
+  _obCheck();
+  if (isFirstVisit) setTimeout(_obShowModal, 1200);
+}
+
 // ── Multi-AI routing ──────────────────────────────────────────────
 var _aiModel = localStorage.getItem('nexus_ai_model') || 'claude';
 var _openaiKey = '', _grokKey = '', _geminiKey = '';
@@ -5938,6 +6032,7 @@ function saveClaudeKey(){
   log("success","AI","Claude key saved. Running initial analysis...");
   setTimeout(function(){runFullAI(false);},1500);
   _saveAll();
+  setTimeout(_obCheck, 300);
 }
 
 function saveAIKeys(){
@@ -5966,6 +6061,7 @@ function saveAIKeys(){
   }
   _initAIModelUI();
   _saveAll();
+  setTimeout(_obCheck, 300);
 }
 
 function _loadAIKeys(){
@@ -6135,7 +6231,7 @@ function saveTelegram(){
   var url = 'https://api.telegram.org/bot'+token+'/sendMessage';
   fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:chatId,text:'✅ NEXUS connected! You will now receive trade alerts here.',parse_mode:'HTML'})})
     .then(r=>r.json()).then(d=>{
-      if(d.ok){stat.textContent='✓ CONNECTED — Test message sent!';stat.style.color='var(--green)';}
+      if(d.ok){stat.textContent='✓ CONNECTED — Test message sent!';stat.style.color='var(--green)';setTimeout(_obCheck,300);}
       else{stat.textContent='Error: '+d.description;stat.style.color='var(--red)';}
     }).catch(()=>{stat.textContent='Connection error — check your token';stat.style.color='var(--red)';});
 }
@@ -6820,8 +6916,8 @@ async function _runScanner(force) {
   try {
     var res = await fetch('/scanner/results', { headers: _authToken ? { 'Authorization': 'Bearer ' + _authToken } : {} });
     if (res.status === 403) {
-      document.getElementById('scannerGate').style.display = 'block';
-      document.getElementById('scannerContent').style.display = 'none';
+      // Not elite — show delayed public feed instead of upgrade gate
+      _runPublicScanner();
       return;
     }
     var data = await res.json();
@@ -6833,6 +6929,33 @@ async function _runScanner(force) {
   }
 }
 
+async function _runPublicScanner() {
+  var statusEl = document.getElementById('scannerStatus');
+  var gateEl   = document.getElementById('scannerGate');
+  var contEl   = document.getElementById('scannerContent');
+  // Show content pane but with a delay banner instead of the upgrade gate
+  if (gateEl) gateEl.style.display = 'none';
+  if (contEl) contEl.style.display = 'block';
+  // Inject delay banner if not already there
+  if (!document.getElementById('scannerDelayBanner')) {
+    var banner = document.createElement('div');
+    banner.id = 'scannerDelayBanner';
+    banner.style.cssText = 'background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.4);padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center';
+    banner.innerHTML = '<div><div style="font-family:Orbitron,monospace;font-size:8px;color:var(--amber);letter-spacing:2px;margin-bottom:3px">⏱ DELAYED 15 MINUTES</div><div style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t3)">Free plan · Upgrade to Elite for live signals</div></div><button onclick="showTab(\'plans\',document.querySelector(\'.tnav\'))" style="background:linear-gradient(135deg,var(--amber),#d97706);border:none;color:#000;font-family:Orbitron,monospace;font-size:7px;font-weight:700;padding:6px 14px;cursor:pointer;letter-spacing:1px">⚡ GO LIVE</button>';
+    var firstChild = document.getElementById('scannerContent').firstChild;
+    document.getElementById('scannerContent').insertBefore(banner, firstChild);
+  }
+  try {
+    var res = await fetch('/scanner/public');
+    var data = await res.json();
+    if (data.scanning) { if(statusEl) statusEl.textContent = 'First scan in progress…'; return; }
+    _scannerData = data;
+    _renderScannerResults(data);
+  } catch(e) {
+    if(statusEl) statusEl.textContent = 'Error: ' + e.message;
+  }
+}
+
 function _renderScannerResults(data) {
   var statusEl = document.getElementById('scannerStatus');
   var top3El   = document.getElementById('scannerTop3');
@@ -6840,7 +6963,9 @@ function _renderScannerResults(data) {
   if (!statusEl || !top3El || !tableEl) return;
 
   var ago = data.scannedAt ? Math.round((Date.now() - data.scannedAt) / 1000) : 0;
-  statusEl.textContent = data.count + ' pairs scanned · ' + (ago < 5 ? 'just now' : ago + 's ago') + ' · refreshes every 60s';
+  var agoStr = ago < 60 ? ago + 's ago' : Math.round(ago/60) + 'm ago';
+  var delayNote = data.delayed ? ' · ⏱ 15-min delay' : '';
+  statusEl.textContent = data.count + ' pairs scanned · ' + agoStr + delayNote;
 
   // ── Top 3 cards ────────────────────────────────────────────────────────
   var scoreColor = function(s) { return s >= 70 ? 'var(--green)' : s >= 55 ? 'var(--cyan)' : s >= 45 ? 'var(--muted)' : 'var(--red)'; };
@@ -7825,5 +7950,56 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 else _sbInit();
 })();
 </script>
+
+<!-- ── ONBOARDING MODAL ──────────────────────────────────────────────────── -->
+<div id="onboardingModal" style="display:none;position:fixed;inset:0;background:rgba(2,6,9,0.95);z-index:9500;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--bg2);border:1px solid rgba(0,212,255,0.3);max-width:480px;width:100%;padding:28px;position:relative">
+    <button onclick="_obDismiss()" style="position:absolute;top:12px;right:14px;background:transparent;border:none;color:var(--t3);cursor:pointer;font-size:16px;font-family:monospace">✕</button>
+    <div style="font-family:Orbitron,monospace;font-size:10px;color:var(--cyan);letter-spacing:3px;margin-bottom:6px">WELCOME TO NEXUS</div>
+    <div style="font-family:Rajdhani,sans-serif;font-size:16px;color:var(--t1);margin-bottom:20px">3 steps to your first trade signal</div>
+
+    <!-- Step 1 -->
+    <div id="ob-step-1" class="ob-step" style="border:1px solid var(--border);padding:14px;margin-bottom:10px;cursor:pointer" onclick="_obGo(1)">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div id="ob-check-1" style="width:22px;height:22px;border-radius:50%;border:2px solid var(--t3);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">1</div>
+        <div>
+          <div style="font-family:Orbitron,monospace;font-size:9px;color:var(--t1);letter-spacing:1px;margin-bottom:3px">ADD YOUR AI KEY</div>
+          <div style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t3)">Claude, GPT-4o, Grok, or Gemini — AI scores the market every 2 minutes</div>
+        </div>
+        <div style="margin-left:auto;font-family:Share Tech Mono,monospace;font-size:8px;color:var(--cyan)">CONFIG →</div>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div id="ob-step-2" class="ob-step" style="border:1px solid var(--border);padding:14px;margin-bottom:10px;cursor:pointer" onclick="_obGo(2)">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div id="ob-check-2" style="width:22px;height:22px;border-radius:50%;border:2px solid var(--t3);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">2</div>
+        <div>
+          <div style="font-family:Orbitron,monospace;font-size:9px;color:var(--t1);letter-spacing:1px;margin-bottom:3px">START THE SIM BOT</div>
+          <div style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t3)">Paper trade with live prices — same signals as the live bot, zero risk</div>
+        </div>
+        <div style="margin-left:auto;font-family:Share Tech Mono,monospace;font-size:8px;color:var(--cyan)">SIM →</div>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div id="ob-step-3" class="ob-step" style="border:1px solid var(--border);padding:14px;margin-bottom:20px;cursor:pointer" onclick="_obGo(3)">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div id="ob-check-3" style="width:22px;height:22px;border-radius:50%;border:2px solid var(--t3);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">3</div>
+        <div>
+          <div style="font-family:Orbitron,monospace;font-size:9px;color:var(--t1);letter-spacing:1px;margin-bottom:3px">CONNECT TELEGRAM <span style="color:var(--t3)">(optional)</span></div>
+          <div style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t3)">Get trade alerts and morning briefs straight to your phone</div>
+        </div>
+        <div style="margin-left:auto;font-family:Share Tech Mono,monospace;font-size:8px;color:var(--cyan)">TELEGRAM →</div>
+      </div>
+    </div>
+
+    <button onclick="_obDismiss()" style="width:100%;padding:12px;background:linear-gradient(135deg,var(--cyan),var(--purple));border:none;color:#000;font-family:Orbitron,monospace;font-size:9px;font-weight:700;letter-spacing:2px;cursor:pointer">LET'S GO</button>
+    <div style="text-align:center;margin-top:10px">
+      <button onclick="_obDismissForever()" style="background:none;border:none;color:var(--t3);font-family:Share Tech Mono,monospace;font-size:8px;cursor:pointer;letter-spacing:1px">Don't show this again</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
