@@ -606,6 +606,18 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
       <div id="tvVolume" style="height:55px;width:100%"></div>
       <div id="tvOscA"   style="height:90px;width:100%"></div>
       <div id="tvOscB"   style="height:80px;width:100%"></div>
+      <!-- OHLC crosshair tooltip — top-left of chart -->
+      <div id="chartTooltip" style="display:none;position:absolute;top:6px;left:6px;z-index:20;background:rgba(10,10,18,0.88);border:1px solid rgba(0,212,255,0.25);border-radius:4px;padding:5px 9px;pointer-events:none;backdrop-filter:blur(4px)">
+        <span id="ctDate" style="font-family:Share Tech Mono,monospace;font-size:7.5px;color:#666;display:block;margin-bottom:3px;letter-spacing:.5px"></span>
+        <span style="font-family:Share Tech Mono,monospace;font-size:8px">
+          <span style="color:#555">O</span><span id="ctO" style="color:#ccc;margin-right:8px"> --</span>
+          <span style="color:#555">H</span><span id="ctH" style="color:#00ff88;margin-right:8px"> --</span>
+          <span style="color:#555">L</span><span id="ctL" style="color:#ff3355;margin-right:8px"> --</span>
+          <span style="color:#555">C</span><span id="ctC" style="color:#e0e0e0;margin-right:8px"> --</span>
+          <span style="color:#555">V</span><span id="ctV" style="color:#888"> --</span>
+          <span id="ctChg" style="margin-left:6px;font-size:7.5px"></span>
+        </span>
+      </div>
       <!-- Drawing canvas overlay — sits on top of tvMain -->
       <canvas id="drawCanvas" style="position:absolute;top:0;left:0;pointer-events:auto;z-index:10;cursor:default"></canvas>
     </div>
@@ -2616,45 +2628,90 @@ var _BINANCE_IMAP={1:'1m',3:'3m',5:'5m',15:'15m',30:'30m',60:'1h',120:'2h',240:'
 var _BINANCE_TICKER_MAP={XXBTZUSD:'BTCUSDT',XETHZUSD:'ETHUSDT',XXRPZUSD:'XRPUSDT',XSOLUSD:'SOLUSDT',XDOTUSD:'DOTUSDT',XXLMZUSD:'XLMUSDT',default:function(t){return t.replace(/X(.+)ZUSD/,'$1USDT').replace(/ZUSD$/,'USDT').replace(/USD$/,'USDT');}};
 function _toBinancePair(krakenPair){return _BINANCE_TICKER_MAP[krakenPair]||_BINANCE_TICKER_MAP.default(krakenPair);}
 
+// Maximum candles to fetch per timeframe (balances depth vs render perf)
+function _maxCandlesForTF(m){
+  if(m>=43200)return 200;  // 1M  ~16 yrs
+  if(m>=10080)return 500;  // 1W  ~9.6 yrs
+  if(m>=1440) return 2000; // 1D  ~5.5 yrs
+  if(m>=240)  return 2000; // 4H  ~333 days
+  if(m>=60)   return 1500; // 1H  ~62 days
+  if(m>=15)   return 1500; // 15m ~15 days
+  if(m>=5)    return 1000; // 5m  ~3.5 days
+  return 750;              // 1m-3m ~12 hrs
+}
+
+// Paginated Binance fetch — walks backwards until maxCandles reached
+async function _fetchBinanceCandlesPaged(krakenPair, intervalMin, maxCandles){
+  var sym=_toBinancePair(krakenPair);
+  var iv=_BINANCE_IMAP[intervalMin]||'5m';
+  var all=[], endTime=null, batchSize=Math.min(1000,maxCandles);
+  while(all.length<maxCandles){
+    var url='https://api.binance.com/api/v3/klines?symbol='+sym+'&interval='+iv+'&limit='+batchSize;
+    if(endTime)url+='&endTime='+endTime;
+    var r=await fetch(url);
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    var d=await r.json();
+    if(!Array.isArray(d))throw new Error(JSON.stringify(d).slice(0,80));
+    if(!d.length)break;
+    var batch=d.map(function(c){return{t:Math.floor(+c[0]/1000),o:+c[1],h:+c[2],l:+c[3],c:+c[4],v:+c[5]};});
+    all=batch.concat(all); // prepend — older data
+    if(d.length<batchSize)break; // hit start of available data
+    if(all.length>=maxCandles)break;
+    endTime=+d[0][0]-1; // 1ms before the oldest candle in this batch
+  }
+  // Sort + deduplicate by timestamp
+  all.sort(function(a,b){return a.t-b.t;});
+  var seen=Object.create(null);
+  return all.filter(function(c){if(seen[c.t])return false;seen[c.t]=true;return true;});
+}
+
+// Legacy single-batch fetch used by fetchAllTF (100 candles, fast)
 async function _fetchBinanceCandles(krakenPair, intervalMin, limit){
   var sym=_toBinancePair(krakenPair);
   var iv=_BINANCE_IMAP[intervalMin]||'5m';
-  var url='https://api.binance.com/api/v3/klines?symbol='+sym+'&interval='+iv+'&limit='+(limit||200);
-  var r=await fetch(url);
+  var r=await fetch('https://api.binance.com/api/v3/klines?symbol='+sym+'&interval='+iv+'&limit='+(limit||200));
   var d=await r.json();
   if(!Array.isArray(d))throw new Error('Binance error: '+JSON.stringify(d).slice(0,80));
   return d.map(function(c){return{t:Math.floor(+c[0]/1000),o:+c[1],h:+c[2],l:+c[3],c:+c[4],v:+c[5]};});
 }
 
+var _ohlcFetchId=0; // increments on each call; stale results are discarded
+
 async function fetchOHLC(){
-  log("info","OHLC","Fetching "+candleInt+"m candles via Binance...");
+  var myId=++_ohlcFetchId;
+  var maxC=_maxCandlesForTF(candleInt);
+  log("info","OHLC","Fetching "+candleInt+"m candles (up to "+maxC+")…");
   try{
-    candles=await _fetchBinanceCandles(_activeTicker,candleInt,300);
-    if(candles.length){
-      price=candles[candles.length-1].c;
-      document.getElementById("livePrice").textContent="$"+price.toFixed(6);
-      document.getElementById("priceSrc").textContent="BINANCE "+candleInt+"m live";
-    }
+    var result=await _fetchBinanceCandlesPaged(_activeTicker,candleInt,maxC);
+    if(myId!==_ohlcFetchId)return; // superseded by a newer fetch
+    if(!result.length)throw new Error('empty response');
+    candles=result;
+    price=candles[candles.length-1].c;
+    document.getElementById("livePrice").textContent="$"+price.toFixed(6);
+    document.getElementById("priceSrc").textContent="BINANCE "+candleInt+"m · "+candles.length+" bars";
     calcAllInd();drawAllCharts();
-    log("success","OHLC",candles.length+" candles loaded. All indicators updated.");
+    log("success","OHLC",candles.length+" candles loaded.");
     fetchAllTF();
   }catch(e){
-    log("warn","OHLC","Binance failed ("+e.message+"), falling back to Kraken...");
+    if(myId!==_ohlcFetchId)return;
+    log("warn","OHLC","Binance failed ("+e.message+") — trying Kraken…");
     try{
       var r=await fetch("https://api.kraken.com/0/public/OHLC?pair="+_activeTicker+"&interval="+candleInt);
       var d=await r.json();
+      if(myId!==_ohlcFetchId)return;
       if(d.error&&d.error.length)throw new Error(d.error[0]);
       var key=Object.keys(d.result).find(function(k){return k!=="last";});
-      candles=d.result[key].slice(-200).map(function(c){return{t:+c[0],o:+c[1],h:+c[2],l:+c[3],c:+c[4],v:+c[6]};});
-      if(candles.length){price=candles[candles.length-1].c;document.getElementById("livePrice").textContent="$"+price.toFixed(6);document.getElementById("priceSrc").textContent="KRAKEN "+candleInt+"m live";}
+      candles=d.result[key].map(function(c){return{t:+c[0],o:+c[1],h:+c[2],l:+c[3],c:+c[4],v:+c[6]};});
+      if(candles.length){price=candles[candles.length-1].c;document.getElementById("livePrice").textContent="$"+price.toFixed(6);document.getElementById("priceSrc").textContent="KRAKEN "+candleInt+"m · "+candles.length+" bars";}
       calcAllInd();drawAllCharts();
-      log("success","OHLC",candles.length+" candles (Kraken). All indicators updated.");
+      log("success","OHLC",candles.length+" candles (Kraken).");
       fetchAllTF();
-    }catch(e2){log("error","OHLC",e2.message);}
+    }catch(e2){if(myId!==_ohlcFetchId)return;log("error","OHLC",e2.message);}
   }
 }
 
 function _setTF(min,btn){
+  if(candleInt===min&&candles.length)return; // already on this TF with data
   candleInt=min;
   document.querySelectorAll('[id^="tf-"]').forEach(function(b){b.classList.remove("active");});
   if(btn)btn.classList.add("active");
@@ -3468,6 +3525,53 @@ function initTVChart() {
   BC.priceScale('right').applyOptions({ scaleMargins:{top:0.1,bottom:0.1} });
 
   _tvCharts = { main:MC, vol:VC, oscA:AC, oscB:BC };
+
+  // ── OHLC crosshair tooltip ─────────────────────────────────────
+  function _fmtP(v){
+    if(v===undefined||v===null)return '--';
+    if(v<0.0001)return v.toFixed(8);
+    if(v<0.01)  return v.toFixed(6);
+    if(v<1)     return v.toFixed(5);
+    if(v<100)   return v.toFixed(4);
+    if(v<10000) return v.toFixed(2);
+    return v.toFixed(0);
+  }
+  function _fmtVol(v){
+    if(!v)return '--';
+    if(v>=1e9)return (v/1e9).toFixed(2)+'B';
+    if(v>=1e6)return (v/1e6).toFixed(2)+'M';
+    if(v>=1e3)return (v/1e3).toFixed(1)+'K';
+    return v.toFixed(0);
+  }
+  MC.subscribeCrosshairMove(function(param){
+    var tt=document.getElementById('chartTooltip');
+    if(!tt)return;
+    if(!param||!param.time||!param.point||param.point.x<0||param.point.y<0){
+      tt.style.display='none';return;
+    }
+    var bar=param.seriesData.get(_tvSeries.candle);
+    if(!bar){tt.style.display='none';return;}
+    // Date + time
+    var d=new Date(param.time*1000);
+    var mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getUTCMonth()];
+    var dateStr=mo+' '+d.getUTCDate()+' '+d.getUTCFullYear();
+    var hh=String(d.getUTCHours()).padStart(2,'0'),mm=String(d.getUTCMinutes()).padStart(2,'0');
+    var timeStr=candleInt<1440?' '+hh+':'+mm+' UTC':'';
+    document.getElementById('ctDate').textContent=dateStr+timeStr;
+    document.getElementById('ctO').textContent=' '+_fmtP(bar.open);
+    document.getElementById('ctH').textContent=' '+_fmtP(bar.high);
+    document.getElementById('ctL').textContent=' '+_fmtP(bar.low);
+    document.getElementById('ctC').textContent=' '+_fmtP(bar.close);
+    // Volume from vol series
+    var vbar=param.seriesData.get(_tvSeries.vol);
+    document.getElementById('ctV').textContent=' '+_fmtVol(vbar&&vbar.value);
+    // Change % open→close
+    var chg=bar.open?((bar.close-bar.open)/bar.open*100):0;
+    var chgEl=document.getElementById('ctChg');
+    chgEl.textContent=(chg>=0?'+':'')+chg.toFixed(2)+'%';
+    chgEl.style.color=chg>=0?'#00ff88':'#ff3355';
+    tt.style.display='block';
+  });
 
   // ── Sync time scales ───────────────────────────────────────────
   [MC,VC,AC,BC].forEach(function(src) {
