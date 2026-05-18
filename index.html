@@ -2686,38 +2686,72 @@ async function _fetchBinanceCandles(krakenPair, intervalMin, limit){
 
 var _ohlcFetchId=0; // increments on each call; stale results are discarded
 
+function _tfSetLoading(loading){
+  // Visual feedback on active TF button while fetching
+  document.querySelectorAll('[id^="tf-"]').forEach(function(b){
+    if(b.classList.contains('active')){
+      b.style.opacity=loading?'0.5':'1';
+      b.style.pointerEvents=loading?'none':'';
+    }
+  });
+  var src=document.getElementById('priceSrc');
+  if(src&&loading)src.textContent='Loading…';
+}
+
 async function fetchOHLC(){
   var myId=++_ohlcFetchId;
-  var maxC=_maxCandlesForTF(candleInt);
-  log("info","OHLC","Fetching "+candleInt+"m candles (up to "+maxC+")…");
+  var myTF=candleInt; // capture at call time — candleInt could change during awaits
+  var maxC=_maxCandlesForTF(myTF);
+  log("info","OHLC","Fetching "+myTF+"m candles (up to "+maxC+")…");
+  _tfSetLoading(true);
+
+  var fetched=null, src='';
+  // ── Try Binance first ────────────────────────────────────────
   try{
-    var result=await _fetchBinanceCandlesPaged(_activeTicker,candleInt,maxC);
-    if(myId!==_ohlcFetchId)return; // superseded by a newer fetch
-    if(!result.length)throw new Error('empty response');
-    candles=result;
-    _loadedTF=candleInt; // mark which TF is actually loaded
-    price=candles[candles.length-1].c;
-    document.getElementById("livePrice").textContent="$"+price.toFixed(6);
-    document.getElementById("priceSrc").textContent="BINANCE "+candleInt+"m · "+candles.length+" bars";
-    calcAllInd();drawAllCharts();
-    log("success","OHLC",candles.length+" candles loaded.");
-    setTimeout(fetchAllTF,3000); // delay MTF fetch to avoid hammering Binance right after main fetch
+    var result=await _fetchBinanceCandlesPaged(_activeTicker,myTF,maxC);
+    if(myId!==_ohlcFetchId){_tfSetLoading(false);return;}
+    if(result.length){fetched=result;src='BINANCE';}
+    else throw new Error('empty response');
   }catch(e){
-    if(myId!==_ohlcFetchId)return;
+    if(myId!==_ohlcFetchId){_tfSetLoading(false);return;}
     log("warn","OHLC","Binance failed ("+e.message+") — trying Kraken…");
-    try{
-      var r=await fetch("https://api.kraken.com/0/public/OHLC?pair="+_activeTicker+"&interval="+candleInt);
-      var d=await r.json();
-      if(myId!==_ohlcFetchId)return;
-      if(d.error&&d.error.length)throw new Error(d.error[0]);
-      var key=Object.keys(d.result).find(function(k){return k!=="last";});
-      candles=d.result[key].map(function(c){return{t:+c[0],o:+c[1],h:+c[2],l:+c[3],c:+c[4],v:+c[6]};});
-      if(candles.length){_loadedTF=candleInt;price=candles[candles.length-1].c;document.getElementById("livePrice").textContent="$"+price.toFixed(6);document.getElementById("priceSrc").textContent="KRAKEN "+candleInt+"m · "+candles.length+" bars";}
-      calcAllInd();drawAllCharts();
-      log("success","OHLC",candles.length+" candles (Kraken).");
-      setTimeout(fetchAllTF,5000);
-    }catch(e2){if(myId!==_ohlcFetchId)return;log("error","OHLC",e2.message);}
+    // ── Kraken fallback (only supports: 1,5,15,30,60,240,1440,10080 min) ──
+    var krakenSupported=[1,5,15,30,60,240,1440,10080];
+    if(krakenSupported.indexOf(myTF)>=0){
+      try{
+        var r=await fetch("https://api.kraken.com/0/public/OHLC?pair="+_activeTicker+"&interval="+myTF);
+        var d=await r.json();
+        if(myId!==_ohlcFetchId){_tfSetLoading(false);return;}
+        if(d.error&&d.error.length)throw new Error(d.error[0]);
+        var key=Object.keys(d.result).find(function(k){return k!=="last";});
+        if(key&&d.result[key].length){
+          fetched=d.result[key].map(function(c){return{t:+c[0],o:+c[1],h:+c[2],l:+c[3],c:+c[4],v:+c[6]};});
+          src='KRAKEN';
+        }
+      }catch(e2){log("error","OHLC","Kraken also failed: "+e2.message);}
+    } else {
+      log("warn","OHLC","Kraken doesn't support "+myTF+"m — no fallback available");
+    }
   }
+
+  _tfSetLoading(false);
+  if(myId!==_ohlcFetchId)return;
+
+  if(!fetched||!fetched.length){
+    log("error","OHLC","No data for "+myTF+"m — try again or pick another timeframe");
+    // Don't set _loadedTF so the user can retry
+    return;
+  }
+
+  // ── Apply data — rendering errors are isolated here, NOT confused with network errors ──
+  candles=fetched;
+  _loadedTF=myTF;
+  price=candles[candles.length-1].c;
+  document.getElementById("livePrice").textContent="$"+price.toFixed(6);
+  document.getElementById("priceSrc").textContent=src+" "+myTF+"m · "+candles.length+" bars";
+  try{calcAllInd();drawAllCharts();}catch(re){log("error","CHART","Render error: "+re.message);}
+  log("success","OHLC",candles.length+" candles loaded ("+src+").");
+  setTimeout(fetchAllTF,3000);
 }
 
 function _setTF(min,btn){
@@ -4194,7 +4228,7 @@ function _setDrawTool(tool,btn){
   var c=document.getElementById('drawCanvas');
   if(c)c.style.cursor=(tool==='cursor'?'default':'crosshair');
   _hideCtxMenu();
-  if(tool!=='cursor')_hidePropsPanel();
+  if(tool!=='cursor'){_hidePropsPanel();_hideInlineBar();_selectedIdx=-1;}
   _setDrawHint(tool==='channel'?'Drag to set main line, then click to set width':tool==='pitch'?'Drag to set handle line, then click to set fork':'');
 }
 
@@ -4216,15 +4250,50 @@ function _clearDrawings(){
   _hidePropsPanel();_hideCtxMenu();_setDrawHint('');_redrawAll();_persistDrawings();
 }
 
+function _drawingMidpoint(d, cw, ch){
+  // Returns {x,y} in canvas pixel space for the midpoint/anchor of a drawing
+  if(d.tool==='hline') return {x:cw/2, y:d.start.y};
+  if(d.tool==='rect')  return {x:(d.start.x+d.end.x)/2, y:(d.start.y+d.end.y)/2};
+  if(d.tool==='text')  return {x:d.start.x, y:d.start.y};
+  return {x:(d.start.x+d.end.x)/2, y:(d.start.y+d.end.y)/2};
+}
+
+function _showInlineBar(d, cw, ch){
+  var bar=document.getElementById('drawInlineBar');
+  if(!bar)return;
+  var canvas=document.getElementById('drawCanvas');
+  if(!canvas)return;
+  var rect=canvas.getBoundingClientRect();
+  var mid=_drawingMidpoint(d, cw, ch);
+  var sx=rect.left + mid.x;
+  var sy=rect.top  + mid.y - 38;
+  if(sy<rect.top+4)sy=rect.top+mid.y+12;
+  bar.style.left = Math.max(4, Math.min(sx-60, window.innerWidth-140))+'px';
+  bar.style.top  = Math.max(4, sy)+'px';
+  bar.style.display='flex';
+  // Reflect lock state
+  var lb=document.getElementById('inlineBarLock');
+  if(lb)lb.textContent=d.locked?'🔒':'🔓';
+}
+
+function _hideInlineBar(){
+  var bar=document.getElementById('drawInlineBar');
+  if(bar)bar.style.display='none';
+}
+
 function _selectDrawing(idx){
   _selectedIdx=idx;
+  var canvas=document.getElementById('drawCanvas');
+  var cw=canvas?canvas.width:0, ch=canvas?canvas.height:0;
   if(idx>=0&&_drawings[idx]){
     var d=_drawings[idx];
     var dc=document.getElementById('drawColor');if(dc)dc.value=d.color||'#00d4ff';
     var dw=document.getElementById('drawWidth');if(dw)dw.value=d.width||2;
     var ds=document.getElementById('drawStyle');if(ds)ds.value=d.style||'solid';
-    _showPropsPanel(d);
+    _showInlineBar(d, cw, ch);
+    _hidePropsPanel(); // don't auto-open props panel; user can click ✎ to open it
   } else {
+    _hideInlineBar();
     _hidePropsPanel();
   }
   _redrawAll();
@@ -4234,7 +4303,7 @@ function _deleteSelected(){
   if(_selectedIdx<0||!_drawings[_selectedIdx])return;
   _drawings.splice(_selectedIdx,1);
   _selectedIdx=-1;
-  _hidePropsPanel();_hideCtxMenu();_redrawAll();_persistDrawings();
+  _hideInlineBar();_hidePropsPanel();_hideCtxMenu();_redrawAll();_persistDrawings();
 }
 
 function _duplicateSelected(){
@@ -4244,16 +4313,25 @@ function _duplicateSelected(){
   nd.id=_newDrawId();nd.start={x:d.start.x+16,y:d.start.y+16};nd.end={x:d.end.x+16,y:d.end.y+16};
   if(nd.p3)nd.p3={x:nd.p3.x+16,y:nd.p3.y+16};
   _drawings.push(nd);_selectedIdx=_drawings.length-1;
-  _hideCtxMenu();_redrawAll();_showPropsPanel(nd);_persistDrawings();
+  var c=document.getElementById('drawCanvas');
+  _hideCtxMenu();_redrawAll();_persistDrawings();
+  if(c)_showInlineBar(nd,c.width,c.height);
 }
 
 function _toggleLockSelected(){
   if(_selectedIdx<0||!_drawings[_selectedIdx])return;
-  _drawings[_selectedIdx].locked=!_drawings[_selectedIdx].locked;
+  var d=_drawings[_selectedIdx];
+  d.locked=!d.locked;
+  // Update lock icon in inline bar
+  var lb=document.getElementById('inlineBarLock');
+  if(lb)lb.textContent=d.locked?'🔒':'🔓';
   _hideCtxMenu();_redrawAll();_persistDrawings();
 }
 
-function _editSelected(){_hideCtxMenu();if(_selectedIdx>=0)_showPropsPanel(_drawings[_selectedIdx]);}
+function _editSelected(){
+  _hideCtxMenu();
+  if(_selectedIdx>=0&&_drawings[_selectedIdx])_showPropsPanel(_drawings[_selectedIdx]);
+}
 
 // ── Geometry helpers ─────────────────────────────────────────
 function _ptSegDist(px,py,ax,ay,bx,by){
@@ -4647,7 +4725,10 @@ function _initDrawCanvas(){
       var d=_drawings[_dragState.dIdx];if(!d)return;
       if(_dragState.type==='move'){d.start.x+=dx;d.start.y+=dy;d.end.x+=dx;d.end.y+=dy;if(d.p3){d.p3.x+=dx;d.p3.y+=dy;}}
       else _applyHandleDrag(d,_dragState.hIdx,dx,dy);
-      _redrawAll();return;
+      _redrawAll();
+      // Reposition inline bar while dragging
+      if(_selectedIdx>=0&&_drawings[_selectedIdx])_showInlineBar(_drawings[_selectedIdx],c.width,c.height);
+      return;
     }
 
     if(_drawState){_drawState.cur={x:mx,y:my};_redrawAll();return;}
@@ -4710,7 +4791,7 @@ function _initDrawCanvas(){
   document.addEventListener('keydown',function(e){
     if(document.activeElement&&['INPUT','TEXTAREA','SELECT'].indexOf(document.activeElement.tagName)>=0)return;
     if(e.key==='Delete'||e.key==='Backspace'){if(_selectedIdx>=0)_deleteSelected();}
-    if(e.key==='Escape'){_drawState=null;_selectDrawing(-1);_hideCtxMenu();_hidePropsPanel();_setDrawHint('');_setDrawTool('cursor',document.getElementById('dt-cursor'));_redrawAll();}
+    if(e.key==='Escape'){_drawState=null;_selectDrawing(-1);_hideCtxMenu();_hidePropsPanel();_hideInlineBar();_setDrawHint('');_setDrawTool('cursor',document.getElementById('dt-cursor'));_redrawAll();}
     if(e.key==='d'||e.key==='D'){if(_selectedIdx>=0)_duplicateSelected();}
   });
 }
@@ -8768,6 +8849,14 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 else _sbInit();
 })();
 </script>
+
+<!-- ── DRAWING: Inline action bar (TradingView-style, appears on left-click) ── -->
+<div id="drawInlineBar" style="display:none;position:fixed;z-index:10005;align-items:center;background:#0d1117;border:1px solid rgba(0,212,255,0.4);border-radius:4px;box-shadow:0 4px 16px rgba(0,0,0,0.7);overflow:hidden;white-space:nowrap">
+  <button onclick="_editSelected()"       title="Edit properties"  style="background:none;border:none;border-right:1px solid rgba(255,255,255,0.08);color:#aac;font-size:12px;padding:5px 9px;cursor:pointer;font-family:Share Tech Mono,monospace" onmouseenter="this.style.background='rgba(0,212,255,0.12)'" onmouseleave="this.style.background='none'">✎</button>
+  <button onclick="_duplicateSelected()" title="Duplicate"         style="background:none;border:none;border-right:1px solid rgba(255,255,255,0.08);color:#aac;font-size:12px;padding:5px 9px;cursor:pointer;font-family:Share Tech Mono,monospace" onmouseenter="this.style.background='rgba(0,212,255,0.12)'" onmouseleave="this.style.background='none'">⊕</button>
+  <button onclick="_toggleLockSelected()" title="Lock / Unlock"   style="background:none;border:none;border-right:1px solid rgba(255,255,255,0.08);color:#aac;font-size:12px;padding:5px 9px;cursor:pointer;font-family:Share Tech Mono,monospace" onmouseenter="this.style.background='rgba(0,212,255,0.12)'" onmouseleave="this.style.background='none'" id="inlineBarLock">🔓</button>
+  <button onclick="_deleteSelected()"    title="Delete (Del key)"  style="background:none;border:none;color:#ff5577;font-size:13px;padding:5px 9px;cursor:pointer;font-family:Share Tech Mono,monospace" onmouseenter="this.style.background='rgba(255,51,85,0.15)'" onmouseleave="this.style.background='none'">✕</button>
+</div>
 
 <!-- ── DRAWING: Text Input ────────────────────────────────────────────────── -->
 <div id="drawTextInput" style="display:none;position:fixed;z-index:10002">
