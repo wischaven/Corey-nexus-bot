@@ -302,6 +302,49 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
         <span id="posStop">SL: --</span><span id="posTP">TP: --</span>
       </div>
     </div>
+    <!-- Portfolio tracker -->
+    <div class="card" style="padding:10px 12px;border-color:rgba(0,212,255,0.2)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-family:Orbitron,monospace;font-size:8px;color:var(--cyan);letter-spacing:2px">PORTFOLIO</div>
+        <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3)" id="portfolioUpdated">--</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+        <div style="border:1px solid var(--border);padding:8px">
+          <div class="clbl">USD BALANCE</div>
+          <div style="font-family:Orbitron,monospace;font-size:12px;color:var(--green)" id="portUSD">--</div>
+          <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3)" id="portMode">--</div>
+        </div>
+        <div style="border:1px solid var(--border);padding:8px">
+          <div class="clbl">EXPOSURE</div>
+          <div style="font-family:Orbitron,monospace;font-size:12px;color:var(--amber)" id="portExposure">--</div>
+          <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3)" id="portExposurePct">% of balance</div>
+        </div>
+        <div style="border:1px solid var(--border);padding:8px">
+          <div class="clbl">SESSION P&amp;L</div>
+          <div style="font-family:Orbitron,monospace;font-size:12px" id="portPnL">--</div>
+          <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3)" id="portROI">-- ROI</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px">
+        <div style="text-align:center;padding:5px;background:rgba(0,0,0,0.2)">
+          <div class="clbl">STREAK</div>
+          <div style="font-family:Orbitron,monospace;font-size:10px" id="portStreak">--</div>
+        </div>
+        <div style="text-align:center;padding:5px;background:rgba(0,0,0,0.2)">
+          <div class="clbl">MAX DD</div>
+          <div style="font-family:Orbitron,monospace;font-size:10px;color:var(--red)" id="portDD">--</div>
+        </div>
+        <div style="text-align:center;padding:5px;background:rgba(0,0,0,0.2)">
+          <div class="clbl">BEST WIN</div>
+          <div style="font-family:Orbitron,monospace;font-size:10px;color:var(--green)" id="portBest">--</div>
+        </div>
+        <div style="text-align:center;padding:5px;background:rgba(0,0,0,0.2)">
+          <div class="clbl">WORST</div>
+          <div style="font-family:Orbitron,monospace;font-size:10px;color:var(--red)" id="portWorst">--</div>
+        </div>
+      </div>
+    </div>
+
     <!-- Manual price levels panel -->
     <div class="card" style="padding:10px 12px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
@@ -5469,6 +5512,75 @@ function updateStats(){
   _updateMLHeaders();
   if(_manualSimPos.length) _renderManualSimPositions();
   _updateJournalStats();
+  _updatePortfolio();
+}
+
+function _updatePortfolio() {
+  var pos = live ? livePos : simPos;
+  var bal = typeof _liveUSDBalance === 'number' ? _liveUSDBalance : _simBalance;
+  var isLive = live && typeof _liveUSDBalance === 'number';
+
+  // Balance
+  var portUSD = document.getElementById('portUSD');
+  var portMode = document.getElementById('portMode');
+  if (portUSD) { portUSD.textContent = bal !== null ? '$' + (+bal).toFixed(2) : '--'; }
+  if (portMode) { portMode.textContent = isLive ? 'LIVE (Kraken)' : 'SIM balance'; }
+
+  // Exposure
+  var portExp = document.getElementById('portExposure');
+  var portExpPct = document.getElementById('portExposurePct');
+  if (pos && pos.orderSize && bal) {
+    var expPct = (pos.orderSize / bal * 100).toFixed(1);
+    if (portExp) { portExp.textContent = '$' + (+pos.orderSize).toFixed(2); portExp.style.color = 'var(--amber)'; }
+    if (portExpPct) portExpPct.textContent = expPct + '% of balance';
+  } else {
+    if (portExp) { portExp.textContent = '$0.00'; portExp.style.color = 'var(--t3)'; }
+    if (portExpPct) portExpPct.textContent = 'no open position';
+  }
+
+  // Session P&L + ROI
+  var portPnL = document.getElementById('portPnL');
+  var portROI = document.getElementById('portROI');
+  if (portPnL) {
+    portPnL.textContent = (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(4);
+    portPnL.style.color = pnl >= 0 ? 'var(--green)' : 'var(--red)';
+  }
+  if (portROI && bal) {
+    var roi = (pnl / bal * 100);
+    portROI.textContent = (roi >= 0 ? '+' : '') + roi.toFixed(3) + '% ROI';
+  }
+
+  // Streak, max drawdown, best/worst
+  var closed = tradeHist.filter(function(t){ return t.pnl !== undefined; });
+  if (closed.length) {
+    // Current streak
+    var streak = 0, streakDir = closed[closed.length-1].pnl > 0 ? 1 : -1;
+    for (var i = closed.length - 1; i >= 0; i--) {
+      if ((closed[i].pnl > 0 ? 1 : -1) === streakDir) streak++; else break;
+    }
+    var portStreak = document.getElementById('portStreak');
+    if (portStreak) {
+      portStreak.textContent = (streakDir > 0 ? '+' : '-') + streak;
+      portStreak.style.color = streakDir > 0 ? 'var(--green)' : 'var(--red)';
+    }
+
+    // Max drawdown
+    var peak = 0, eq = 0, maxDD = 0;
+    closed.forEach(function(t){ eq += t.pnl; if(eq > peak) peak = eq; var dd = peak - eq; if(dd > maxDD) maxDD = dd; });
+    var portDD = document.getElementById('portDD');
+    if (portDD) portDD.textContent = maxDD > 0 ? '-$' + maxDD.toFixed(4) : '$0';
+
+    // Best / worst
+    var bestT = Math.max.apply(null, closed.map(function(t){ return t.pnl; }));
+    var worstT = Math.min.apply(null, closed.map(function(t){ return t.pnl; }));
+    var portBest = document.getElementById('portBest');
+    var portWorst = document.getElementById('portWorst');
+    if (portBest) portBest.textContent = '+$' + bestT.toFixed(4);
+    if (portWorst) portWorst.textContent = '$' + worstT.toFixed(4);
+  }
+
+  var portUp = document.getElementById('portfolioUpdated');
+  if (portUp) portUp.textContent = 'updated ' + new Date().toLocaleTimeString();
 }
 
 // ─── Trade Journal — analytics + equity curve + CSV export ───────────────
