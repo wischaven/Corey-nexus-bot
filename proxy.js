@@ -90,8 +90,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // ─── Static files + health check ──────────────────────────────────────────
 app.get('/health', (_req, res) => res.json({ ok: true, ts: Date.now() }));
-app.use(express.static(path.join(__dirname), { index: 'index.html' }));
-app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+app.use(express.static(path.join(__dirname), { index: 'landing.html' }));
+app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'landing.html')));
+app.get('/app', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
 // ─── Auth endpoints ────────────────────────────────────────────────────────
 
