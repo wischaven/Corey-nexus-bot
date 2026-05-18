@@ -1569,13 +1569,22 @@ Content-Type: application/json
       </div>
     </div>
 
-    <!-- User notes / feed knowledge -->
-    <div class="card">
-      <div class="clbl" style="margin-bottom:6px;color:var(--purple)">FEED NEXUS YOUR OBSERVATIONS</div>
-      <div style="font-family:Rajdhani,sans-serif;font-size:12px;color:var(--t2);line-height:1.6;margin-bottom:8px">Type anything you've noticed about the market — patterns, news events, or trading rules. Claude AI will factor these into every analysis.</div>
-      <textarea id="brainNotes" style="width:100%;background:#030c13;border:1px solid var(--border);color:var(--t1);font-family:Rajdhani,sans-serif;font-size:13px;padding:10px 12px;outline:none;resize:none;height:90px;margin-bottom:6px" placeholder="e.g. XRP tends to spike before SEC news. Volume above 2x average usually precedes a breakout. BTC dominance above 55% is bad for alts..."></textarea>
-      <button onclick="saveBrainNotes()" class="btn btn-p" style="font-size:8px;padding:10px">🧠 SAVE TO NEXUS MEMORY</button>
-      <div id="brainNoteStatus" style="font-family:Share Tech Mono,monospace;font-size:8px;margin-top:6px;min-height:14px"></div>
+    <!-- User knowledge feed — killer feature -->
+    <div class="card" style="border-color:rgba(139,92,246,0.4);background:rgba(139,92,246,0.03)">
+      <div class="clbl" style="margin-bottom:4px;color:var(--purple)">📖 FEED NEXUS YOUR KNOWLEDGE</div>
+      <div style="font-family:Rajdhani,sans-serif;font-size:12px;color:var(--t2);line-height:1.6;margin-bottom:10px">Paste trading rules, book excerpts, personal observations, or anything you've learned. NEXUS extracts discrete rules and checks them before every trade.</div>
+      <textarea id="brainNotes" style="width:100%;background:#030c13;border:1px solid rgba(139,92,246,0.3);color:var(--t1);font-family:Rajdhani,sans-serif;font-size:13px;padding:10px 12px;outline:none;resize:none;height:100px;margin-bottom:8px" placeholder="e.g. Never trade XRP in the first 30 minutes after a big BTC move. Wait for RSI to cross back above 35 before entering a long. Volume should be at least 1.5x average for a valid breakout. BTC dominance above 55% is bad for alts..."></textarea>
+      <div style="display:flex;gap:8px;margin-bottom:6px">
+        <button onclick="saveBrainNotes()" class="btn btn-p" style="font-size:8px;padding:8px 14px;flex:1">💾 SAVE RAW NOTES</button>
+        <button onclick="extractRulesAI()" class="btn" style="font-size:8px;padding:8px 14px;flex:2;background:rgba(139,92,246,0.2);border:1px solid var(--purple);color:var(--purple)">🧠 EXTRACT RULES WITH AI</button>
+      </div>
+      <div id="brainNoteStatus" style="font-family:Share Tech Mono,monospace;font-size:8px;margin-bottom:10px;min-height:14px"></div>
+
+      <!-- Extracted rules list -->
+      <div id="brainRulesSection" style="display:none">
+        <div style="font-family:Orbitron,monospace;font-size:8px;color:var(--purple);letter-spacing:2px;margin-bottom:8px">ACTIVE TRADING RULES</div>
+        <div id="brainRulesList" style="display:flex;flex-direction:column;gap:6px"></div>
+      </div>
     </div>
 
   </div>
@@ -5322,9 +5331,11 @@ async function execLive(){
     var _sbEn=_sbEvaluate(window._activeStrategy,ind,mtf,ask||price,_liveUSDBalance||os,null,null);
     if(!_sbEn.entry){log("info","STRATEGY","Builder: no entry signal for '"+window._activeStrategy.name+"' — skip");return;}
     log("info","STRATEGY","Builder: entry confirmed by '"+window._activeStrategy.name+"'");
-    // Override order size if strategy specifies it
     if(_sbEn.size&&_sbEn.size>10)os=+_sbEn.size.toFixed(2);
   }
+
+  // Brain rules check — log active rules before entry
+  if(typeof _checkBrainRules==='function') _checkBrainRules({price:ask||price,ind:ind,mode:mode});
 
   // 3-minute cooldown after any trade closes
   var _cooldownMs=3*60*1000;
@@ -6583,20 +6594,93 @@ function renderBrainTab() {
 
   // ── Restore saved notes ───────────────────────────────────────────────────
   var notesEl = document.getElementById('brainNotes');
-  if (notesEl && !notesEl._loaded) {
+  if (notesEl) {
     notesEl.value = localStorage.getItem('nexus_brain_notes') || '';
     notesEl._loaded = true;
   }
+  _renderBrainRules();
 }
 
 function saveBrainNotes() {
   var val = (document.getElementById('brainNotes')||{}).value || '';
   localStorage.setItem('nexus_brain_notes', val);
-  // Also inject into Claude context so AI uses it
   window._brainNotes = val;
   var s = document.getElementById('brainNoteStatus');
-  if (s) { s.textContent = '✓ Saved — Claude AI will use these observations in every analysis'; s.style.color = 'var(--green)'; setTimeout(function(){ s.textContent=''; }, 3000); }
+  if (s) { s.textContent = '✓ Saved — AI will use these in every analysis. Use EXTRACT RULES for discrete rule checking.'; s.style.color = 'var(--green)'; setTimeout(function(){ s.textContent=''; }, 4000); }
   log('info','BRAIN','User notes saved to NEXUS memory');
+}
+
+// ── Knowledge extraction — Claude reads notes and returns discrete rules ──
+var _brainRules = (function(){ try{ return JSON.parse(localStorage.getItem('nexus_brain_rules')||'[]'); }catch(e){ return []; } })();
+
+async function extractRulesAI() {
+  var notes = (document.getElementById('brainNotes')||{}).value || '';
+  if (!notes.trim()) { var s=document.getElementById('brainNoteStatus'); if(s){s.textContent='⚠ Add some notes first.';s.style.color='var(--amber)';} return; }
+  var s = document.getElementById('brainNoteStatus');
+  if(s){s.textContent='🧠 AI extracting rules...';s.style.color='var(--cyan)';}
+  var sys = 'You are a trading rules extractor. Given free-form trading notes, extract a list of clear, actionable trading rules. Return ONLY a JSON array of strings, each string being one rule. Maximum 10 rules. Rules must be concise (under 15 words each). No preamble, no explanation, just the JSON array.';
+  var usr = 'Extract discrete trading rules from these notes:\n\n' + notes + '\n\nReturn only a JSON array of rule strings.';
+  try {
+    var result = await _callAI(sys, usr, 400);
+    if (!result) throw new Error('No AI response — check API key');
+    // Parse the JSON array from the response
+    var match = result.match(/\[[\s\S]*\]/);
+    if (!match) throw new Error('Could not parse rules from AI response');
+    var extracted = JSON.parse(match[0]);
+    if (!Array.isArray(extracted)) throw new Error('AI did not return an array');
+    // Merge with existing rules (avoid exact duplicates)
+    var existingTexts = _brainRules.map(function(r){ return r.text.toLowerCase(); });
+    var newRules = extracted.filter(function(r){ return !existingTexts.includes(r.toLowerCase()); });
+    newRules.forEach(function(r){
+      _brainRules.push({ id: Date.now() + Math.random(), text: r, addedAt: new Date().toLocaleString(), active: true, appliedCount: 0 });
+    });
+    localStorage.setItem('nexus_brain_rules', JSON.stringify(_brainRules));
+    window._brainNotes = (document.getElementById('brainNotes')||{}).value || '';
+    localStorage.setItem('nexus_brain_notes', window._brainNotes);
+    if(s){ s.textContent = '✓ Extracted ' + newRules.length + ' new rule' + (newRules.length===1?'':'s') + ' (' + _brainRules.length + ' total active)'; s.style.color='var(--green)'; }
+    _renderBrainRules();
+    log('success','BRAIN', newRules.length + ' rules extracted and stored. Bot will check these before every trade.');
+  } catch(e) {
+    if(s){ s.textContent = '✗ ' + e.message; s.style.color='var(--red)'; }
+  }
+}
+
+function _renderBrainRules() {
+  var sec = document.getElementById('brainRulesSection');
+  var list = document.getElementById('brainRulesList');
+  if (!sec || !list) return;
+  if (!_brainRules.length) { sec.style.display='none'; return; }
+  sec.style.display = 'block';
+  list.innerHTML = _brainRules.map(function(r, i) {
+    var col = r.active ? 'var(--green)' : 'var(--t3)';
+    var applied = r.appliedCount ? (' · checked ' + r.appliedCount + 'x') : '';
+    return '<div style="display:flex;align-items:flex-start;gap:8px;padding:8px;background:rgba(0,0,0,0.3);border:1px solid ' + (r.active?'rgba(139,92,246,0.3)':'var(--border)') + '">' +
+      '<input type="checkbox"' + (r.active?' checked':'') + ' onchange="_toggleRule(' + i + ',this.checked)" style="margin-top:2px;accent-color:var(--purple)">' +
+      '<div style="flex:1">' +
+        '<div style="font-family:Share Tech Mono,monospace;font-size:9px;color:' + col + ';line-height:1.5">' + r.text + '</div>' +
+        '<div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);margin-top:2px">' + r.addedAt + applied + '</div>' +
+      '</div>' +
+      '<button onclick="_deleteRule(' + i + ')" style="background:transparent;border:none;color:var(--t3);cursor:pointer;font-size:10px;padding:0 2px;flex-shrink:0" title="Delete">✕</button>' +
+    '</div>';
+  }).join('');
+}
+
+function _toggleRule(i, active) {
+  if (_brainRules[i]) { _brainRules[i].active = active; localStorage.setItem('nexus_brain_rules', JSON.stringify(_brainRules)); }
+}
+
+function _deleteRule(i) {
+  _brainRules.splice(i, 1);
+  localStorage.setItem('nexus_brain_rules', JSON.stringify(_brainRules));
+  _renderBrainRules();
+}
+
+function _checkBrainRules(context) {
+  var active = _brainRules.filter(function(r){ return r.active; });
+  if (!active.length) return;
+  active.forEach(function(r){ r.appliedCount = (r.appliedCount||0) + 1; });
+  localStorage.setItem('nexus_brain_rules', JSON.stringify(_brainRules));
+  log('info','RULES', active.length + ' active rule' + (active.length===1?'':'s') + ' checked: ' + active.map(function(r){return '"'+r.text.slice(0,40)+'"';}).join(' | '));
 }
 
 // ============================================================
