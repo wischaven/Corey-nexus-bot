@@ -1140,7 +1140,7 @@ Content-Type: application/json
         </div>
         <textarea id="chatIn" class="chatIn" placeholder="Should I trade right now? What does the RSI mean? Analyze my last trades. What would you do differently?"></textarea>
         <div style="display:flex;gap:6px">
-          <button class="chatSend" style="flex:1" onclick="sendChat()">&#x1F9E0; SEND TO CLAUDE</button>
+          <button class="chatSend" style="flex:1" onclick="sendChat()">&#x1F9E0; SEND TO AI</button>
           <button onclick="analyzeChart()" id="analyzeChartBtn" style="display:none;background:rgba(0,212,255,0.1);border:1px solid var(--cyan);color:var(--cyan);font-family:Share Tech Mono,monospace;font-size:8px;padding:0 12px;cursor:pointer;letter-spacing:1px">ANALYZE CHART</button>
         </div>
       </div>
@@ -1919,12 +1919,28 @@ Content-Type: application/json
       <button class="btn btn-a" onclick="getBalance()">&#x27F3; REFRESH BALANCE</button>
     </div>
     <div class="divider"></div>
-    <div class="slbl">CLAUDE AI API KEY</div>
+    <div class="slbl">AI ENGINE</div>
+    <div class="card" style="border-color:rgba(139,92,246,0.3)">
+      <div class="fl" style="margin-bottom:6px">SELECT AI MODEL</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
+        <button id="ai_claude" onclick="_setAIModel('claude',this)" class="btn btn-p" style="font-size:8px;padding:8px 4px;letter-spacing:1px">🤖 CLAUDE</button>
+        <button id="ai_gpt4" onclick="_setAIModel('gpt4',this)" class="btn" style="font-size:8px;padding:8px 4px;letter-spacing:1px;background:transparent;border:1px solid var(--border);color:var(--t2)">💬 GPT-4o</button>
+        <button id="ai_grok" onclick="_setAIModel('grok',this)" class="btn" style="font-size:8px;padding:8px 4px;letter-spacing:1px;background:transparent;border:1px solid var(--border);color:var(--t2)">⚡ GROK</button>
+        <button id="ai_gemini" onclick="_setAIModel('gemini',this)" class="btn" style="font-size:8px;padding:8px 4px;letter-spacing:1px;background:transparent;border:1px solid var(--border);color:var(--t2)">✦ GEMINI</button>
+      </div>
+      <div id="aiModelStatus" style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--cyan);letter-spacing:1px;margin-bottom:8px">ACTIVE: CLAUDE SONNET 4</div>
+    </div>
+    <div class="slbl">AI API KEYS</div>
     <div class="card" style="border-color:rgba(255,68,170,0.25)">
-      <div style="font-family:Rajdhani,sans-serif;font-size:12px;color:var(--t2);line-height:1.6;margin-bottom:10px">Get free key at <span style="color:var(--pink)">console.anthropic.com</span> &#x2192; API Keys &#x2192; Create Key</div>
-      <div class="fl">CLAUDE API KEY</div>
+      <div class="fl">CLAUDE (Anthropic)</div>
       <input type="password" id="claudeKey" class="ti" placeholder="sk-ant-...">
-      <button class="btn btn-p" onclick="saveClaudeKey()">&#x1F4BE; SAVE CLAUDE KEY</button>
+      <div class="fl" style="margin-top:8px">OPENAI (GPT-4o)</div>
+      <input type="password" id="openaiKey" class="ti" placeholder="sk-...">
+      <div class="fl" style="margin-top:8px">XAI (Grok)</div>
+      <input type="password" id="grokKey" class="ti" placeholder="xai-...">
+      <div class="fl" style="margin-top:8px">GOOGLE (Gemini)</div>
+      <input type="password" id="geminiKey" class="ti" placeholder="AIza...">
+      <button class="btn btn-p" style="margin-top:8px" onclick="saveAIKeys()">&#x1F4BE; SAVE ALL AI KEYS</button>
       <div id="claudeStat" style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);margin-top:7px;letter-spacing:1px"></div>
     </div>
     <div class="divider"></div>
@@ -2488,9 +2504,11 @@ function init(){
   setInterval(function(){if(live&&botRunning)checkOpenOrders();},60000);
   // Auto-save every 60 seconds
   setInterval(_saveAll,60000);
+  _loadAIKeys();
+  _initAIModelUI();
   calcFees();
   setTimeout(seedAlerts,800);
-  log("info","SYS","NEXUS v4.0 — RSI + Bollinger Bands + MACD + Claude AI Memory + Coaching");
+  log("info","SYS","NEXUS v4.0 — RSI + Bollinger Bands + MACD + Multi-AI Memory + Coaching");
 }
 
 var _BINANCE_IMAP={1:'1m',3:'3m',5:'5m',15:'15m',30:'30m',60:'1h',120:'2h',240:'4h',360:'6h',480:'8h',720:'12h',1440:'1d',4320:'3d',10080:'1w',43200:'1M'};
@@ -2601,6 +2619,7 @@ function calcAllInd(){
     _sendTelegramAlert('🚀 <b>HIGH CONFLUENCE SIGNAL</b>\n📊 '+_activeTickerLabel+'\n🎯 Confluence: <b>'+ind.confluence.toFixed(0)+'/100</b>\n📈 RSI: <code>'+(ind.rsi?ind.rsi.toFixed(1):'?')+'</code>\n🧭 Verdict: <b>'+ind.verdict+'</b>\n💲 Price: <code>$'+(price?price.toFixed(5):'?')+'</code>');
   }
   if(ind.confluence<75)window._tgLastSignalConf=false;
+  _checkDailySummary();
   if(aiPaused&&ind.confluence>=65){aiPaused=false;addAlert("ai2","AUTO-RESUME","Confluence "+ind.confluence.toFixed(0)+"/100 recovered. Restarting bot.");if(!botRunning)startBot();}
   // Master arm: auto-start when conditions are right, auto-stop when they're not
   if(masterEnabled&&!botRunning&&!aiPaused&&ind.confluence>=65&&(!autoPause||aiScore>=40)&&(_dailyLoss<+document.getElementById("ml").value)){
@@ -4045,20 +4064,14 @@ async function analyzeNewsAI(){
 }
 
 async function callClaude(sys,usr,maxTok){
-  if(!cKeySet)return null;
   try{
-    var r=await fetch("https://api.anthropic.com/v1/messages",{
-      method:"POST",
-      headers:{"Content-Type":"application/json","x-api-key":cKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:maxTok||800,system:sys,messages:[{role:"user",content:usr}]})
-    });
-    var data=await r.json();if(data.error)throw new Error(data.error.message);
-    return data.content[0].text;
+    var r=await _callAI(sys,usr,maxTok||800);
+    return r;
   }catch(e){log("error","AI",e.message);return null;}
 }
 
 async function runFullAI(silent){
-  if(!silent){document.getElementById("aiSpin").style.display="block";document.getElementById("aiBannerTxt").textContent="Claude analyzing all market data...";}
+  if(!silent){document.getElementById("aiSpin").style.display="block";document.getElementById("aiBannerTxt").textContent=(_AI_MODELS[_aiModel]||{label:'AI'}).label+" analyzing all market data...";}
   var fR=+document.getElementById("feeSelect").value/100;
   var oSz=document.getElementById("oSz").value;
   var rt=tradeHist.slice(-10).map(function(t){return t.time+" "+t.type+" @ $"+t.price+" Sp:"+t.spread+"bps RSI:"+t.rsi+" BB%B:"+t.bbPct+" P&L:"+(t.pnl>=0?"+":"")+"$"+t.pnl;}).join("\n")||"No trades yet this session";
@@ -4080,9 +4093,9 @@ async function runFullAI(silent){
   // Inject user brain notes if saved
   var _notes = window._brainNotes || localStorage.getItem('nexus_brain_notes') || '';
   if (_notes) usr2 += '\n\nUSER OBSERVATIONS (factor these in):\n' + _notes;
-  var result=await callClaude(sys,usr2,800);
+  var result=await _callAI(sys,usr2,800);
   document.getElementById("aiSpin").style.display="none";
-  if(!result){document.getElementById("aiBannerTxt").textContent="AI failed - check Claude API key in CONFIG";return;}
+  if(!result){document.getElementById("aiBannerTxt").textContent="AI failed - check API key in CONFIG → AI ENGINE";return;}
   var sm=result.match(/SCORE:\s*(\d+)/i),vm=result.match(/VERDICT:\s*([A-Z]+)/i);
   var score=sm?+sm[1]:50,verdict=vm?vm[1]:"UNKNOWN";
   aiScore=score;
@@ -4120,23 +4133,21 @@ function clearChat(){chatHist=[];var cw=document.getElementById("chatBox");cw.in
 
 async function sendChat(){
   var inp=document.getElementById("chatIn");var q=inp.value.trim();if(!q)return;
-  if(!cKeySet){appendMsg("assistant","No Claude API key set. Add it in the CONFIG tab.");return;}
+  if(!cKeySet&&!_openaiKey&&!_grokKey&&!_geminiKey){appendMsg("assistant","No AI key set. Add one in CONFIG → AI ENGINE.");return;}
   inp.value="";appendMsg("user",q);chatHist.push({role:"user",content:q});
   var typEl=document.createElement("div");typEl.className="typing";typEl.id="typInd";
   typEl.innerHTML='<div class="msg-who" style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--pink);letter-spacing:1px;margin-right:8px">NEXUS AI</div><div class="tydot"></div><div class="tydot"></div><div class="tydot"></div>';
   document.getElementById("chatBox").appendChild(typEl);scrollChat();
-  var sys=buildChatSys();var msgs=chatHist.slice(-20);
+  var sys=buildChatSys();
+  // Build the user message incorporating chat history context
+  var histCtx=chatHist.slice(-18).map(function(m){return(m.role==='user'?'User: ':'Assistant: ')+m.content;}).join('\n');
+  var fullUsr=(histCtx?histCtx+'\nUser: ':'')+q;
   try{
-    var r=await fetch("https://api.anthropic.com/v1/messages",{
-      method:"POST",
-      headers:{"Content-Type":"application/json","x-api-key":cKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:600,system:sys,messages:msgs})
-    });
-    var data=await r.json();
+    var reply=await _callAI(sys,fullUsr,600);
     var typInd=document.getElementById("typInd");if(typInd)typInd.remove();
-    if(data.error)throw new Error(data.error.message);
-    var reply=data.content[0].text;chatHist.push({role:"assistant",content:reply});appendMsg("assistant",reply);
-  }catch(e){var ti=document.getElementById("typInd");if(ti)ti.remove();appendMsg("assistant","Error: "+e.message+". Check Claude API key in CONFIG.");}
+    if(!reply)throw new Error("No response — check API key in CONFIG");
+    chatHist.push({role:"assistant",content:reply});appendMsg("assistant",reply);
+  }catch(e){var ti=document.getElementById("typInd");if(ti)ti.remove();appendMsg("assistant","Error: "+e.message);}
 }
 
 function _mtfStr(){
@@ -4469,7 +4480,7 @@ function handleChartUpload(input){
 
 async function analyzeChart(){
   if(!_chartImageB64){log("warning","CHART","No image loaded.");return;}
-  if(!cKeySet){appendMsg("assistant","Add your Claude API key in CONFIG to use chart analysis.");return;}
+  if(!cKeySet){appendMsg("assistant","Chart analysis requires a Claude API key (vision). Add it in CONFIG → AI ENGINE.");return;}
   var curP=price||0;
   var ctx="You are an expert technical analyst. Analyze this XRP/USD chart screenshot. Identify: 1) Key support and resistance levels (give exact or approximate prices), 2) Current trend direction, 3) Any chart patterns (wedge, triangle, channel, head & shoulders etc), 4) Whether price is near a good scalp entry or should be avoided, 5) Suggested scalp range if visible. Current live price: $"+curP.toFixed(4)+". Be specific with price levels. Format: SUPPORT: ... | RESISTANCE: ... | TREND: ... | PATTERN: ... | VERDICT: ... | SCALP RANGE: ...";
   appendMsg("user","[Chart image uploaded — analyzing...]");
@@ -5612,6 +5623,81 @@ async function checkOpenOrders(){
     }
   }
 }
+// ── Multi-AI routing ──────────────────────────────────────────────
+var _aiModel = localStorage.getItem('nexus_ai_model') || 'claude';
+var _openaiKey = '', _grokKey = '', _geminiKey = '';
+
+var _AI_MODELS = {
+  claude:  { label:'CLAUDE SONNET 4',  provider:'anthropic' },
+  gpt4:    { label:'GPT-4o',           provider:'openai'    },
+  grok:    { label:'GROK 2',           provider:'xai'       },
+  gemini:  { label:'GEMINI 1.5 PRO',   provider:'google'    },
+};
+
+function _setAIModel(model, btn) {
+  _aiModel = model;
+  localStorage.setItem('nexus_ai_model', model);
+  document.querySelectorAll('[id^="ai_"]').forEach(function(b){
+    b.style.background='transparent';b.style.borderColor='var(--border)';b.style.color='var(--t2)';
+  });
+  if(btn){btn.style.background='rgba(139,92,246,0.2)';btn.style.borderColor='var(--purple)';btn.style.color='var(--purple)';}
+  var stat=document.getElementById('aiModelStatus');
+  if(stat)stat.textContent='ACTIVE: '+(_AI_MODELS[model]||{label:model.toUpperCase()}).label;
+  // Verify we have a key for this model
+  var hasKey = model==='claude'?cKeySet : model==='gpt4'?!!_openaiKey : model==='grok'?!!_grokKey : !!_geminiKey;
+  if(!hasKey){var s=document.getElementById('claudeStat');if(s){s.textContent='⚠ No API key for '+model.toUpperCase()+' — add key below';s.style.color='var(--amber)';}}
+}
+
+function _initAIModelUI() {
+  var btn=document.getElementById('ai_'+_aiModel);
+  if(btn)_setAIModel(_aiModel,btn);
+}
+
+async function _callAI(sys, usr, maxTok) {
+  maxTok = maxTok || 800;
+  if (_aiModel === 'claude' || (!_openaiKey && !_grokKey && !_geminiKey)) {
+    // Claude (Anthropic)
+    if (!cKeySet) return null;
+    var r = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':cKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:maxTok,system:sys,messages:[{role:'user',content:usr}]})
+    });
+    var d = await r.json();
+    return d.content&&d.content[0]?d.content[0].text:null;
+  }
+  if (_aiModel === 'gpt4' && _openaiKey) {
+    var r2 = await fetch('https://api.openai.com/v1/chat/completions', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+_openaiKey},
+      body:JSON.stringify({model:'gpt-4o',max_tokens:maxTok,messages:[{role:'system',content:sys},{role:'user',content:usr}]})
+    });
+    var d2 = await r2.json();
+    return d2.choices&&d2.choices[0]?d2.choices[0].message.content:null;
+  }
+  if (_aiModel === 'grok' && _grokKey) {
+    var r3 = await fetch('https://api.x.ai/v1/chat/completions', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+_grokKey},
+      body:JSON.stringify({model:'grok-2-latest',max_tokens:maxTok,messages:[{role:'system',content:sys},{role:'user',content:usr}]})
+    });
+    var d3 = await r3.json();
+    return d3.choices&&d3.choices[0]?d3.choices[0].message.content:null;
+  }
+  if (_aiModel === 'gemini' && _geminiKey) {
+    var r4 = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key='+_geminiKey, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({contents:[{parts:[{text:sys+'\n\n'+usr}]}],generationConfig:{maxOutputTokens:maxTok}})
+    });
+    var d4 = await r4.json();
+    return d4.candidates&&d4.candidates[0]?d4.candidates[0].content.parts[0].text:null;
+  }
+  // Fallback to Claude if we have the key
+  if(cKeySet) { _aiModel='claude'; return _callAI(sys,usr,maxTok); }
+  return null;
+}
+
 function saveClaudeKey(){
   var k=document.getElementById("claudeKey").value.trim();
   if(!k||!k.startsWith("sk-ant-")){document.getElementById("claudeStat").textContent="Invalid - must start with sk-ant-";document.getElementById("claudeStat").style.color="var(--red)";return;}
@@ -5621,6 +5707,45 @@ function saveClaudeKey(){
   log("success","AI","Claude key saved. Running initial analysis...");
   setTimeout(function(){runFullAI(false);},1500);
   _saveAll();
+}
+
+function saveAIKeys(){
+  var ck=document.getElementById("claudeKey").value.trim();
+  var ok=(document.getElementById("openaiKey")||{}).value&&document.getElementById("openaiKey").value.trim();
+  var gk=(document.getElementById("grokKey")||{}).value&&document.getElementById("grokKey").value.trim();
+  var mk=(document.getElementById("geminiKey")||{}).value&&document.getElementById("geminiKey").value.trim();
+  var stat=document.getElementById("claudeStat");
+  var saved=[];
+  if(ck&&ck.startsWith("sk-ant-")){cKey=ck;cKeySet=true;saved.push("Claude");}
+  if(ok){_openaiKey=ok;saved.push("GPT-4o");}
+  if(gk){_grokKey=gk;saved.push("Grok");}
+  if(mk){_geminiKey=mk;saved.push("Gemini");}
+  if(stat){
+    if(saved.length){stat.textContent="Saved: "+saved.join(", ");stat.style.color="var(--green)";}
+    else{stat.textContent="No valid keys entered";stat.style.color="var(--amber)";}
+  }
+  try{
+    var aiKeys={openai:ok||'',grok:gk||'',gemini:mk||''};
+    localStorage.setItem('nexus_ai_keys',btoa(JSON.stringify(aiKeys)));
+  }catch(e){}
+  if(cKeySet){
+    addAlert("aai","AI KEYS SAVED","Models available: "+saved.join(", ")+". Switch models in CONFIG → AI ENGINE.");
+    log("success","AI","AI keys saved. Running initial analysis...");
+    setTimeout(function(){runFullAI(false);},1500);
+  }
+  _initAIModelUI();
+  _saveAll();
+}
+
+function _loadAIKeys(){
+  try{
+    var raw=localStorage.getItem('nexus_ai_keys');
+    if(!raw)return;
+    var k=JSON.parse(atob(raw));
+    if(k.openai){_openaiKey=k.openai;var el=document.getElementById('openaiKey');if(el)el.value=k.openai;}
+    if(k.grok){_grokKey=k.grok;var el2=document.getElementById('grokKey');if(el2)el2.value=k.grok;}
+    if(k.gemini){_geminiKey=k.gemini;var el3=document.getElementById('geminiKey');if(el3)el3.value=k.gemini;}
+  }catch(e){}
 }
 
 function calcFees(){
@@ -5876,6 +6001,48 @@ function _syncTickerLabels(){
   var chip=document.getElementById('tickerChip');if(chip)chip.textContent=label+' ▾';
   var disp=document.getElementById('selectedTickerDisplay');if(disp)disp.textContent=label;
   var pairEl=document.getElementById('selectedTickerPair');if(pairEl)pairEl.textContent=_activeTicker;
+}
+
+// ── Daily Telegram summary (fires once per day around 8am local time) ─
+function _checkDailySummary() {
+  if (!_tgAlertEnabled('daily')) return;
+  var now = new Date();
+  if (now.getHours() < 8 || now.getHours() > 9) return; // only between 8-9am
+  var todayKey = 'nexus_daily_tg_' + now.toDateString();
+  if (localStorage.getItem(todayKey)) return; // already sent today
+  localStorage.setItem(todayKey, '1');
+  // Clean up old daily keys
+  Object.keys(localStorage).filter(function(k){return k.startsWith('nexus_daily_tg_')&&k!==todayKey;}).forEach(function(k){localStorage.removeItem(k);});
+
+  var todayTrades = tradeHist.filter(function(t){
+    return t.time && new Date(t.time).toDateString() === now.toDateString();
+  });
+  var todayPnl = todayTrades.reduce(function(s,t){return s+(t.pnl||0);},0);
+  var todayWins = todayTrades.filter(function(t){return (t.pnl||0)>0;}).length;
+  var todayWR = todayTrades.length ? Math.round(todayWins/todayTrades.length*100) : 0;
+
+  var topPair = _activeTickerLabel || 'XRP/USD';
+  var confStr = ind.confluence != null ? ind.confluence.toFixed(0)+'/100' : '—';
+  var verdictEmoji = ind.verdict==='BULLISH'?'🟢':ind.verdict==='BEARISH'?'🔴':'🟡';
+
+  var msg = '📋 <b>NEXUS DAILY SUMMARY</b>\n'+
+    '📅 ' + now.toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'}) + '\n\n'+
+    '📊 <b>Session Stats</b>\n'+
+    '• Trades today: <code>' + todayTrades.length + '</code>\n'+
+    '• Win rate: <code>' + (todayTrades.length ? todayWR+'%' : 'N/A') + '</code>\n'+
+    '• Today P&L: <code>' + (todayPnl>=0?'+':'') + '$'+todayPnl.toFixed(2) + '</code>\n'+
+    '• Session P&L: <code>' + (pnl>=0?'+':'') + '$'+pnl.toFixed(2) + '</code>\n\n'+
+    '📈 <b>Current Signal</b>\n'+
+    '• Pair: <code>' + topPair + '</code>\n'+
+    '• Price: <code>$' + (price?price.toFixed(5):'?') + '</code>\n'+
+    '• Confluence: <code>' + confStr + '</code>\n'+
+    verdictEmoji + ' Verdict: <b>' + ind.verdict + '</b>\n'+
+    '• RSI: <code>' + (ind.rsi?ind.rsi.toFixed(1):'?') + '</code>\n'+
+    '• BTC: <code>$' + (macroD.btc?macroD.btc.toLocaleString():'?') + '</code>\n'+
+    '• Fear&Greed: <code>' + (macroD.fg||'?') + ' ' + (macroD.fgLbl||'') + '</code>\n\n'+
+    '🤖 Bot: ' + (botRunning?'<b>RUNNING</b>':'STOPPED') + ' | Mode: ' + mode;
+
+  _sendTelegramAlert(msg);
 }
 
 // ── Fire-and-forget Telegram alert (called after any trade event) ─
