@@ -586,6 +586,10 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
       </select>
       <span style="color:var(--border);font-size:10px;margin:0 1px">│</span>
       <button onclick="_clearDrawings()" style="background:rgba(255,51,85,0.1);border:1px solid var(--red);color:var(--red);font-family:Share Tech Mono,monospace;font-size:7px;padding:2px 7px;cursor:pointer" title="Clear All Drawings">CLEAR</button>
+      <span style="color:var(--border);font-size:10px;margin:0 1px">│</span>
+      <button onclick="_exportDrawings()" style="background:rgba(0,212,255,0.08);border:1px solid var(--cyan);color:var(--cyan);font-family:Share Tech Mono,monospace;font-size:7px;padding:2px 7px;cursor:pointer" title="Export drawings to JSON file">EXPORT</button>
+      <label title="Import drawings from JSON file" style="background:rgba(0,255,136,0.08);border:1px solid var(--green);color:var(--green);font-family:Share Tech Mono,monospace;font-size:7px;padding:2px 7px;cursor:pointer;line-height:normal">IMPORT<input type="file" id="drawImportFile" accept=".json" onchange="_importDrawings(this)" style="display:none"></label>
+      <span id="drawSaveStatus" style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);margin-left:2px" title="Auto-saved to browser storage"></span>
       <span id="drawHint" style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--cyan);margin-left:4px;opacity:0.8"></span>
     </div>
     <!-- ── Full Indicator Side Panel ──────────────────────────── -->
@@ -4036,7 +4040,7 @@ function _drawStyleChange(v){
 
 function _clearDrawings(){
   _drawings=[];_selectedIdx=-1;_drawState=null;_dragState=null;_forwarding=false;
-  _hidePropsPanel();_hideCtxMenu();_setDrawHint('');_redrawAll();
+  _hidePropsPanel();_hideCtxMenu();_setDrawHint('');_redrawAll();_persistDrawings();
 }
 
 function _selectDrawing(idx){
@@ -4057,7 +4061,7 @@ function _deleteSelected(){
   if(_selectedIdx<0||!_drawings[_selectedIdx])return;
   _drawings.splice(_selectedIdx,1);
   _selectedIdx=-1;
-  _hidePropsPanel();_hideCtxMenu();_redrawAll();
+  _hidePropsPanel();_hideCtxMenu();_redrawAll();_persistDrawings();
 }
 
 function _duplicateSelected(){
@@ -4067,13 +4071,13 @@ function _duplicateSelected(){
   nd.id=_newDrawId();nd.start={x:d.start.x+16,y:d.start.y+16};nd.end={x:d.end.x+16,y:d.end.y+16};
   if(nd.p3)nd.p3={x:nd.p3.x+16,y:nd.p3.y+16};
   _drawings.push(nd);_selectedIdx=_drawings.length-1;
-  _hideCtxMenu();_redrawAll();_showPropsPanel(nd);
+  _hideCtxMenu();_redrawAll();_showPropsPanel(nd);_persistDrawings();
 }
 
 function _toggleLockSelected(){
   if(_selectedIdx<0||!_drawings[_selectedIdx])return;
   _drawings[_selectedIdx].locked=!_drawings[_selectedIdx].locked;
-  _hideCtxMenu();_redrawAll();
+  _hideCtxMenu();_redrawAll();_persistDrawings();
 }
 
 function _editSelected(){_hideCtxMenu();if(_selectedIdx>=0)_showPropsPanel(_drawings[_selectedIdx]);}
@@ -4311,6 +4315,7 @@ function _initDrawCanvas(){
   }
   new ResizeObserver(_resize).observe(container);
   _resize();
+  _loadDrawingsFromStorage();
 
   function _fwd(e,type){
     c.style.pointerEvents='none';
@@ -4406,7 +4411,7 @@ function _initDrawCanvas(){
     var mx=e.clientX-rect.left,my=e.clientY-rect.top;
 
     if(_forwarding){_forwarding=false;_fwd(e);return;}
-    if(_dragState){_dragState=null;_redrawAll();return;}
+    if(_dragState){_dragState=null;_redrawAll();_persistDrawings();return;}
 
     if(_drawState&&_drawState.phase==='drawing'){
       var tool=_drawTool,start=_drawState.start,end={x:mx,y:my};
@@ -4417,7 +4422,7 @@ function _initDrawCanvas(){
       }
       var nd={id:_newDrawId(),tool:tool,start:JSON.parse(JSON.stringify(start)),end:JSON.parse(JSON.stringify(end)),p3:null,color:_drawColor,width:_drawWidth,style:_drawStyle,locked:false,label:''};
       _drawings.push(nd);_selectedIdx=_drawings.length-1;
-      _drawState=null;_redrawAll();_showPropsPanel(nd);
+      _drawState=null;_redrawAll();_showPropsPanel(nd);_persistDrawings();
       _setDrawTool('cursor',document.getElementById('dt-cursor'));
     }
   });
@@ -4462,7 +4467,7 @@ function _finishPhase2(mx,my){
     nd={id:_newDrawId(),tool:'pitch',start:JSON.parse(JSON.stringify(_drawState.start)),end:JSON.parse(JSON.stringify(_drawState.end)),p3:{x:mx,y:my},color:_drawColor,width:_drawWidth,style:_drawStyle,locked:false,label:''};
   }
   _drawings.push(nd);_selectedIdx=_drawings.length-1;
-  _drawState=null;_setDrawHint('');_redrawAll();_showPropsPanel(nd);
+  _drawState=null;_setDrawHint('');_redrawAll();_showPropsPanel(nd);_persistDrawings();
   _setDrawTool('cursor',document.getElementById('dt-cursor'));
 }
 
@@ -4515,7 +4520,7 @@ function _dpApply(){
   var dw=document.getElementById('drawWidth');if(dw)dw.value=d.width;
   var ds=document.getElementById('drawStyle');if(ds)ds.value=d.style;
   _drawColor=d.color;_drawWidth=d.width;_drawStyle=d.style;
-  _redrawAll();
+  _redrawAll();_persistDrawings();
 }
 function _dpClose(){_hidePropsPanel();}
 
@@ -4531,6 +4536,96 @@ document.addEventListener('click',function(e){
   var m=document.getElementById('drawCtxMenu');
   if(m&&m.style.display!=='none'&&!m.contains(e.target))_hideCtxMenu();
 });
+
+// ── Persistence — auto-save to localStorage ──────────────────
+var _drawSaveTimer=null;
+function _persistDrawings(){
+  clearTimeout(_drawSaveTimer);
+  _drawSaveTimer=setTimeout(function(){
+    try{
+      localStorage.setItem('nexus_drawings',JSON.stringify(_drawings));
+      var s=document.getElementById('drawSaveStatus');
+      if(s){s.textContent='✓ saved';setTimeout(function(){if(s)s.textContent='';},1800);}
+    }catch(err){}
+  },600);
+}
+function _loadDrawingsFromStorage(){
+  try{
+    var raw=localStorage.getItem('nexus_drawings');
+    if(!raw)return;
+    var arr=JSON.parse(raw);
+    if(Array.isArray(arr)&&arr.length){
+      _drawings=arr;
+      // Re-sequence ID counter so new drawings don't collide
+      arr.forEach(function(d){if(d.id&&d.id>_drawIdCtr)_drawIdCtr=d.id;});
+      _redrawAll();
+    }
+  }catch(err){}
+}
+
+// ── Export ──────────────────────────────────────────────────
+function _exportDrawings(){
+  if(!_drawings.length){alert('No drawings to export.');return;}
+  var ticker=(typeof _ticker!=='undefined'?_ticker:'NEXUS');
+  var payload={
+    version:'nexus-drawings-1.0',
+    ticker:ticker,
+    exported:new Date().toISOString(),
+    count:_drawings.length,
+    drawings:_drawings
+  };
+  var blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;
+  a.download='nexus-drawings-'+ticker+'-'+new Date().toISOString().slice(0,10)+'.json';
+  document.body.appendChild(a);a.click();
+  document.body.removeChild(a);URL.revokeObjectURL(url);
+}
+
+// ── Import ──────────────────────────────────────────────────
+function _importDrawings(input){
+  var file=input.files&&input.files[0];
+  if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      var data=JSON.parse(ev.target.result);
+      var arr=null;
+      // Accept: {drawings:[...]} envelope OR bare array
+      if(Array.isArray(data))arr=data;
+      else if(data&&Array.isArray(data.drawings))arr=data.drawings;
+      if(!arr||!arr.length)throw new Error('No drawings found in file');
+
+      // Validate & sanitise each drawing
+      var valid=['hline','ray','eline','tline','fib','rect','channel','pitch','arrow','text'];
+      var imported=[];
+      arr.forEach(function(d){
+        if(!d.tool||valid.indexOf(d.tool)<0)return;
+        if(!d.start||typeof d.start.x!=='number')return;
+        // Assign fresh IDs
+        d.id=_newDrawId();
+        imported.push(d);
+      });
+      if(!imported.length)throw new Error('No valid drawings in file');
+
+      // Ask: replace or merge
+      var mode=_drawings.length
+        ?confirm('Merge with existing '+_drawings.length+' drawing(s)?\n\nOK = Merge   Cancel = Replace')
+        :false;
+      if(mode){_drawings=_drawings.concat(imported);}
+      else{_drawings=imported;_selectedIdx=-1;}
+
+      _redrawAll();_persistDrawings();
+      var s=document.getElementById('drawSaveStatus');
+      if(s){s.textContent='↑ '+imported.length+' imported';setTimeout(function(){if(s)s.textContent='';},2500);}
+    }catch(err){
+      alert('Import failed: '+err.message);
+    }
+    input.value=''; // allow re-importing same file
+  };
+  reader.readAsText(file);
+}
 
 async function fetchAllMacro(){
   await Promise.all([fetchKrakenTickers(),fetchFearGreed(),fetchCG()]);
