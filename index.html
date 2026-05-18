@@ -6257,24 +6257,33 @@ function _checkDailySummary() {
   var confStr = ind.confluence != null ? ind.confluence.toFixed(0)+'/100' : '—';
   var verdictEmoji = ind.verdict==='BULLISH'?'🟢':ind.verdict==='BEARISH'?'🔴':'🟡';
 
-  var msg = '📋 <b>NEXUS DAILY SUMMARY</b>\n'+
+  var statsBlock = '📋 <b>NEXUS MORNING BRIEF</b>\n'+
     '📅 ' + now.toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'}) + '\n\n'+
-    '📊 <b>Session Stats</b>\n'+
-    '• Trades today: <code>' + todayTrades.length + '</code>\n'+
-    '• Win rate: <code>' + (todayTrades.length ? todayWR+'%' : 'N/A') + '</code>\n'+
-    '• Today P&L: <code>' + (todayPnl>=0?'+':'') + '$'+todayPnl.toFixed(2) + '</code>\n'+
-    '• Session P&L: <code>' + (pnl>=0?'+':'') + '$'+pnl.toFixed(2) + '</code>\n\n'+
-    '📈 <b>Current Signal</b>\n'+
-    '• Pair: <code>' + topPair + '</code>\n'+
-    '• Price: <code>$' + (price?price.toFixed(5):'?') + '</code>\n'+
-    '• Confluence: <code>' + confStr + '</code>\n'+
-    verdictEmoji + ' Verdict: <b>' + ind.verdict + '</b>\n'+
-    '• RSI: <code>' + (ind.rsi?ind.rsi.toFixed(1):'?') + '</code>\n'+
-    '• BTC: <code>$' + (macroD.btc?macroD.btc.toLocaleString():'?') + '</code>\n'+
-    '• Fear&Greed: <code>' + (macroD.fg||'?') + ' ' + (macroD.fgLbl||'') + '</code>\n\n'+
+    '📊 <b>Yesterday\'s Session</b>\n'+
+    '• Trades: <code>' + todayTrades.length + '</code>  Win rate: <code>' + (todayTrades.length ? todayWR+'%' : 'N/A') + '</code>\n'+
+    '• P&L: <code>' + (todayPnl>=0?'+':'') + '$'+todayPnl.toFixed(2) + '</code>\n\n'+
+    '📈 <b>Current Market</b>\n'+
+    '• ' + topPair + ': <code>$' + (price?price.toFixed(4):'?') + '</code>  Confluence: <code>' + confStr + '</code>\n'+
+    verdictEmoji + ' <b>' + ind.verdict + '</b>  RSI: <code>' + (ind.rsi?ind.rsi.toFixed(1):'?') + '</code>\n'+
+    '• BTC: <code>$' + (macroD.btc?macroD.btc.toLocaleString():'?') + '</code>  F&G: <code>' + (macroD.fg||'?') + ' ' + (macroD.fgLbl||'') + '</code>\n'+
     '🤖 Bot: ' + (botRunning?'<b>RUNNING</b>':'STOPPED') + ' | Mode: ' + mode;
 
-  _sendTelegramAlert(msg);
+  // Try to get AI brief, fall back to stats-only message
+  (async function() {
+    var aiOutlook = '';
+    try {
+      var sys = 'You are a crypto morning briefing AI. Write a 3-4 sentence daily market outlook. Be specific, direct, and actionable. No fluff.';
+      var usr = 'Morning brief for ' + now.toDateString() + '.\n' +
+        'Pair focus: ' + topPair + ' @ $' + (price?price.toFixed(4):'?') + '\n' +
+        'RSI: ' + (ind.rsi?ind.rsi.toFixed(1):'?') + '  BB%B: ' + (ind.bbPct?(ind.bbPct*100).toFixed(0)+'%':'?') + '  Confluence: ' + confStr + '\n' +
+        'BTC: $' + (macroD.btc||'?') + '  Fear&Greed: ' + (macroD.fg||'?') + ' ' + (macroD.fgLbl||'') + '  BTC Dom: ' + (macroD.btcDom||'?') + '%\n' +
+        'Verdict: ' + ind.verdict + '  Regime: ' + (ind.regime||'?') + '\n' +
+        'Write a 3-4 sentence morning outlook: what to watch, key levels, and whether conditions favor trading today.';
+      var result = await _callAI(sys, usr, 300);
+      if (result) aiOutlook = '\n\n🧠 <b>AI Morning Outlook</b>\n' + result.trim();
+    } catch(e) {}
+    _sendTelegramAlert(statsBlock + aiOutlook);
+  })();
 }
 
 // ── Fire-and-forget Telegram alert (called after any trade event) ─
