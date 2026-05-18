@@ -1266,15 +1266,27 @@ Content-Type: application/json
   </div>
   <!-- TRADES -->
   <div class="pane" id="tab-trades">
+    <!-- Analytics summary -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+      <div class="card"><div class="clbl">TOTAL P&amp;L</div><div class="cval" id="jrnPnl" style="color:var(--green)">$0.00</div><div class="csub" id="jrnTrades">0 trades</div></div>
+      <div class="card"><div class="clbl">WIN RATE</div><div class="cval ct" id="jrnWR">--%</div><div class="csub" id="jrnWL">0W / 0L</div></div>
+      <div class="card"><div class="clbl">BEST TRADE</div><div class="cval cg" id="bestTrade">$0</div><div class="csub" id="jrnWorst" style="color:var(--red)">worst $0</div></div>
+      <div class="card"><div class="clbl">AVG SPREAD</div><div class="cval ct" id="avgSpread">0 bps</div><div class="csub" id="jrnAvgPnl">avg $0</div></div>
+    </div>
+    <!-- Equity curve -->
+    <div class="card" style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div class="clbl" style="margin:0">EQUITY CURVE</div>
+        <button onclick="exportTradeCSV()" style="background:rgba(0,212,255,0.1);border:1px solid var(--cyan);color:var(--cyan);font-family:Orbitron,monospace;font-size:7px;padding:4px 12px;cursor:pointer;letter-spacing:1px">⬇ EXPORT CSV</button>
+      </div>
+      <canvas id="equityCanvas" style="width:100%;height:80px;display:block"></canvas>
+    </div>
+    <!-- Trade table -->
     <div class="card" style="padding:0;overflow-x:auto">
       <table class="ttbl">
         <thead><tr><th>TIME</th><th>TYPE</th><th>PRICE</th><th>SIZE</th><th>RSI</th><th>BB%B</th><th>P&amp;L</th></tr></thead>
         <tbody id="tradeBody"><tr><td colspan="7" style="color:var(--t3);font-size:7px;padding:14px 5px;letter-spacing:2px">NO TRADES YET</td></tr></tbody>
       </table>
-    </div>
-    <div class="g2">
-      <div class="card"><div class="clbl">AVG SPREAD</div><div class="cval ct" id="avgSpread">0 bps</div></div>
-      <div class="card"><div class="clbl">BEST TRADE</div><div class="cval cg" id="bestTrade">$0</div></div>
     </div>
   </div>
   <!-- SIM LEARN TAB -->
@@ -5445,6 +5457,102 @@ function updateStats(){
   // Keep manual order desk headers + open sim positions current
   _updateMLHeaders();
   if(_manualSimPos.length) _renderManualSimPositions();
+  _updateJournalStats();
+}
+
+// ─── Trade Journal — analytics + equity curve + CSV export ───────────────
+function _updateJournalStats() {
+  var closed = tradeHist.filter(function(t){ return t.pnl !== undefined && t.pnl !== null; });
+  if (!closed.length) return;
+  var wins2 = closed.filter(function(t){ return t.pnl > 0; });
+  var losses = closed.filter(function(t){ return t.pnl <= 0; });
+  var totalPnl = closed.reduce(function(s,t){ return s + (t.pnl||0); }, 0);
+  var wrPct = (wins2.length / closed.length * 100).toFixed(1);
+  var best = Math.max.apply(null, closed.map(function(t){ return t.pnl||0; }));
+  var worst = Math.min.apply(null, closed.map(function(t){ return t.pnl||0; }));
+  var avgPnl = totalPnl / closed.length;
+  var jPnl = document.getElementById('jrnPnl');
+  if(jPnl){ jPnl.textContent=(totalPnl>=0?'+':'')+'$'+totalPnl.toFixed(4); jPnl.style.color=totalPnl>=0?'var(--green)':'var(--red)'; }
+  var jT = document.getElementById('jrnTrades'); if(jT) jT.textContent=closed.length+' trades';
+  var jWR = document.getElementById('jrnWR'); if(jWR) jWR.textContent=wrPct+'%';
+  var jWL = document.getElementById('jrnWL'); if(jWL) jWL.textContent=wins2.length+'W / '+losses.length+'L';
+  var jW = document.getElementById('jrnWorst'); if(jW) jW.textContent='worst $'+worst.toFixed(4);
+  var jA = document.getElementById('jrnAvgPnl'); if(jA) jA.textContent='avg $'+avgPnl.toFixed(4);
+  _drawEquityCurve(closed);
+}
+
+function _drawEquityCurve(trades) {
+  var canvas = document.getElementById('equityCanvas');
+  if (!canvas) return;
+  var dpr = window.devicePixelRatio || 1;
+  canvas.width = canvas.offsetWidth * dpr;
+  canvas.height = 80 * dpr;
+  var ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  var W = canvas.offsetWidth, H = 80;
+  ctx.clearRect(0, 0, W, H);
+  // Build equity line
+  var equity = [0];
+  trades.forEach(function(t){ equity.push(equity[equity.length-1] + (t.pnl||0)); });
+  var mn = Math.min.apply(null, equity), mx = Math.max.apply(null, equity);
+  var range = mx - mn || 1;
+  var pad = 6;
+  function px(i){ return pad + (i / (equity.length-1)) * (W - pad*2); }
+  function py(v){ return H - pad - ((v - mn) / range) * (H - pad*2); }
+  // Fill under curve
+  var grad = ctx.createLinearGradient(0, 0, 0, H);
+  var isPos = equity[equity.length-1] >= 0;
+  grad.addColorStop(0, isPos ? 'rgba(0,255,136,0.25)' : 'rgba(255,68,68,0.25)');
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.beginPath();
+  ctx.moveTo(px(0), py(equity[0]));
+  equity.forEach(function(v,i){ if(i>0) ctx.lineTo(px(i), py(v)); });
+  ctx.lineTo(px(equity.length-1), H);
+  ctx.lineTo(px(0), H);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+  // Draw line
+  ctx.beginPath();
+  ctx.moveTo(px(0), py(equity[0]));
+  equity.forEach(function(v,i){ if(i>0) ctx.lineTo(px(i), py(v)); });
+  ctx.strokeStyle = isPos ? 'var(--green)' : 'var(--red)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  // Zero line
+  if(mn < 0 && mx > 0) {
+    ctx.beginPath();
+    ctx.moveTo(pad, py(0));
+    ctx.lineTo(W-pad, py(0));
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 0.5;
+    ctx.setLineDash([4,4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+}
+
+function exportTradeCSV() {
+  var closed = tradeHist.filter(function(t){ return t.pnl !== undefined; });
+  if (!closed.length) { log('warning','JOURNAL','No trades to export.'); return; }
+  var rows = [['Time','Type','Price','Entry Price','Size','RSI','BB%B','Spread(bps)','P&L','Exit Reason']];
+  closed.forEach(function(t){
+    rows.push([
+      t.time||'', t.type||'', t.price||'', t.entryPrice||'',
+      t.size||'', t.rsi||'', t.bbPct||'', t.spread||'',
+      t.pnl !== undefined ? t.pnl.toFixed(6) : '',
+      t.exitReason||''
+    ]);
+  });
+  var csv = rows.map(function(r){ return r.map(function(v){ return '"'+String(v).replace(/"/g,'""')+'"'; }).join(','); }).join('\n');
+  var blob = new Blob([csv], {type:'text/csv'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'nexus_trades_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  log('success','JOURNAL','Exported '+closed.length+' trades to CSV.');
 }
 
 // ─── PUSH BOT STATE TO PROXY (for remote viewing on any device) ──────────
@@ -5801,13 +5909,14 @@ function _renderTradesTab(){
       return;
     }
     tb.innerHTML="";
-    var sorted=tradeHist.slice().reverse().slice(0,100);
+    var sorted=tradeHist.slice().reverse().slice(0,200);
     sorted.forEach(function(t){
       var r=document.createElement("tr");
       var pnlV=parseFloat(t.pnl||0);
       r.innerHTML='<td>'+(t.time||t.traded_at||"--")+'</td><td class="'+(String(t.type||"").startsWith("BUY")?'tb2':'ts2')+'" style="font-size:6px">'+(t.type||"--")+'</td><td>'+(t.price?parseFloat(t.price).toFixed(5):"--")+'</td><td>$'+(t.size||t.orderSize||"--")+'</td><td style="color:'+(parseFloat(t.rsi||50)<30?'var(--green)':parseFloat(t.rsi||50)>70?'var(--red)':'var(--t2)')+'">'+( t.rsi||"--")+'</td><td>'+(t.bbPct||t.bbp||"--")+'</td><td class="'+(pnlV>=0?'tb2':'ts2')+'">'+(pnlV>=0?"+":"")+"$"+pnlV.toFixed(4)+'</td>';
       tb.appendChild(r);
     });
+    _updateJournalStats();
   });
 }
 
