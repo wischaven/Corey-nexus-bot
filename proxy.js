@@ -395,9 +395,19 @@ const BINANCE_INTERVAL_MAP = {
   240:'4h',360:'6h',480:'8h',720:'12h',1440:'1d',4320:'3d',10080:'1w',43200:'1M'
 };
 
+// Convert NEXUS/Kraken pair → Binance symbol (e.g. XRPUSD → XRPUSDT, XXRPZUSD → XRPUSDT)
+function _toBinanceSymbol(symbol) {
+  let s = symbol.toUpperCase().replace('XBT', 'BTC');
+  // Strip Kraken full-format double prefixes only (XXRPZUSD → XRPUSD)
+  s = s.replace(/^X([A-Z]{2,4})Z([A-Z]{3})$/, '$1$2');
+  // Ensure USDT suffix
+  if (s.endsWith('USD') && !s.endsWith('USDT')) s += 'T';
+  return s;
+}
+
 function fetchBinanceCandles(symbol, interval, limit=500) {
   return new Promise((resolve) => {
-    const binSym = symbol.replace('XBT','BTC').replace('USD','USDT').replace(/^X/,'').replace(/^Z/,'');
+    const binSym = _toBinanceSymbol(symbol);
     const binInterval = BINANCE_INTERVAL_MAP[+interval] || '1h';
     const url = `https://api.binance.com/api/v3/klines?symbol=${binSym}&interval=${binInterval}&limit=${limit}`;
     const req = https.get(url, { headers: { 'User-Agent': 'NEXUS/4.0' } }, (res) => {
@@ -616,6 +626,137 @@ app.post('/signal/token', requireAuth, async (req, res) => {
     { onConflict: 'user_id' }
   );
   res.json({ ok: true, token });
+});
+
+// ─── OHLC Cache + server-side candle proxy ────────────────────────────────
+
+// Cache TTL per interval: shorter intervals need fresher data
+function _ohlcTtlMs(intervalMin) {
+  if (intervalMin <= 5)    return 15_000;    // 1m/5m   → 15s
+  if (intervalMin <= 60)   return 60_000;    // 15m–1H  → 60s
+  if (intervalMin <= 240)  return 5 * 60_000; // 2H–4H  → 5 min
+  if (intervalMin <= 1440) return 30 * 60_000; // 6H–1D → 30 min
+  return 60 * 60_000;                         // 1W+    → 1 hr
+}
+
+// key: `${pair}:${intervalMin}` → { candles, fetchedAt }
+const _ohlcCache = new Map();
+
+async function fetchOHLCCached(pair, intervalMin, limit) {
+  const key = `${pair}:${intervalMin}`;
+  const ttl = _ohlcTtlMs(intervalMin);
+  const cached = _ohlcCache.get(key);
+  if (cached && (Date.now() - cached.fetchedAt) < ttl) return cached.candles;
+
+  const candles = await fetchBinanceCandles(pair, intervalMin, limit);
+  if (candles && candles.length) {
+    _ohlcCache.set(key, { candles, fetchedAt: Date.now() });
+  }
+  return candles;
+}
+
+// GET /ohlc?pair=XRPUSD&interval=5&limit=500
+// Returns cached candles, fetching server-side (no CORS, rate-limit pooled across users)
+app.get('/ohlc', async (req, res) => {
+  const { pair = 'XRPUSD', interval = '60', limit = '500' } = req.query;
+  const intervalMin = +interval;
+  const lim = Math.min(+limit, 1000);
+  if (!intervalMin || intervalMin < 1) return res.status(400).json({ error: 'Invalid interval' });
+
+  try {
+    const candles = await fetchOHLCCached(pair, intervalMin, lim);
+    if (!candles || candles.length < 2) return res.status(503).json({ error: 'No candle data available' });
+    res.json({ ok: true, pair, interval: intervalMin, count: candles.length, candles });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ─── SSE live kline streaming ─────────────────────────────────────────────
+// Browser connects to GET /stream/kline?pair=XRPUSDT&interval=5
+// Server polls Binance price every 2s and pushes ticks; also updates the cache
+
+// clients: Map<`${pair}:${interval}`, Set<res>>
+const _sseClients = new Map();
+
+// Lightweight price-only fetch from Binance ticker endpoint
+function _fetchBinanceLatestPrice(symbol) {
+  return new Promise((resolve) => {
+    const binSym = _toBinanceSymbol(symbol);
+    const url = `https://api.binance.com/api/v3/ticker/price?symbol=${binSym}`;
+    const req = https.get(url, { headers: { 'User-Agent': 'NEXUS/4.0' } }, (bRes) => {
+      let raw = '';
+      bRes.on('data', d => raw += d);
+      bRes.on('end', () => {
+        try { resolve(+JSON.parse(raw).price || null); } catch { resolve(null); }
+      });
+    });
+    req.setTimeout(4000, () => { req.destroy(); resolve(null); });
+    req.on('error', () => resolve(null));
+  });
+}
+
+// Tick loop: runs every 2s, only active when there are SSE clients
+let _sseTicker = null;
+
+function _ensureSseTicker() {
+  if (_sseTicker) return;
+  _sseTicker = setInterval(async () => {
+    if (_sseClients.size === 0) { clearInterval(_sseTicker); _sseTicker = null; return; }
+
+    // Collect unique pairs
+    const pairs = new Set([..._sseClients.keys()].map(k => k.split(':')[0]));
+
+    for (const pair of pairs) {
+      const price = await _fetchBinanceLatestPrice(pair);
+      if (!price) continue;
+      const now = Math.floor(Date.now() / 1000);
+
+      // Push tick to all clients subscribed to this pair
+      for (const [key, clients] of _sseClients.entries()) {
+        if (!key.startsWith(pair + ':')) continue;
+        const intervalMin = +key.split(':')[1];
+        const payload = JSON.stringify({ pair, interval: intervalMin, price, t: now });
+        for (const client of clients) {
+          try { client.write(`data: ${payload}\n\n`); } catch (_) {}
+        }
+      }
+
+      // Keep the last candle in cache live (high/low/close update)
+      for (const [k, entry] of _ohlcCache.entries()) {
+        if (!k.startsWith(pair + ':')) continue;
+        if (entry.candles && entry.candles.length) {
+          const last = entry.candles[entry.candles.length - 1];
+          if (price > last.h) last.h = price;
+          if (price < last.l) last.l = price;
+          last.c = price;
+        }
+      }
+    }
+  }, 2000);
+}
+
+// GET /stream/kline?pair=XRPUSD&interval=5
+app.get('/stream/kline', (req, res) => {
+  const { pair = 'XRPUSD', interval = '60' } = req.query;
+  const key = `${pair}:${+interval || 60}`;
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no'); // prevent nginx buffering on Railway
+  res.flushHeaders();
+
+  if (!_sseClients.has(key)) _sseClients.set(key, new Set());
+  _sseClients.get(key).add(res);
+  _ensureSseTicker();
+
+  res.write('data: {"type":"connected"}\n\n');
+
+  req.on('close', () => {
+    const clients = _sseClients.get(key);
+    if (clients) { clients.delete(res); if (clients.size === 0) _sseClients.delete(key); }
+  });
 });
 
 // ─── Start ─────────────────────────────────────────────────────────────────

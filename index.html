@@ -2685,6 +2685,43 @@ async function _fetchBinanceCandles(krakenPair, intervalMin, limit){
 }
 
 var _ohlcFetchId=0; // increments on each call; stale results are discarded
+var _klineES=null;  // active EventSource for live tick updates
+
+function _stopKlineStream(){
+  if(_klineES){_klineES.close();_klineES=null;}
+}
+
+function _startKlineStream(intervalMin){
+  _stopKlineStream();
+  if(typeof EventSource==='undefined')return;
+  var url='/stream/kline?pair='+encodeURIComponent(_activeTicker)+'&interval='+intervalMin;
+  var es=new EventSource(url);
+  es.onmessage=function(ev){
+    try{
+      var msg=JSON.parse(ev.data);
+      if(msg.type==='connected'||!msg.price)return;
+      // Update live price display
+      price=msg.price;
+      var lp=document.getElementById('livePrice');
+      if(lp)lp.textContent='$'+price.toFixed(6);
+      // Update the close of the last candle so indicators stay fresh
+      if(candles.length){
+        var last=candles[candles.length-1];
+        if(msg.price>last.h)last.h=msg.price;
+        if(msg.price<last.l)last.l=msg.price;
+        last.c=msg.price;
+        // Redraw just the last candle on the main chart (fast path)
+        try{
+          if(_tvCharts&&_tvCharts.main&&_tvSeries&&_tvSeries.candle){
+            _tvSeries.candle.update({time:last.t,open:last.o,high:last.h,low:last.l,close:last.c});
+          }
+        }catch(_){}
+      }
+    }catch(_){}
+  };
+  es.onerror=function(){es.close();_klineES=null;};
+  _klineES=es;
+}
 
 function _tfSetLoading(loading){
   // Visual feedback on active TF button while fetching
@@ -2706,31 +2743,37 @@ async function fetchOHLC(){
   _tfSetLoading(true);
 
   var fetched=null, src='';
-  // ── Try Binance first ────────────────────────────────────────
+  // ── Server-side proxy (Binance, no CORS, cached) ─────────────
   try{
-    var result=await _fetchBinanceCandlesPaged(_activeTicker,myTF,maxC);
+    var r=await fetch('/ohlc?pair='+encodeURIComponent(_activeTicker)+'&interval='+myTF+'&limit='+maxC);
     if(myId!==_ohlcFetchId){_tfSetLoading(false);return;}
-    if(result.length){fetched=result;src='BINANCE';}
-    else throw new Error('empty response');
+    if(r.ok){
+      var d=await r.json();
+      if(myId!==_ohlcFetchId){_tfSetLoading(false);return;}
+      if(d.ok&&d.candles&&d.candles.length){fetched=d.candles;src='NEXUS';}
+      else throw new Error(d.error||'empty');
+    } else {
+      throw new Error('HTTP '+r.status);
+    }
   }catch(e){
     if(myId!==_ohlcFetchId){_tfSetLoading(false);return;}
-    log("warn","OHLC","Binance failed ("+e.message+") — trying Kraken…");
-    // ── Kraken fallback (only supports: 1,5,15,30,60,240,1440,10080 min) ──
+    log("warn","OHLC","Server proxy failed ("+e.message+") — trying Kraken direct…");
+    // ── Kraken direct fallback (only supports: 1,5,15,30,60,240,1440,10080 min) ──
     var krakenSupported=[1,5,15,30,60,240,1440,10080];
     if(krakenSupported.indexOf(myTF)>=0){
       try{
-        var r=await fetch("https://api.kraken.com/0/public/OHLC?pair="+_activeTicker+"&interval="+myTF);
-        var d=await r.json();
+        var rk=await fetch("https://api.kraken.com/0/public/OHLC?pair="+_activeTicker+"&interval="+myTF);
+        var dk=await rk.json();
         if(myId!==_ohlcFetchId){_tfSetLoading(false);return;}
-        if(d.error&&d.error.length)throw new Error(d.error[0]);
-        var key=Object.keys(d.result).find(function(k){return k!=="last";});
-        if(key&&d.result[key].length){
-          fetched=d.result[key].map(function(c){return{t:+c[0],o:+c[1],h:+c[2],l:+c[3],c:+c[4],v:+c[6]};});
+        if(dk.error&&dk.error.length)throw new Error(dk.error[0]);
+        var key=Object.keys(dk.result).find(function(k){return k!=="last";});
+        if(key&&dk.result[key].length){
+          fetched=dk.result[key].map(function(c){return{t:+c[0],o:+c[1],h:+c[2],l:+c[3],c:+c[4],v:+c[6]};});
           src='KRAKEN';
         }
       }catch(e2){log("error","OHLC","Kraken also failed: "+e2.message);}
     } else {
-      log("warn","OHLC","Kraken doesn't support "+myTF+"m — no fallback available");
+      log("warn","OHLC","No fallback for "+myTF+"m — server unreachable?");
     }
   }
 
@@ -2739,11 +2782,10 @@ async function fetchOHLC(){
 
   if(!fetched||!fetched.length){
     log("error","OHLC","No data for "+myTF+"m — try again or pick another timeframe");
-    // Don't set _loadedTF so the user can retry
     return;
   }
 
-  // ── Apply data — rendering errors are isolated here, NOT confused with network errors ──
+  // ── Apply data — rendering errors isolated from network errors ──
   candles=fetched;
   _loadedTF=myTF;
   price=candles[candles.length-1].c;
@@ -2751,6 +2793,7 @@ async function fetchOHLC(){
   document.getElementById("priceSrc").textContent=src+" "+myTF+"m · "+candles.length+" bars";
   try{calcAllInd();drawAllCharts();}catch(re){log("error","CHART","Render error: "+re.message);}
   log("success","OHLC",candles.length+" candles loaded ("+src+").");
+  _startKlineStream(myTF);
   setTimeout(fetchAllTF,3000);
 }
 
@@ -3049,24 +3092,17 @@ function updateMTFUI(){
 }
 
 async function fetchAllTF(){
-  // Fetch MTF data sequentially with small delays to avoid rate limits
-  // Only fetch the key timeframes needed for confluence scoring
+  // Server-side /ohlc proxy — no CORS, results cached server-side, no rate limit risk
   var _keyTFs=[{v:1,l:"1m"},{v:5,l:"5m"},{v:15,l:"15m"},{v:60,l:"1H"},{v:240,l:"4H"},{v:1440,l:"1D"}];
   for(var _i=0;_i<_keyTFs.length;_i++){
     var tf=_keyTFs[_i];
-    if(tf.v===candleInt)continue; // already have this one
+    if(tf.v===candleInt)continue; // already loaded for main chart
     try{
-      mtfData[tf.v]=await _fetchBinanceCandles(_activeTicker,tf.v,100);
-    }catch(e){
-      try{
-        var r=await fetch("https://api.kraken.com/0/public/OHLC?pair="+_activeTicker+"&interval="+tf.v);
-        var d=await r.json();
-        if(d.error&&d.error.length)continue;
-        var key=Object.keys(d.result).find(function(k){return k!=="last";});
-        if(key)mtfData[tf.v]=d.result[key].slice(-100).map(function(c){return{t:+c[0],o:+c[1],h:+c[2],l:+c[3],c:+c[4],v:+c[6]};});
-      }catch(e2){}
-    }
-    await new Promise(function(res){setTimeout(res,400);}); // 400ms between requests
+      var r=await fetch('/ohlc?pair='+encodeURIComponent(_activeTicker)+'&interval='+tf.v+'&limit=100');
+      if(r.ok){var d=await r.json();if(d.ok&&d.candles)mtfData[tf.v]=d.candles;}
+    }catch(e){}
+    // Small delay still courteous to keep requests spaced
+    await new Promise(function(res){setTimeout(res,150);});
   }
   calcMTF();
   updateMTFUI();
@@ -7210,6 +7246,7 @@ async function setActiveTicker(pair, label){
   }
 
   // Reload market data for new pair
+  _stopKlineStream(); // close old SSE stream before fetching new ticker
   var stat=document.getElementById('tickerSwitchStatus');
   if(stat){stat.textContent='↻ Switching to '+label+'...';stat.style.color='var(--cyan)';}
   fetchOHLC();
