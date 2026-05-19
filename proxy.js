@@ -77,7 +77,7 @@ async function _krakenCancelOrder(txid) {
 }
 
 // ─── Supabase auth + DB ────────────────────────────────────────────────────
-const { supabase, requireAuth, getUserPlan, isOwner } = require('./trading_engine/supabase');
+const { supabase, supabaseAdmin, requireAuth, getUserPlan, isOwner } = require('./trading_engine/supabase');
 
 // ─── Trading Engine ────────────────────────────────────────────────────────
 const RiskManager = require('./trading_engine/risk_management');
