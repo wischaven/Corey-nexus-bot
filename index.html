@@ -509,21 +509,6 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
   <div class="pane" id="tab-chart">
     <!-- ── TradingView Advanced Chart ─────────────────────────── -->
     <div id="tradingview_nexus" style="height:600px;width:100%;border-radius:4px;overflow:hidden;margin-bottom:8px;background:#0a0a0f"></div>
-    <!-- ── AI Analysis Timeframe ──────────────────────────────── -->
-    <div style="display:flex;align-items:center;gap:2px;margin-bottom:6px;flex-wrap:wrap">
-      <span style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);margin-right:4px;white-space:nowrap">AI TF:</span>
-      <button class="tbtn" id="tf-1"     onclick="_setTF(1,this)"     style="font-size:7px;padding:3px 5px">1m</button>
-      <button class="tbtn" id="tf-3"     onclick="_setTF(3,this)"     style="font-size:7px;padding:3px 5px">3m</button>
-      <button class="tbtn active" id="tf-5"  onclick="_setTF(5,this)" style="font-size:7px;padding:3px 5px">5m</button>
-      <button class="tbtn" id="tf-15"    onclick="_setTF(15,this)"    style="font-size:7px;padding:3px 5px">15m</button>
-      <button class="tbtn" id="tf-30"    onclick="_setTF(30,this)"    style="font-size:7px;padding:3px 5px">30m</button>
-      <button class="tbtn" id="tf-60"    onclick="_setTF(60,this)"    style="font-size:7px;padding:3px 5px">1H</button>
-      <button class="tbtn" id="tf-120"   onclick="_setTF(120,this)"   style="font-size:7px;padding:3px 5px">2H</button>
-      <button class="tbtn" id="tf-240"   onclick="_setTF(240,this)"   style="font-size:7px;padding:3px 5px">4H</button>
-      <button class="tbtn" id="tf-1440"  onclick="_setTF(1440,this)"  style="font-size:7px;padding:3px 5px">1D</button>
-      <button class="tbtn" id="tf-10080" onclick="_setTF(10080,this)" style="font-size:7px;padding:3px 5px">1W</button>
-      <span style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);margin-left:6px" id="priceSrc"></span>
-    </div>
     <!-- ══ MANUAL ORDER DESK (Live) ══ -->
     <div class="card" id="manualDeskLive" style="padding:10px 12px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
