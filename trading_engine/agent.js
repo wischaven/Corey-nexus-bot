@@ -1,7 +1,6 @@
 ﻿'use strict';
 
 require('dotenv').config({ override: true });
-const Anthropic = require('@anthropic-ai/sdk');
 const https = require('https');
 const http  = require('http');
 const fs    = require('fs');
@@ -17,11 +16,39 @@ function _readEnvKey(name) {
   } catch { return process.env[name]; }
 }
 
-const _anthropicKey = _readEnvKey('ANTHROPIC_API_KEY');
-const client = new Anthropic({
-  apiKey: _anthropicKey,
-  baseURL: 'https://api.anthropic.com',
-});
+// Direct HTTPS call to Anthropic API — bypasses SDK auth complexity entirely
+function _claudeAPI(body) {
+  return new Promise((resolve, reject) => {
+    const key = _readEnvKey('ANTHROPIC_API_KEY');
+    if (!key) return reject(new Error('ANTHROPIC_API_KEY not set in .env'));
+    const payload = JSON.stringify(body);
+    const req = https.request({
+      hostname: 'api.anthropic.com',
+      port: 443,
+      path: '/v1/messages',
+      method: 'POST',
+      headers: {
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+        'content-length': Buffer.byteLength(payload),
+      },
+    }, (res) => {
+      let raw = '';
+      res.on('data', d => raw += d);
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(raw);
+          if (parsed.type === 'error') reject(new Error(parsed.error?.message || 'Anthropic API error'));
+          else resolve(parsed);
+        } catch (e) { reject(e); }
+      });
+    });
+    req.on('error', reject);
+    req.write(payload);
+    req.end();
+  });
+}
 
 // â”€â”€â”€ In-memory stores â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const _memory    = new Map();
@@ -469,7 +496,7 @@ async function agentChat({ sessionId, userMessage, images = [], context = {}, mo
   const toolCalls = [];
 
   while (true) {
-    const response = await client.messages.create({
+    const response = await _claudeAPI({
       model, max_tokens: 4096, system: systemPrompt, tools: TOOLS, messages,
     });
 
@@ -535,7 +562,7 @@ Return ONLY valid JSON:
 ${userContext ? 'User context: ' + userContext : ''}`,
   });
 
-  const response = await client.messages.create({
+  const response = await _claudeAPI({
     model, max_tokens: 2048,
     messages: [{ role: 'user', content }],
   });
@@ -586,7 +613,7 @@ Knowledge items: ${_knowledge.length}`;
 
     // Run one full agentic loop
     while (true) {
-      const response = await client.messages.create({
+      const response = await _claudeAPI({
         model: 'claude-sonnet-4-6', // Sonnet for speed/cost on automated cycles
         max_tokens: 4096,
         system: systemPrompt,
@@ -700,7 +727,7 @@ Execute the cycle now. Use your tools. Be the best trader in the room.`;
     let tradesExecuted = 0;
 
     while (true) {
-      const response = await client.messages.create({
+      const response = await _claudeAPI({
         model: 'claude-sonnet-4-6', // Sonnet for cycle speed; Opus used for user chat
         max_tokens: 8096,
         system: systemPrompt,
@@ -775,7 +802,7 @@ Respond with JSON only:
   "risk_reward": number|null
 }`;
 
-  const response = await client.messages.create({
+  const response = await _claudeAPI({
     model: 'claude-sonnet-4-6',
     max_tokens: 512,
     messages: [{ role: 'user', content: prompt }],
