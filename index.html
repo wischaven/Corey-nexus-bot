@@ -507,8 +507,11 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
   </div>
   <!-- CHARTS TAB -->
   <div class="pane" id="tab-chart">
-    <!-- ── Timeframe bar ──────────────────────────────────────── -->
-    <div style="display:flex;align-items:center;gap:2px;margin-bottom:4px;flex-wrap:wrap">
+    <!-- ── TradingView Advanced Chart ─────────────────────────── -->
+    <div id="tradingview_nexus" style="height:600px;width:100%;border-radius:4px;overflow:hidden;margin-bottom:8px;background:#0a0a0f"></div>
+    <!-- ── AI Analysis Timeframe ──────────────────────────────── -->
+    <div style="display:flex;align-items:center;gap:2px;margin-bottom:6px;flex-wrap:wrap">
+      <span style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);margin-right:4px;white-space:nowrap">AI TF:</span>
       <button class="tbtn" id="tf-1"     onclick="_setTF(1,this)"     style="font-size:7px;padding:3px 5px">1m</button>
       <button class="tbtn" id="tf-3"     onclick="_setTF(3,this)"     style="font-size:7px;padding:3px 5px">3m</button>
       <button class="tbtn active" id="tf-5"  onclick="_setTF(5,this)" style="font-size:7px;padding:3px 5px">5m</button>
@@ -517,122 +520,9 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
       <button class="tbtn" id="tf-60"    onclick="_setTF(60,this)"    style="font-size:7px;padding:3px 5px">1H</button>
       <button class="tbtn" id="tf-120"   onclick="_setTF(120,this)"   style="font-size:7px;padding:3px 5px">2H</button>
       <button class="tbtn" id="tf-240"   onclick="_setTF(240,this)"   style="font-size:7px;padding:3px 5px">4H</button>
-      <button class="tbtn" id="tf-360"   onclick="_setTF(360,this)"   style="font-size:7px;padding:3px 5px">6H</button>
-      <button class="tbtn" id="tf-480"   onclick="_setTF(480,this)"   style="font-size:7px;padding:3px 5px">8H</button>
-      <button class="tbtn" id="tf-720"   onclick="_setTF(720,this)"   style="font-size:7px;padding:3px 5px">12H</button>
       <button class="tbtn" id="tf-1440"  onclick="_setTF(1440,this)"  style="font-size:7px;padding:3px 5px">1D</button>
-      <button class="tbtn" id="tf-4320"  onclick="_setTF(4320,this)"  style="font-size:7px;padding:3px 5px">3D</button>
       <button class="tbtn" id="tf-10080" onclick="_setTF(10080,this)" style="font-size:7px;padding:3px 5px">1W</button>
-      <button class="tbtn" id="tf-43200" onclick="_setTF(43200,this)" style="font-size:7px;padding:3px 5px">1M</button>
-      <span style="margin-left:6px;font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3)" id="chartDataSrc">BINANCE</span>
-    </div>
-    <!-- ── Indicator panel bar ─────────────────────────────────── -->
-    <div style="display:flex;align-items:center;gap:4px;margin-bottom:5px;flex-wrap:wrap">
-      <button onclick="_indPanelToggle()" style="background:rgba(0,212,255,0.12);border:1px solid var(--cyan);color:var(--cyan);font-family:Share Tech Mono,monospace;font-size:8px;padding:4px 10px;cursor:pointer;letter-spacing:1px">⊕ INDICATORS</button>
-      <div style="width:1px;height:14px;background:var(--border);margin:0 3px"></div>
-      <span style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3)">OVERLAYS:</span>
-      <button class="tbtn active" id="ti-bb"   onclick="_tvToggle(this,'bb')"        style="font-size:7px;padding:3px 6px">BB</button>
-      <button class="tbtn active" id="ti-ema"  onclick="_tvToggle(this,'ema')"       style="font-size:7px;padding:3px 6px">EMA 9/21</button>
-      <button class="tbtn active" id="ti-vwap" onclick="_tvToggle(this,'vwap')"      style="font-size:7px;padding:3px 6px">VWAP</button>
-      <button class="tbtn"        id="ti-ema50"onclick="_tvToggle(this,'ema50')"     style="font-size:7px;padding:3px 6px">EMA 50</button>
-      <button class="tbtn"        id="ti-ema200"onclick="_tvToggle(this,'ema200')"   style="font-size:7px;padding:3px 6px">EMA 200</button>
-      <button class="tbtn"        id="ti-sma200"onclick="_tvToggle(this,'sma200')"   style="font-size:7px;padding:3px 6px">SMA 200</button>
-      <button class="tbtn"        id="ti-kelt" onclick="_tvToggle(this,'kelt')"      style="font-size:7px;padding:3px 6px">KELTNER</button>
-      <button class="tbtn"        id="ti-psar" onclick="_tvToggle(this,'psar')"      style="font-size:7px;padding:3px 6px">PSAR</button>
-      <div style="width:1px;height:14px;background:var(--border);margin:0 3px"></div>
-      <span style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3)">PANES:</span>
-      <button class="tbtn active" id="ti-vol"  onclick="_tvToggle(this,'vol')"       style="font-size:7px;padding:3px 6px">VOL</button>
-      <select id="oscA_sel" onchange="_setOscA(this.value)" style="background:var(--bg2);border:1px solid var(--border);color:var(--cyan);font-family:Share Tech Mono,monospace;font-size:7px;padding:2px 4px">
-        <option value="rsi">RSI</option><option value="stochrsi">STOCH RSI</option>
-        <option value="stoch">STOCHASTIC</option><option value="mfi">MFI</option>
-        <option value="cci">CCI</option><option value="willr">WILLIAMS %R</option>
-        <option value="cmo">CHANDE MO</option><option value="tsi">TSI</option><option value="none">— HIDE —</option>
-      </select>
-      <select id="oscB_sel" onchange="_setOscB(this.value)" style="background:var(--bg2);border:1px solid var(--border);color:var(--amber);font-family:Share Tech Mono,monospace;font-size:7px;padding:2px 4px">
-        <option value="macd">MACD</option><option value="adx">ADX</option>
-        <option value="aroon">AROON</option><option value="ao">AWESOME OSC</option>
-        <option value="obv">OBV</option><option value="cmf">CMF</option>
-        <option value="force">FORCE INDEX</option><option value="ppo">PPO</option>
-        <option value="kst">KST</option><option value="none">— HIDE —</option>
-      </select>
-    </div>
-    <!-- ── Drawing tools bar ──────────────────────────────────── -->
-    <div style="display:flex;align-items:center;gap:2px;margin-bottom:5px;flex-wrap:wrap" id="drawToolbar">
-      <span style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);margin-right:2px">DRAW:</span>
-      <button class="tbtn active" id="dt-cursor" onclick="_setDrawTool('cursor',this)"  style="font-size:10px;padding:2px 6px" title="Select / Move (V)">⊹</button>
-      <span style="color:var(--border);font-size:10px;margin:0 1px">│</span>
-      <button class="tbtn" id="dt-hline"   onclick="_setDrawTool('hline',this)"   style="font-size:10px;padding:2px 6px" title="Horizontal Line (H)">—</button>
-      <button class="tbtn" id="dt-ray"     onclick="_setDrawTool('ray',this)"     style="font-size:10px;padding:2px 6px" title="Ray (R)">→</button>
-      <button class="tbtn" id="dt-eline"   onclick="_setDrawTool('eline',this)"   style="font-size:10px;padding:2px 6px" title="Extended Line">↔</button>
-      <button class="tbtn" id="dt-tline"   onclick="_setDrawTool('tline',this)"   style="font-size:10px;padding:2px 6px" title="Trend Line (T)">╱</button>
-      <span style="color:var(--border);font-size:10px;margin:0 1px">│</span>
-      <button class="tbtn" id="dt-fib"     onclick="_setDrawTool('fib',this)"     style="font-size:10px;padding:2px 6px" title="Fibonacci Retracement (F)">Φ</button>
-      <button class="tbtn" id="dt-rect"    onclick="_setDrawTool('rect',this)"    style="font-size:10px;padding:2px 6px" title="Rectangle (B)">▭</button>
-      <button class="tbtn" id="dt-channel" onclick="_setDrawTool('channel',this)" style="font-size:10px;padding:2px 6px" title="Parallel Channel">⫼</button>
-      <button class="tbtn" id="dt-pitch"   onclick="_setDrawTool('pitch',this)"   style="font-size:10px;padding:2px 6px" title="Pitchfork">⑂</button>
-      <span style="color:var(--border);font-size:10px;margin:0 1px">│</span>
-      <button class="tbtn" id="dt-arrow"   onclick="_setDrawTool('arrow',this)"   style="font-size:10px;padding:2px 6px" title="Arrow">⇒</button>
-      <button class="tbtn" id="dt-text"    onclick="_setDrawTool('text',this)"    style="font-size:10px;padding:2px 6px;font-weight:bold" title="Text Label">T</button>
-      <span style="color:var(--border);font-size:10px;margin:0 1px">│</span>
-      <input type="color" id="drawColor" value="#00d4ff" onchange="_drawColorChange(this.value)" style="width:20px;height:20px;border:1px solid var(--border);background:none;cursor:pointer;padding:1px;vertical-align:middle" title="Line Color">
-      <select id="drawWidth" onchange="_drawWidthChange(this.value)" style="background:var(--bg2);border:1px solid var(--border);color:var(--t2);font-family:Share Tech Mono,monospace;font-size:7px;padding:2px 3px;cursor:pointer" title="Line Width">
-        <option value="1">Thin</option>
-        <option value="2" selected>Normal</option>
-        <option value="3">Thick</option>
-        <option value="4">Bold</option>
-      </select>
-      <select id="drawStyle" onchange="_drawStyleChange(this.value)" style="background:var(--bg2);border:1px solid var(--border);color:var(--t2);font-family:Share Tech Mono,monospace;font-size:7px;padding:2px 3px;cursor:pointer" title="Line Style">
-        <option value="solid">Solid</option>
-        <option value="dashed">Dashed</option>
-        <option value="dotted">Dotted</option>
-      </select>
-      <span style="color:var(--border);font-size:10px;margin:0 1px">│</span>
-      <button onclick="_clearDrawings()" style="background:rgba(255,51,85,0.1);border:1px solid var(--red);color:var(--red);font-family:Share Tech Mono,monospace;font-size:7px;padding:2px 7px;cursor:pointer" title="Clear All Drawings">CLEAR</button>
-      <span style="color:var(--border);font-size:10px;margin:0 1px">│</span>
-      <button onclick="_exportDrawings()" style="background:rgba(0,212,255,0.08);border:1px solid var(--cyan);color:var(--cyan);font-family:Share Tech Mono,monospace;font-size:7px;padding:2px 7px;cursor:pointer" title="Export drawings to JSON file">EXPORT</button>
-      <label title="Import drawings from JSON file" style="background:rgba(0,255,136,0.08);border:1px solid var(--green);color:var(--green);font-family:Share Tech Mono,monospace;font-size:7px;padding:2px 7px;cursor:pointer;line-height:normal">IMPORT<input type="file" id="drawImportFile" accept=".json" onchange="_importDrawings(this)" style="display:none"></label>
-      <span id="drawSaveStatus" style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);margin-left:2px" title="Auto-saved to browser storage"></span>
-      <span id="drawHint" style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--cyan);margin-left:4px;opacity:0.8"></span>
-    </div>
-    <!-- ── Full Indicator Side Panel ──────────────────────────── -->
-    <div id="indPanel" style="display:none;position:fixed;top:0;right:0;width:310px;height:100vh;background:var(--bg2);border-left:1px solid var(--border);z-index:9999;overflow-y:auto;padding:12px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <div style="font-family:Orbitron,monospace;font-size:10px;color:var(--cyan);letter-spacing:2px">INDICATORS</div>
-        <button onclick="_indPanelToggle()" style="background:none;border:none;color:var(--t3);font-size:14px;cursor:pointer">✕</button>
-      </div>
-      <div id="indPanelBody"></div>
-    </div>
-    <!-- ── Lightweight Charts containers ──────────────────────── -->
-    <div id="chartWrapper" style="background:#0a0a0f;border-radius:4px;overflow:hidden;margin-bottom:4px;position:relative">
-      <div id="tvMain"   style="height:320px;width:100%"></div>
-      <div class="pane-rz" id="rz-vol"  title="Drag to resize pane"></div>
-      <div id="tvVolume" style="height:55px;width:100%"></div>
-      <div class="pane-rz" id="rz-oscA" title="Drag to resize pane"></div>
-      <div id="tvOscA"   style="height:90px;width:100%"></div>
-      <div class="pane-rz" id="rz-oscB" title="Drag to resize pane"></div>
-      <div id="tvOscB"   style="height:80px;width:100%"></div>
-      <!-- Pane name labels — positions updated dynamically by _updatePaneLabels() -->
-      <div id="paneLabelVol"  data-lbl="vol"  style="position:absolute;top:322px;left:5px;z-index:8;pointer-events:none;font-family:Share Tech Mono,monospace;font-size:7px;color:rgba(255,255,255,0.3);letter-spacing:.5px">VOLUME</div>
-      <div id="paneLabelOscA" data-lbl="oscA" style="position:absolute;top:379px;left:5px;z-index:8;pointer-events:none;font-family:Share Tech Mono,monospace;font-size:7px;color:rgba(0,212,255,0.55);letter-spacing:.5px">RSI (14)</div>
-      <div id="paneLabelOscB" data-lbl="oscB" style="position:absolute;top:473px;left:5px;z-index:8;pointer-events:none;font-family:Share Tech Mono,monospace;font-size:7px;color:rgba(0,212,255,0.55);letter-spacing:.5px">MACD (12,26,9)</div>
-      <!-- OHLC crosshair tooltip — top-left of chart -->
-      <div id="chartTooltip" style="display:none;position:absolute;top:6px;left:6px;z-index:20;background:rgba(10,10,18,0.88);border:1px solid rgba(0,212,255,0.25);border-radius:4px;padding:5px 9px;pointer-events:none;backdrop-filter:blur(4px)">
-        <span id="ctDate" style="font-family:Share Tech Mono,monospace;font-size:7.5px;color:#666;display:block;margin-bottom:3px;letter-spacing:.5px"></span>
-        <span style="font-family:Share Tech Mono,monospace;font-size:8px">
-          <span style="color:#555">O</span><span id="ctO" style="color:#ccc;margin-right:8px"> --</span>
-          <span style="color:#555">H</span><span id="ctH" style="color:#00ff88;margin-right:8px"> --</span>
-          <span style="color:#555">L</span><span id="ctL" style="color:#ff3355;margin-right:8px"> --</span>
-          <span style="color:#555">C</span><span id="ctC" style="color:#e0e0e0;margin-right:8px"> --</span>
-          <span style="color:#555">V</span><span id="ctV" style="color:#888"> --</span>
-          <span id="ctChg" style="margin-left:6px;font-size:7.5px"></span>
-        </span>
-      </div>
-      <!-- Drawing canvas overlay — sits on top of tvMain -->
-      <canvas id="drawCanvas" style="position:absolute;top:0;left:0;pointer-events:auto;z-index:10;cursor:default"></canvas>
-    </div>
-    <!-- ── Trade marker legend ────────────────────────────────── -->
-    <div style="display:flex;gap:10px;font-family:Share Tech Mono,monospace;font-size:7px;padding:3px 6px;margin-bottom:6px;flex-wrap:wrap;color:var(--t3)">
-      MARKERS:&nbsp;<span style="color:#00ff88">▲ BOT BUY</span>&nbsp;<span style="color:#ff3355">▼ BOT SELL</span>&nbsp;<span style="color:#00d4ff">▲ SIM BUY</span>&nbsp;<span style="color:#8b5cf6">▼ SIM SELL</span>&nbsp;<span style="color:#ffaa00">▲ MANUAL BUY</span>&nbsp;<span style="color:#ff44aa">▼ MANUAL SELL</span>
+      <span style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);margin-left:6px" id="priceSrc"></span>
     </div>
     <!-- ══ MANUAL ORDER DESK (Live) ══ -->
     <div class="card" id="manualDeskLive" style="padding:10px 12px">
@@ -3452,45 +3342,55 @@ function drawMACD(){
 var _tvWidget = null;
 var _tvWidgetPair = null;
 
-var _TV_INTERVAL_MAP = { 1:'1', 5:'5', 15:'15', 60:'60', 240:'240', 1440:'1D', 10080:'1W' };
+var _TV_INTERVAL_MAP = {
+  1:'1', 3:'3', 5:'5', 15:'15', 30:'30',
+  60:'60', 120:'120', 240:'240', 360:'360', 480:'480', 720:'720',
+  1440:'1D', 4320:'3D', 10080:'1W', 43200:'1M'
+};
 
-function _tvKrakenSymbol(pair) {
-  // TradingView uses KRAKEN: prefix. BTC is XBT on Kraken.
-  return 'KRAKEN:' + pair;
+function _toBinanceTV(pair) {
+  // Convert NEXUS pair → TradingView Binance symbol
+  var s = pair.toUpperCase().replace('XBT','BTC');
+  if(s.endsWith('USD') && !s.endsWith('USDT')) s += 'T';
+  return 'BINANCE:' + s;
 }
 
 function _initTVWidget(pair) {
   if (typeof TradingView === 'undefined') return;
   var container = document.getElementById('tradingview_nexus');
   if (!container) return;
-  // Same pair already loaded — no need to reinit
-  if (_tvWidgetPair === pair && _tvWidget) return;
-  // Wipe old widget
   container.innerHTML = '';
   _tvWidget = null;
   _tvWidgetPair = pair;
-  var interval = _TV_INTERVAL_MAP[candleInt] || '1';
+  var interval = _TV_INTERVAL_MAP[candleInt] || '60';
   _tvWidget = new TradingView.widget({
-    container_id:       'tradingview_nexus',
-    width:              '100%',
-    height:             520,
-    symbol:             _tvKrakenSymbol(pair),
-    interval:           interval,
-    timezone:           'Etc/UTC',
-    theme:              'dark',
-    style:              '1',
-    locale:             'en',
-    toolbar_bg:         '#0a0a0f',
-    enable_publishing:  false,
-    withdateranges:     true,
-    hide_side_toolbar:  false,
-    allow_symbol_change:true,
-    save_image:         false,
-    hide_legend:        false,
-    studies:            ['RSI@tv-basicstudies','MACD@tv-basicstudies','BB@tv-basicstudies','Volume@tv-basicstudies'],
-    show_popup_button:  true,
-    popup_width:        '1000',
-    popup_height:       '650',
+    container_id:        'tradingview_nexus',
+    autosize:            true,
+    symbol:              _toBinanceTV(pair),
+    interval:            interval,
+    timezone:            'Etc/UTC',
+    theme:               'dark',
+    style:               '1',
+    locale:              'en',
+    toolbar_bg:          '#0a0a0f',
+    backgroundColor:     '#0a0a0f',
+    gridColor:           'rgba(30,30,45,0.8)',
+    enable_publishing:   false,
+    withdateranges:      true,
+    hide_side_toolbar:   false,
+    allow_symbol_change: true,
+    save_image:          true,
+    hide_legend:         false,
+    studies:             [
+      'RSI@tv-basicstudies',
+      'MACD@tv-basicstudies',
+      'BB@tv-basicstudies',
+      'Volume@tv-basicstudies',
+    ],
+    show_popup_button:   true,
+    popup_width:         '1200',
+    popup_height:        '700',
+    support_host:        'https://www.tradingview.com',
   });
 }
 
@@ -7085,7 +6985,7 @@ function showTab(id,btn){
   document.querySelectorAll(".tnav").forEach(function(b){b.classList.remove("active");});
   document.getElementById("tab-"+id).classList.add("active");
   if(btn)btn.classList.add("active");
-  if(id==='chart'){ if(!_tvCharts)initTVChart(); if(candles.length)_updateTVCharts(candles); _updateMLHeaders(); setTimeout(function(){refreshOpenOrders();refreshOpenPositions();},500); setTimeout(_initDrawCanvas,200); setTimeout(_initPaneResize,250); }
+  if(id==='chart'){ _initTVWidget(_activeTicker); _updateMLHeaders(); setTimeout(function(){refreshOpenOrders();refreshOpenPositions();},500); }
   if(id==='plans') _renderPlansPage();
   if(id==='telegram') { _renderTelegramPage(); _tgLoadSettings(); }
   if(id==='notifications') _renderNotificationsPage();
