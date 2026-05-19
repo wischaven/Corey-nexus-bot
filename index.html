@@ -213,10 +213,6 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
       <div class="fl">PASSWORD</div>
       <input type="password" id="authPassword" class="fi" placeholder="&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;" maxlength="64" autocomplete="current-password">
       <button class="lbtn" onclick="doLogin()">&#x25BA; SIGN IN</button>
-      <div style="margin:10px 0;display:flex;align-items:center;gap:8px"><div style="flex:1;height:1px;background:var(--border)"></div><span style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);letter-spacing:2px">OWNER ACCESS</span><div style="flex:1;height:1px;background:var(--border)"></div></div>
-      <div class="fl">NEXUS OWNER KEY</div>
-      <input type="password" id="ownerKey" class="fi" placeholder="Set NEXUS_API_KEY in .env" maxlength="128" autocomplete="off">
-      <button class="lbtn" onclick="doOwnerLogin()" style="border-color:var(--cyan);color:var(--cyan)">&#x26A1; OWNER ACCESS</button>
     </div>
     <div id="authSignup" style="display:none">
       <div class="fl">EMAIL</div>
@@ -2266,26 +2262,6 @@ async function doLogin(){
     _authUser=d.user;
     localStorage.setItem('nexus_token',_authToken);
     await _loadUserPlan();
-    document.getElementById("loginScreen").style.display="none";
-    document.getElementById("app").style.display="flex";
-    init();
-  }catch(e){errEl.style.color="var(--red)";errEl.textContent="CONNECTION ERROR";}
-}
-
-async function doOwnerLogin(){
-  var key=document.getElementById("ownerKey").value.trim();
-  var errEl=document.getElementById("loginErr");
-  errEl.textContent="";
-  if(!key){errEl.textContent="ENTER YOUR NEXUS OWNER KEY";return;}
-  errEl.textContent="VERIFYING...";errEl.style.color="var(--cyan)";
-  try{
-    // Test the key against a protected endpoint
-    var r=await fetch('/agent/trading-status',{headers:{'Authorization':'Bearer '+key}});
-    if(!r.ok){errEl.style.color="var(--red)";errEl.textContent="INVALID OWNER KEY";return;}
-    _authToken=key;
-    _authUser={email:'owner',plan:'elite'};
-    _userPlan='elite';
-    localStorage.setItem('nexus_token',key);
     document.getElementById("loginScreen").style.display="none";
     document.getElementById("app").style.display="flex";
     init();

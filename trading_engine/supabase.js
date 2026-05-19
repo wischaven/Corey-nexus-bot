@@ -25,20 +25,12 @@ const supabaseAdmin = (SERVICE_KEY && _supabaseReady)
   ? createClient(SUPABASE_URL, SERVICE_KEY, { auth: { autoRefreshToken: false, persistSession: false } })
   : _supabaseStub;
 
-const OWNER_API_KEY = process.env.NEXUS_API_KEY || '';
-
 // ─── Verify JWT from Authorization header ─────────────────────────────────
 // Returns { user, error }
 async function verifyToken(req) {
   if (!_supabaseReady) return { user: { id: 'local', email: process.env.OWNER_EMAIL || 'local' }, error: null };
 
   const authHeader = req.headers['authorization'];
-
-  // Owner API key bypass — no Supabase needed
-  if (OWNER_API_KEY && authHeader === `Bearer ${OWNER_API_KEY}`) {
-    return { user: { id: 'owner', email: process.env.OWNER_EMAIL || 'owner' }, error: null };
-  }
-
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return { user: null, error: 'Missing token' };
   }
