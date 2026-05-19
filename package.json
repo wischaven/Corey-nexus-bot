@@ -23,6 +23,7 @@
   },
   "homepage": "https://github.com/wischaven/Coreynexus#readme",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.96.0",
     "@supabase/supabase-js": "^2.105.4",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",

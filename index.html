@@ -253,6 +253,7 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
   <div class="tabnav">
     <button class="tnav active" onclick="showTab('dash',this)">DASH</button>
     <button class="tnav" onclick="showTab('chart',this)">CHARTS</button>
+    <button class="tnav" onclick="showTab('agent',this)" style="color:var(--cyan);border-bottom:2px solid var(--cyan)">⬡ NEXUS AI</button>
     <button class="tnav" onclick="showTab('backtest',this)">📊 BACKTEST</button>
     <button class="tnav" onclick="showTab('stratbuilder',this)">🧩 BUILDER</button>
     <button class="tnav" onclick="showTab('strategy',this)">⚙️ STRATEGY</button>
@@ -1065,6 +1066,78 @@ Content-Type: application/json
           <div class="clbl" style="color:var(--green);margin-bottom:6px">TEST RESULTS</div>
           <div id="strat_metricsGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:5px"></div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NEXUS AI AGENT -->
+  <div class="pane" id="tab-agent">
+
+    <!-- Header row: model selector + status -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="font-family:Orbitron,monospace;font-size:11px;color:var(--cyan);letter-spacing:3px">⬡ NEXUS AI</div>
+        <div id="agentStatus" style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--green);background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.2);padding:2px 8px;border-radius:2px">READY</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3)">MODEL:</span>
+        <select id="agentModel" style="background:var(--bg2);border:1px solid var(--cyan);color:var(--cyan);font-family:Share Tech Mono,monospace;font-size:7px;padding:3px 6px;cursor:pointer">
+          <option value="claude-opus-4-7">Claude Opus (Deep Reasoning)</option>
+          <option value="claude-sonnet-4-6">Claude Sonnet (Fast)</option>
+        </select>
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer">
+          <input type="checkbox" id="agentCanTrade" style="accent-color:var(--green)">
+          <span style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--amber)">LIVE TRADING</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Main layout: chat left, knowledge right -->
+    <div style="display:grid;grid-template-columns:1fr 300px;gap:10px;height:calc(100vh - 180px);min-height:500px">
+
+      <!-- Chat feed -->
+      <div style="display:flex;flex-direction:column;gap:0">
+        <div id="agentFeed" style="flex:1;overflow-y:auto;background:var(--bg2);border:1px solid var(--border);border-radius:4px 4px 0 0;padding:12px;display:flex;flex-direction:column;gap:10px;min-height:0"></div>
+
+        <!-- Image preview strip -->
+        <div id="agentImgStrip" style="display:none;background:var(--bg2);border-left:1px solid var(--border);border-right:1px solid var(--border);padding:6px 10px;display:flex;gap:6px;flex-wrap:wrap;align-items:center"></div>
+
+        <!-- Input bar -->
+        <div style="background:var(--bg2);border:1px solid var(--border);border-top:1px solid rgba(0,212,255,0.2);border-radius:0 0 4px 4px;padding:8px 10px;display:flex;gap:8px;align-items:flex-end">
+          <label style="cursor:pointer;color:var(--cyan);font-size:16px;padding:4px" title="Upload images">
+            📎
+            <input type="file" id="agentImgInput" accept="image/*" multiple style="display:none" onchange="_agentAddImages(this)">
+          </label>
+          <textarea id="agentInput" placeholder="Ask anything — market analysis, strategy questions, upload a chart to analyze..." style="flex:1;background:transparent;border:none;outline:none;color:var(--t1);font-family:Share Tech Mono,monospace;font-size:8px;resize:none;line-height:1.5;max-height:100px;min-height:32px" rows="2" onkeydown="_agentKeydown(event)"></textarea>
+          <button onclick="_agentSend()" style="background:var(--cyan);border:none;color:var(--bg);font-family:Share Tech Mono,monospace;font-size:8px;padding:6px 14px;cursor:pointer;border-radius:2px;letter-spacing:1px;white-space:nowrap">SEND ↵</button>
+        </div>
+      </div>
+
+      <!-- Right panel: knowledge base + memory -->
+      <div style="display:flex;flex-direction:column;gap:8px;overflow-y:auto">
+
+        <!-- Knowledge base -->
+        <div class="card" style="padding:10px;flex-shrink:0">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div style="font-family:Orbitron,monospace;font-size:8px;color:var(--purple);letter-spacing:1px">KNOWLEDGE BASE</div>
+            <span id="agentKnowCount" style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3)">0 items</span>
+          </div>
+          <div id="agentKnowledge" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto">
+            <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);text-align:center;padding:20px 0">Upload images or teach the agent — knowledge appears here</div>
+          </div>
+        </div>
+
+        <!-- Memory -->
+        <div class="card" style="padding:10px;flex:1">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div style="font-family:Orbitron,monospace;font-size:8px;color:var(--amber);letter-spacing:1px">MEMORY</div>
+            <span id="agentMemCount" style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3)">0 items</span>
+          </div>
+          <div id="agentMemory" style="display:flex;flex-direction:column;gap:5px;overflow-y:auto">
+            <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);text-align:center;padding:20px 0">Agent memories appear here as it learns</div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -6971,6 +7044,7 @@ function showTab(id,btn){
   document.getElementById("tab-"+id).classList.add("active");
   if(btn)btn.classList.add("active");
   if(id==='chart'){ _initTVWidget(_activeTicker); _updateMLHeaders(); setTimeout(function(){refreshOpenOrders();refreshOpenPositions();},500); }
+  if(id==='agent'){ _agentInit(); }
   if(id==='plans') _renderPlansPage();
   if(id==='telegram') { _renderTelegramPage(); _tgLoadSettings(); }
   if(id==='notifications') _renderNotificationsPage();
@@ -8769,6 +8843,274 @@ function _sbInit(){
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_sbInit);
 else _sbInit();
+})();
+</script>
+
+<!-- ═══ NEXUS AI AGENT JS ═══ -->
+<script>
+(function(){
+  var _agentImages = []; // pending images to send
+  var _agentInited = false;
+
+  window._agentInit = function() {
+    if (_agentInited) return;
+    _agentInited = true;
+    _agentLoadMemory();
+    _agentWelcome();
+  };
+
+  function _agentWelcome() {
+    var feed = document.getElementById('agentFeed');
+    if (!feed || feed.children.length) return;
+    _agentAppendMsg('agent', "Hey — I'm NEXUS AI. I can analyze markets, read your chart images, build custom indicators, explain any setup, and trade for you when you're ready.\n\nWhat do you want to look at?", []);
+  }
+
+  window._agentKeydown = function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); _agentSend(); }
+  };
+
+  window._agentAddImages = function(input) {
+    var files = Array.from(input.files);
+    files.forEach(function(file) {
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        var b64 = ev.target.result.split(',')[1];
+        _agentImages.push({ data: b64, mediaType: file.type, name: file.name });
+        _agentRenderImgStrip();
+      };
+      reader.readAsDataURL(file);
+    });
+    input.value = '';
+  };
+
+  function _agentRenderImgStrip() {
+    var strip = document.getElementById('agentImgStrip');
+    if (!strip) return;
+    if (!_agentImages.length) { strip.style.display = 'none'; strip.innerHTML = ''; return; }
+    strip.style.display = 'flex';
+    strip.innerHTML = '<span style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3)">IMAGES:</span>' +
+      _agentImages.map(function(img, i) {
+        return '<div style="position:relative;display:inline-block">' +
+          '<img src="data:' + img.mediaType + ';base64,' + img.data + '" style="height:40px;width:40px;object-fit:cover;border:1px solid var(--border);border-radius:2px">' +
+          '<button onclick="_agentRemoveImg(' + i + ')" style="position:absolute;top:-4px;right:-4px;background:var(--red);border:none;color:#fff;font-size:8px;width:14px;height:14px;border-radius:50%;cursor:pointer;line-height:14px;padding:0">✕</button>' +
+          '</div>';
+      }).join('');
+  }
+
+  window._agentRemoveImg = function(i) {
+    _agentImages.splice(i, 1);
+    _agentRenderImgStrip();
+  };
+
+  window._agentSend = async function() {
+    var input = document.getElementById('agentInput');
+    var msg = input ? input.value.trim() : '';
+    if (!msg && !_agentImages.length) return;
+
+    // Show user message
+    _agentAppendMsg('user', msg, _agentImages.map(function(img) { return img.mediaType + ';base64,' + img.data; }));
+    if (input) input.value = '';
+
+    var imagesToSend = _agentImages.slice();
+    _agentImages = [];
+    _agentRenderImgStrip();
+
+    // If images with no message — analyze them first
+    if (imagesToSend.length && !msg) {
+      await _agentAnalyzeImages(imagesToSend);
+      return;
+    }
+
+    // Stream chat response
+    await _agentStreamChat(msg, imagesToSend);
+  };
+
+  async function _agentAnalyzeImages(images) {
+    var status = _agentAppendMsg('agent', '🔍 Analyzing image' + (images.length > 1 ? 's' : '') + '...', []);
+    try {
+      var r = await fetch('/agent/image', {
+        method: 'POST',
+        headers: { ..._authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ images: images, context: '', model: _agentModel() }),
+      });
+      var d = await r.json();
+      if (d.ok && d.knowledge) {
+        var k = d.knowledge;
+        var text = '**' + k.summary + '**\n\n' + k.explanation;
+        if (k.price_levels && k.price_levels.length) {
+          text += '\n\n**Key Levels:**\n' + k.price_levels.map(function(l) { return '• $' + l.price + ' — ' + l.label + (l.notes ? ' (' + l.notes + ')' : ''); }).join('\n');
+        }
+        if (k.trading_rules && k.trading_rules.length) {
+          text += '\n\n**Trading Rules:**\n' + k.trading_rules.map(function(r) { return '• ' + r; }).join('\n');
+        }
+        text += '\n\n*This knowledge has been saved to your knowledge base and will inform all future trading decisions.*';
+        if (status) status.querySelector('.agent-msg-text').innerHTML = _agentFormat(text);
+        _agentLoadMemory();
+      } else {
+        if (status) status.querySelector('.agent-msg-text').textContent = d.error || 'Analysis failed';
+      }
+    } catch(e) {
+      if (status) status.querySelector('.agent-msg-text').textContent = 'Error: ' + e.message;
+    }
+  }
+
+  async function _agentStreamChat(message, images) {
+    var msgEl = _agentAppendMsg('agent', '', []);
+    var textEl = msgEl ? msgEl.querySelector('.agent-msg-text') : null;
+    var toolEl = msgEl ? msgEl.querySelector('.agent-msg-tools') : null;
+    var fullText = '';
+
+    try {
+      var r = await fetch('/agent/chat', {
+        method: 'POST',
+        headers: { ..._authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: message,
+          images: images,
+          sessionId: (_authUser && _authUser.id) || 'local',
+          model: _agentModel(),
+          pair: _activeTicker,
+          canTrade: document.getElementById('agentCanTrade') && document.getElementById('agentCanTrade').checked,
+        }),
+      });
+
+      var reader = r.body.getReader();
+      var decoder = new TextDecoder();
+      var buf = '';
+
+      while (true) {
+        var chunk = await reader.read();
+        if (chunk.done) break;
+        buf += decoder.decode(chunk.value, { stream: true });
+        var lines = buf.split('\n');
+        buf = lines.pop();
+        for (var line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          try {
+            var ev = JSON.parse(line.slice(6));
+            if (ev.type === 'stream') {
+              var e = ev.event;
+              if (e.type === 'text') {
+                fullText += e.text;
+                if (textEl) textEl.innerHTML = _agentFormat(fullText);
+              } else if (e.type === 'tool_call') {
+                if (toolEl) toolEl.innerHTML += '<div style="color:var(--cyan);font-size:7px;margin-top:4px">⚙ Calling: <b>' + e.tool + '</b></div>';
+              } else if (e.type === 'tool_done') {
+                if (toolEl) {
+                  var last = toolEl.lastElementChild;
+                  if (last) last.style.color = 'var(--t3)';
+                }
+              } else if (e.type === 'trade_intent') {
+                if (toolEl) toolEl.innerHTML += '<div style="color:var(--amber);font-size:7px;margin-top:4px">📊 Trade signal: ' + e.data.side + ' ' + e.data.pair + ' $' + e.data.size_usd + '</div>';
+              }
+            } else if (ev.type === 'done') {
+              fullText = ev.text || fullText;
+              if (textEl) textEl.innerHTML = _agentFormat(fullText);
+              _agentLoadMemory();
+            } else if (ev.type === 'error') {
+              if (textEl) textEl.textContent = 'Error: ' + ev.message;
+            }
+          } catch(_) {}
+        }
+        // Auto-scroll
+        var feed = document.getElementById('agentFeed');
+        if (feed) feed.scrollTop = feed.scrollHeight;
+      }
+    } catch(e) {
+      if (textEl) textEl.textContent = 'Connection error: ' + e.message;
+    }
+  }
+
+  function _agentAppendMsg(role, text, images) {
+    var feed = document.getElementById('agentFeed');
+    if (!feed) return null;
+    var isAgent = role === 'agent';
+    var div = document.createElement('div');
+    div.style.cssText = 'display:flex;flex-direction:column;gap:4px;' + (isAgent ? 'align-items:flex-start' : 'align-items:flex-end');
+    var bubble = document.createElement('div');
+    bubble.style.cssText = 'max-width:85%;padding:10px 13px;border-radius:' + (isAgent ? '2px 8px 8px 8px' : '8px 2px 8px 8px') + ';background:' + (isAgent ? 'rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.15)' : 'rgba(139,92,246,0.12);border:1px solid rgba(139,92,246,0.25)');
+    // Images
+    if (images && images.length) {
+      var imgRow = document.createElement('div');
+      imgRow.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px';
+      images.forEach(function(src) {
+        var img = document.createElement('img');
+        img.src = 'data:' + src;
+        img.style.cssText = 'height:60px;width:60px;object-fit:cover;border-radius:2px;border:1px solid var(--border)';
+        imgRow.appendChild(img);
+      });
+      bubble.appendChild(imgRow);
+    }
+    var textEl = document.createElement('div');
+    textEl.className = 'agent-msg-text';
+    textEl.style.cssText = 'font-family:Share Tech Mono,monospace;font-size:8px;color:' + (isAgent ? 'var(--t1)' : 'var(--t2)') + ';line-height:1.6;white-space:pre-wrap';
+    textEl.innerHTML = _agentFormat(text);
+    bubble.appendChild(textEl);
+    var toolEl = document.createElement('div');
+    toolEl.className = 'agent-msg-tools';
+    bubble.appendChild(toolEl);
+    var meta = document.createElement('div');
+    meta.style.cssText = 'font-family:Share Tech Mono,monospace;font-size:6.5px;color:var(--t3);margin-top:2px';
+    meta.textContent = (isAgent ? '⬡ NEXUS AI' : 'YOU') + ' · ' + new Date().toLocaleTimeString();
+    div.appendChild(bubble);
+    div.appendChild(meta);
+    feed.appendChild(div);
+    feed.scrollTop = feed.scrollHeight;
+    return div;
+  }
+
+  function _agentFormat(text) {
+    if (!text) return '';
+    return text
+      .replace(/\*\*(.+?)\*\*/g, '<b style="color:var(--cyan)">$1</b>')
+      .replace(/\*(.+?)\*/g, '<i style="color:var(--t2)">$1</i>')
+      .replace(/`([^`]+)`/g, '<code style="background:rgba(0,212,255,0.08);padding:1px 4px;border-radius:2px;color:var(--cyan)">$1</code>')
+      .replace(/\n/g, '<br>');
+  }
+
+  function _agentModel() {
+    var sel = document.getElementById('agentModel');
+    return sel ? sel.value : 'claude-opus-4-7';
+  }
+
+  async function _agentLoadMemory() {
+    try {
+      var r = await fetch('/agent/memory', { headers: _authHeaders() });
+      var d = await r.json();
+      _agentRenderKnowledge(d.knowledge || []);
+      _agentRenderMemory(d.memory || []);
+    } catch(_) {}
+  }
+
+  function _agentRenderKnowledge(items) {
+    var el = document.getElementById('agentKnowledge');
+    var cnt = document.getElementById('agentKnowCount');
+    if (!el) return;
+    if (cnt) cnt.textContent = items.length + ' item' + (items.length !== 1 ? 's' : '');
+    if (!items.length) { el.innerHTML = '<div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);text-align:center;padding:20px 0">Upload images or teach the agent — knowledge appears here</div>'; return; }
+    el.innerHTML = items.slice().reverse().map(function(k) {
+      return '<div style="background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.2);border-radius:3px;padding:7px 9px">' +
+        '<div style="font-family:Share Tech Mono,monospace;font-size:7.5px;color:var(--purple);margin-bottom:3px">' + (k.type || 'knowledge').toUpperCase() + '</div>' +
+        '<div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t2);line-height:1.5">' + (k.summary || '').slice(0, 120) + (k.summary && k.summary.length > 120 ? '…' : '') + '</div>' +
+        (k.price_levels && k.price_levels.length ? '<div style="font-family:Share Tech Mono,monospace;font-size:6.5px;color:var(--cyan);margin-top:4px">' + k.price_levels.length + ' price level' + (k.price_levels.length !== 1 ? 's' : '') + ' extracted</div>' : '') +
+        '</div>';
+    }).join('');
+  }
+
+  function _agentRenderMemory(items) {
+    var el = document.getElementById('agentMemory');
+    var cnt = document.getElementById('agentMemCount');
+    if (!el) return;
+    if (cnt) cnt.textContent = items.length + ' item' + (items.length !== 1 ? 's' : '');
+    if (!items.length) { el.innerHTML = '<div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);text-align:center;padding:20px 0">Agent memories appear here as it learns</div>'; return; }
+    el.innerHTML = items.slice().reverse().map(function(m) {
+      return '<div style="border-bottom:1px solid var(--border);padding:5px 0">' +
+        '<div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--amber)">' + m.key + '</div>' +
+        '<div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t2);margin-top:2px;line-height:1.4">' + (m.value || '').slice(0, 100) + '</div>' +
+        '</div>';
+    }).join('');
+  }
+
 })();
 </script>
 

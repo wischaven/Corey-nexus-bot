@@ -799,6 +799,114 @@ app.get('/stream/kline', (req, res) => {
   });
 });
 
+// ─── NEXUS AI Agent endpoints ─────────────────────────────────────────────
+const agent = require('./trading_engine/agent');
+
+// Load persisted memory + knowledge from Supabase on startup
+(async () => {
+  try {
+    const { data: mem } = await supabaseAdmin.from('agent_memory').select('*');
+    if (mem && mem.length) agent.loadMemory(mem.map(r => ({ key: r.key, value: r.value, category: r.category, savedAt: r.created_at })));
+    const { data: know } = await supabaseAdmin.from('agent_knowledge').select('*');
+    if (know && know.length) agent.loadKnowledge(know.map(r => ({ ...r.data, id: r.id, uploadedAt: r.created_at })));
+  } catch (e) { console.log('[Agent] Supabase memory load skipped (tables may not exist yet):', e.message); }
+})();
+
+// POST /agent/chat — main conversational endpoint with SSE streaming
+app.post('/agent/chat', requireAuth, async (req, res) => {
+  const { message, images = [], sessionId, model = 'claude-opus-4-7', pair = 'XRPUSD', canTrade = false } = req.body;
+  if (!message && !images.length) return res.status(400).json({ error: 'message or images required' });
+
+  // Stream response via SSE
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders();
+
+  const send = (obj) => { try { res.write(`data: ${JSON.stringify(obj)}\n\n`); } catch (_) {} };
+
+  try {
+    const context = {
+      pair, canTrade,
+      getTradeHistory: async (limit) => {
+        const { data } = await supabaseAdmin.from('trade_log').select('*').eq('user_id', req.user.id).order('traded_at', { ascending: false }).limit(limit || 20);
+        return data || [];
+      },
+      saveMemory: async (item) => {
+        try { await supabaseAdmin.from('agent_memory').upsert({ user_id: req.user.id, key: item.key, value: item.value, category: item.category || 'general' }, { onConflict: 'user_id,key' }); } catch (_) {}
+      },
+      placeTrade: async (input) => {
+        send({ type: 'trade_intent', data: input });
+        return { queued: true, message: 'Trade logged — execute via your Kraken keys on the client', input };
+      },
+    };
+
+    const result = await agent.agentChat({
+      sessionId: sessionId || req.user.id,
+      userMessage: message,
+      images,
+      context,
+      model,
+      onToken: (event) => send({ type: 'stream', event }),
+    });
+
+    // Save conversation to Supabase
+    try {
+      await supabaseAdmin.from('agent_conversations').insert({
+        user_id: req.user.id, session_id: sessionId || req.user.id,
+        role: 'assistant', content: result.text,
+        tool_calls: result.toolCalls, model,
+      });
+    } catch (_) {}
+
+    send({ type: 'done', text: result.text, toolCalls: result.toolCalls });
+  } catch (e) {
+    send({ type: 'error', message: e.message });
+  }
+  res.end();
+});
+
+// POST /agent/image — analyze uploaded images, extract trading knowledge
+app.post('/agent/image', requireAuth, async (req, res) => {
+  const { images, context: userContext = '', model = 'claude-opus-4-7' } = req.body;
+  if (!images || !images.length) return res.status(400).json({ error: 'images required (base64 array)' });
+
+  try {
+    const result = await agent.analyzeImages({ images, userContext, model });
+
+    // Persist to Supabase
+    try {
+      await supabaseAdmin.from('agent_knowledge').insert({ user_id: req.user.id, data: result, summary: result.summary, type: result.type });
+    } catch (_) {}
+
+    res.json({ ok: true, knowledge: result });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// GET /agent/memory — retrieve all memory + knowledge
+app.get('/agent/memory', requireAuth, async (_req, res) => {
+  res.json({ memory: agent.getMemory(), knowledge: agent.getKnowledge() });
+});
+
+// DELETE /agent/memory/:key — forget a specific memory item
+app.delete('/agent/memory/:key', requireAuth, async (req, res) => {
+  try { await supabaseAdmin.from('agent_memory').delete().eq('user_id', req.user.id).eq('key', req.params.key); } catch (_) {}
+  res.json({ ok: true });
+});
+
+// GET /agent/conversations — retrieve conversation history
+app.get('/agent/conversations', requireAuth, async (req, res) => {
+  try {
+    const { data } = await supabaseAdmin.from('agent_conversations').select('*').eq('user_id', req.user.id).order('created_at', { ascending: false }).limit(100);
+    res.json({ conversations: data || [] });
+  } catch (e) {
+    res.json({ conversations: [] });
+  }
+});
+
 // ─── Start ─────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
