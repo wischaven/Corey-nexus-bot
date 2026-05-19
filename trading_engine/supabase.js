@@ -38,7 +38,7 @@ async function verifyToken(req) {
   if (!token) return { user: null, error: 'Empty token' };
 
   try {
-    const { data, error } = await supabase.auth.getUser(token);
+    const { data, error } = await supabaseAdmin.auth.getUser(token);
     if (error || !data?.user) return { user: null, error: error?.message || 'Invalid token' };
     return { user: data.user, error: null };
   } catch (e) {
