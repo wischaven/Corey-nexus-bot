@@ -1056,5 +1056,28 @@ function getLearnLog()  { return [..._learnLog]; }
 function loadMemory(items)    { items.forEach(i => _memory.set(i.key, i)); }
 function loadKnowledge(items) { items.forEach(i => _knowledge.push(i)); }
 
-module.exports = { agentChat, analyzeImages, quickScan, runLearningCycle, runTradingCycle, getMemory, getKnowledge, getLearnLog, loadMemory, loadKnowledge, TOOLS };
+// Seed conversation history from Supabase rows so cross-device context is restored
+function loadHistory(sessionId, rows) {
+  if (!rows || !rows.length) return;
+  const messages = [];
+  for (const row of rows) {
+    if (row.role === 'user') {
+      messages.push({ role: 'user', content: [{ type: 'text', text: row.content || '' }] });
+    } else if (row.role === 'assistant') {
+      const content = [];
+      if (row.content) content.push({ type: 'text', text: row.content });
+      if (row.tool_calls && row.tool_calls.length) {
+        for (const tc of row.tool_calls) {
+          content.push({ type: 'tool_use', id: tc.id || 'tc_' + Date.now(), name: tc.tool, input: tc.input || {} });
+        }
+      }
+      messages.push({ role: 'assistant', content: content.length ? content : [{ type: 'text', text: '' }] });
+    }
+  }
+  if (messages.length) _convHist.set(sessionId, messages.slice(-40));
+}
+
+function hasHistory(sessionId) { return _convHist.has(sessionId); }
+
+module.exports = { agentChat, analyzeImages, quickScan, runLearningCycle, runTradingCycle, getMemory, getKnowledge, getLearnLog, loadMemory, loadKnowledge, loadHistory, hasHistory, TOOLS };
 

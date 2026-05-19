@@ -894,7 +894,27 @@ app.post('/agent/chat', requireAuth, async (req, res) => {
 
   const send = (obj) => { try { res.write(`data: ${JSON.stringify(obj)}\n\n`); } catch (_) {} };
 
+  const sid = sessionId || req.user.id;
+
   try {
+    // Seed server-side conversation history from Supabase on first connect
+    if (!agent.hasHistory(sid)) {
+      const { data: hist } = await supabaseAdmin
+        .from('agent_conversations')
+        .select('role,content,tool_calls')
+        .eq('user_id', req.user.id)
+        .order('created_at', { ascending: true })
+        .limit(40);
+      agent.loadHistory(sid, hist || []);
+    }
+
+    // Save user message to Supabase
+    try {
+      await supabaseAdmin.from('agent_conversations').insert({
+        user_id: req.user.id, session_id: sid, role: 'user', content: message, model,
+      });
+    } catch (_) {}
+
     const effectiveCanTrade = canTrade || _tradingEnabled;
     const context = {
       pair, canTrade: effectiveCanTrade,
@@ -916,7 +936,7 @@ app.post('/agent/chat', requireAuth, async (req, res) => {
     };
 
     const result = await agent.agentChat({
-      sessionId: sessionId || req.user.id,
+      sessionId: sid,
       userMessage: message,
       images,
       context,
@@ -924,10 +944,10 @@ app.post('/agent/chat', requireAuth, async (req, res) => {
       onToken: (event) => send({ type: 'stream', event }),
     });
 
-    // Save conversation to Supabase
+    // Save assistant response to Supabase
     try {
       await supabaseAdmin.from('agent_conversations').insert({
-        user_id: req.user.id, session_id: sessionId || req.user.id,
+        user_id: req.user.id, session_id: sid,
         role: 'assistant', content: result.text,
         tool_calls: result.toolCalls, model,
       });
@@ -938,6 +958,21 @@ app.post('/agent/chat', requireAuth, async (req, res) => {
     send({ type: 'error', message: e.message });
   }
   res.end();
+});
+
+// GET /agent/history — load last 40 messages for display on any device
+app.get('/agent/history', requireAuth, async (req, res) => {
+  try {
+    const { data } = await supabaseAdmin
+      .from('agent_conversations')
+      .select('role,content,tool_calls,model,created_at')
+      .eq('user_id', req.user.id)
+      .order('created_at', { ascending: true })
+      .limit(40);
+    res.json({ messages: data || [] });
+  } catch (e) {
+    res.json({ messages: [] });
+  }
 });
 
 // POST /agent/image â€” analyze uploaded images, extract trading knowledge

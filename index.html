@@ -8908,13 +8908,31 @@ else _sbInit();
     _agentLoadMemory();
     _agentLoadLearnLog();
     _agentLoadTradingStatus();
-    _agentWelcome();
+    _agentLoadHistory();
     // Refresh trading status every 30s while on agent tab
     setInterval(function() {
       var agentTab = document.getElementById('tab-agent');
       if (agentTab && agentTab.style.display !== 'none') _agentLoadTradingStatus();
     }, 30000);
   };
+
+  async function _agentLoadHistory() {
+    var feed = document.getElementById('agentFeed');
+    if (!feed) return;
+    try {
+      var r = await fetch('/agent/history', { headers: _authHeaders() });
+      if (!r.ok) { _agentWelcome(); return; }
+      var d = await r.json();
+      var msgs = d.messages || [];
+      if (!msgs.length) { _agentWelcome(); return; }
+      feed.innerHTML = '';
+      msgs.forEach(function(m) {
+        if (m.role === 'user' && m.content) _agentAppendMsg('user', m.content, []);
+        else if (m.role === 'assistant' && m.content) _agentAppendMsg('agent', m.content, []);
+      });
+      feed.scrollTop = feed.scrollHeight;
+    } catch(_) { _agentWelcome(); }
+  }
 
   function _agentWelcome() {
     var feed = document.getElementById('agentFeed');
