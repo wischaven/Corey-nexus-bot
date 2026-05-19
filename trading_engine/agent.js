@@ -1,11 +1,15 @@
 ﻿'use strict';
 
 require('dotenv').config({ override: true });
+delete process.env.ANTHROPIC_BASE_URL; // Remove Claude Code proxy interference
 const Anthropic = require('@anthropic-ai/sdk');
 const https = require('https');
 const http  = require('http');
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const client = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+  baseURL: 'https://api.anthropic.com',
+});
 
 // â”€â”€â”€ In-memory stores â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const _memory    = new Map();
