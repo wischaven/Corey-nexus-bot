@@ -903,8 +903,7 @@ app.post('/agent/chat', requireAuth, async (req, res) => {
         .from('agent_conversations')
         .select('role,content,tool_calls')
         .eq('user_id', req.user.id)
-        .order('created_at', { ascending: true })
-        .limit(40);
+        .order('created_at', { ascending: true });
       agent.loadHistory(sid, hist || []);
     }
 

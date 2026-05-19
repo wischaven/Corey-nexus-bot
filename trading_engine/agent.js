@@ -529,7 +529,7 @@ async function agentChat({ sessionId, userMessage, images = [], context = {}, mo
     messages.push({ role: 'user', content: toolResults });
   }
 
-  if (messages.length > 40) _convHist.set(sessionId, messages.slice(-40));
+  // no trim — full history kept and persisted to Supabase
   return { text: finalText, toolCalls, sessionId };
 }
 
@@ -1074,7 +1074,7 @@ function loadHistory(sessionId, rows) {
       messages.push({ role: 'assistant', content: content.length ? content : [{ type: 'text', text: '' }] });
     }
   }
-  if (messages.length) _convHist.set(sessionId, messages.slice(-40));
+  if (messages.length) _convHist.set(sessionId, messages);
 }
 
 function hasHistory(sessionId) { return _convHist.has(sessionId); }
