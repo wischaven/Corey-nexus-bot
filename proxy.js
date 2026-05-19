@@ -425,7 +425,36 @@ function fetchBinanceCandles(symbol, interval, limit=500) {
         } catch { resolve(null); }
       });
     });
-    req.setTimeout(8000, () => { req.destroy(); resolve(null); });
+    req.setTimeout(12000, () => { req.destroy(); resolve(null); });
+    req.on('error', () => resolve(null));
+  });
+}
+
+// Server-side Kraken OHLC fetch — fallback when Binance is unavailable
+// Kraken supports intervals (min): 1, 5, 15, 30, 60, 240, 1440, 10080
+const KRAKEN_OHLC_INTERVALS = new Set([1, 5, 15, 30, 60, 240, 1440, 10080]);
+function fetchKrakenCandles(pair, intervalMin, limit=720) {
+  return new Promise((resolve) => {
+    if (!KRAKEN_OHLC_INTERVALS.has(+intervalMin)) { resolve(null); return; }
+    const url = `https://api.kraken.com/0/public/OHLC?pair=${pair}&interval=${intervalMin}`;
+    const req = https.get(url, { headers: { 'User-Agent': 'NEXUS/4.0' } }, (res) => {
+      let raw = '';
+      res.on('data', d => raw += d);
+      res.on('end', () => {
+        try {
+          const d = JSON.parse(raw);
+          if (d.error && d.error.length) { resolve(null); return; }
+          const key = Object.keys(d.result || {}).find(k => k !== 'last');
+          if (!key) { resolve(null); return; }
+          const rows = d.result[key].slice(-limit);
+          resolve(rows.map(r => ({
+            t: +r[0], o: +r[1], h: +r[2], l: +r[3], c: +r[4], v: +r[6],
+            open: +r[1], high: +r[2], low: +r[3], close: +r[4], volume: +r[6],
+          })));
+        } catch { resolve(null); }
+      });
+    });
+    req.setTimeout(10000, () => { req.destroy(); resolve(null); });
     req.on('error', () => resolve(null));
   });
 }
@@ -648,7 +677,18 @@ async function fetchOHLCCached(pair, intervalMin, limit) {
   const cached = _ohlcCache.get(key);
   if (cached && (Date.now() - cached.fetchedAt) < ttl) return cached.candles;
 
-  const candles = await fetchBinanceCandles(pair, intervalMin, limit);
+  // Try Binance — retry once after 1.5s on failure
+  let candles = await fetchBinanceCandles(pair, intervalMin, limit);
+  if (!candles || !candles.length) {
+    await new Promise(r => setTimeout(r, 1500));
+    candles = await fetchBinanceCandles(pair, intervalMin, limit);
+  }
+
+  // Kraken server-side fallback
+  if (!candles || !candles.length) {
+    candles = await fetchKrakenCandles(pair, intervalMin, limit);
+  }
+
   if (candles && candles.length) {
     _ohlcCache.set(key, { candles, fetchedAt: Date.now() });
   }
