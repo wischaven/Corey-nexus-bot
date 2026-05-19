@@ -907,6 +907,18 @@ app.get('/agent/conversations', requireAuth, async (req, res) => {
   }
 });
 
+// GET /agent/learn-log — return autonomous learning activity log
+app.get('/agent/learn-log', requireAuth, (_req, res) => {
+  res.json({ log: agent.getLearnLog() });
+});
+
+// POST /agent/learn-now — trigger an immediate learning cycle (owner only)
+app.post('/agent/learn-now', requireAuth, async (req, res) => {
+  if (!isOwner(req)) return res.status(403).json({ error: 'Owner only' });
+  res.json({ status: 'started' });
+  agent.runLearningCycle({ manual: true }).catch(e => console.error('[LearnCycle] manual error:', e));
+});
+
 // ─── Start ─────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
@@ -914,4 +926,12 @@ app.listen(PORT, '0.0.0.0', () => {
   // Delay sim engine start so health check passes first
   setTimeout(() => simEngine.start(), 3000);
   startBackgroundRefresh();
+
+  // Autonomous learning — first cycle 5 min after boot, then every hour
+  setTimeout(() => {
+    agent.runLearningCycle().catch(e => console.error('[LearnCycle] error:', e));
+    setInterval(() => {
+      agent.runLearningCycle().catch(e => console.error('[LearnCycle] error:', e));
+    }, 60 * 60 * 1000); // every 60 minutes
+  }, 5 * 60 * 1000);
 });

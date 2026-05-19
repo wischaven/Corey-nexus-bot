@@ -1128,13 +1128,25 @@ Content-Type: application/json
         </div>
 
         <!-- Memory -->
-        <div class="card" style="padding:10px;flex:1">
+        <div class="card" style="padding:10px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
             <div style="font-family:Orbitron,monospace;font-size:8px;color:var(--amber);letter-spacing:1px">MEMORY</div>
             <span id="agentMemCount" style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3)">0 items</span>
           </div>
-          <div id="agentMemory" style="display:flex;flex-direction:column;gap:5px;overflow-y:auto">
+          <div id="agentMemory" style="display:flex;flex-direction:column;gap:5px;max-height:180px;overflow-y:auto">
             <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);text-align:center;padding:20px 0">Agent memories appear here as it learns</div>
+          </div>
+        </div>
+
+        <!-- Autonomous Learning Log -->
+        <div class="card" style="padding:10px;flex:1">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div style="font-family:Orbitron,monospace;font-size:8px;color:var(--green);letter-spacing:1px">⟳ OVERNIGHT LEARNING</div>
+            <button onclick="_agentLoadLearnLog()" style="background:none;border:1px solid var(--border);color:var(--t3);font-family:Share Tech Mono,monospace;font-size:6px;padding:2px 6px;cursor:pointer;letter-spacing:1px">REFRESH</button>
+          </div>
+          <div style="font-family:Share Tech Mono,monospace;font-size:6.5px;color:var(--t3);margin-bottom:6px;line-height:1.4">What NEXUS learned while you slept — runs every hour automatically.</div>
+          <div id="agentLearnLog" style="display:flex;flex-direction:column;gap:5px;overflow-y:auto;max-height:220px">
+            <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);text-align:center;padding:16px 0">No overnight learning yet — first cycle runs 5 min after server start.</div>
           </div>
         </div>
 
@@ -8856,6 +8868,7 @@ else _sbInit();
     if (_agentInited) return;
     _agentInited = true;
     _agentLoadMemory();
+    _agentLoadLearnLog();
     _agentWelcome();
   };
 
@@ -9107,6 +9120,39 @@ else _sbInit();
       return '<div style="border-bottom:1px solid var(--border);padding:5px 0">' +
         '<div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--amber)">' + m.key + '</div>' +
         '<div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t2);margin-top:2px;line-height:1.4">' + (m.value || '').slice(0, 100) + '</div>' +
+        '</div>';
+    }).join('');
+  }
+
+  window._agentLoadLearnLog = async function() {
+    var el = document.getElementById('agentLearnLog');
+    if (!el) return;
+    try {
+      var r = await fetch('/agent/learn-log', { headers: _authHeaders() });
+      var d = await r.json();
+      _agentRenderLearnLog(d.log || []);
+    } catch(_) {}
+  };
+
+  function _agentRenderLearnLog(entries) {
+    var el = document.getElementById('agentLearnLog');
+    if (!el) return;
+    if (!entries.length) {
+      el.innerHTML = '<div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);text-align:center;padding:16px 0">No overnight learning yet — first cycle runs 5 min after server start.</div>';
+      return;
+    }
+    el.innerHTML = entries.slice().reverse().map(function(e) {
+      var ts = e.startedAt ? new Date(e.startedAt).toLocaleString() : '';
+      var statusColor = e.status === 'ok' ? 'var(--green)' : (e.status === 'running' ? 'var(--cyan)' : 'var(--red)');
+      var statusLabel = (e.status || 'unknown').toUpperCase();
+      return '<div style="background:rgba(0,255,136,0.04);border:1px solid rgba(0,255,136,0.12);border-radius:3px;padding:7px 9px;margin-bottom:4px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
+          '<span style="font-family:Share Tech Mono,monospace;font-size:6.5px;color:' + statusColor + ';letter-spacing:1px">' + statusLabel + (e.manual ? ' (MANUAL)' : '') + '</span>' +
+          '<span style="font-family:Share Tech Mono,monospace;font-size:6px;color:var(--t3)">' + ts + '</span>' +
+        '</div>' +
+        (e.summary ? '<div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t2);line-height:1.5">' + e.summary.slice(0, 200) + (e.summary.length > 200 ? '…' : '') + '</div>' : '') +
+        (e.insights && e.insights.length ? '<div style="font-family:Share Tech Mono,monospace;font-size:6.5px;color:var(--cyan);margin-top:4px">' + e.insights.length + ' insight' + (e.insights.length !== 1 ? 's' : '') + ' stored</div>' : '') +
+        (e.error ? '<div style="font-family:Share Tech Mono,monospace;font-size:6.5px;color:var(--red);margin-top:3px">' + e.error.slice(0, 80) + '</div>' : '') +
         '</div>';
     }).join('');
   }
