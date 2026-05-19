@@ -4,9 +4,77 @@ require('dotenv').config();
 
 const express = require('express');
 const https   = require('https');
+const crypto  = require('crypto');
 const path    = require('path');
 const fs      = require('fs');
 const app     = express();
+
+// ─── Autonomous trading state ─────────────────────────────────────────────
+let _tradingEnabled  = false;
+let _tradingActive   = false; // guard: one cycle at a time
+const _openPositions = []; // { id, pair, side, size, entryPrice, stop, target, openedAt, krakenTxid }
+const _tradeLog      = []; // last 200 completed trades
+
+// ─── Kraken private API ───────────────────────────────────────────────────
+function _krakenSign(path, nonce, postData) {
+  const hash = crypto.createHash('sha256').update(nonce + postData).digest();
+  const secret = Buffer.from(process.env.KRAKEN_API_SECRET || '', 'base64');
+  return crypto.createHmac('sha512', secret).update(path).update(hash).digest('base64');
+}
+
+function _krakenPrivate(endpoint, params = {}) {
+  const apiKey = process.env.KRAKEN_API_KEY;
+  const apiSecret = process.env.KRAKEN_API_SECRET;
+  if (!apiKey || !apiSecret || apiKey === 'paste_kraken_api_key_here') {
+    return Promise.resolve({ error: 'Kraken API keys not set in .env' });
+  }
+  const nonce = String(Date.now() * 1000);
+  const postData = new URLSearchParams({ nonce, ...params }).toString();
+  const sign = _krakenSign(endpoint, nonce, postData);
+  const body = Buffer.from(postData);
+  return new Promise((resolve) => {
+    const req = https.request({
+      hostname: 'api.kraken.com', port: 443, path: endpoint, method: 'POST',
+      headers: {
+        'API-Key': apiKey, 'API-Sign': sign,
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Length': body.length,
+      },
+    }, (res) => {
+      let raw = '';
+      res.on('data', d => raw += d);
+      res.on('end', () => {
+        try {
+          const d = JSON.parse(raw);
+          if (d.error && d.error.length) resolve({ error: d.error.join(', ') });
+          else resolve({ ok: true, result: d.result });
+        } catch { resolve({ error: 'Parse error' }); }
+      });
+    });
+    req.setTimeout(12000, () => { req.destroy(); resolve({ error: 'Timeout' }); });
+    req.on('error', e => resolve({ error: e.message }));
+    req.write(body);
+    req.end();
+  });
+}
+
+async function _krakenPlaceOrder({ pair, side, ordertype = 'market', volume, price, validate = false }) {
+  const params = { ordertype, type: side, pair, volume: String(volume) };
+  if (price) params.price = String(price);
+  if (validate) params.validate = 'true';
+  const r = await _krakenPrivate('/0/private/AddOrder', params);
+  if (r.error) return { ok: false, error: r.error };
+  return { ok: true, txid: r.result?.txid?.[0], descr: r.result?.descr };
+}
+
+async function _krakenBalance() {
+  const r = await _krakenPrivate('/0/private/Balance');
+  return r.ok ? r.result : null;
+}
+
+async function _krakenCancelOrder(txid) {
+  return _krakenPrivate('/0/private/CancelOrder', { txid });
+}
 
 // ─── Supabase auth + DB ────────────────────────────────────────────────────
 const { supabase, requireAuth, getUserPlan, isOwner } = require('./trading_engine/supabase');
@@ -827,8 +895,9 @@ app.post('/agent/chat', requireAuth, async (req, res) => {
   const send = (obj) => { try { res.write(`data: ${JSON.stringify(obj)}\n\n`); } catch (_) {} };
 
   try {
+    const effectiveCanTrade = canTrade || _tradingEnabled;
     const context = {
-      pair, canTrade,
+      pair, canTrade: effectiveCanTrade,
       getTradeHistory: async (limit) => {
         const { data } = await supabaseAdmin.from('trade_log').select('*').eq('user_id', req.user.id).order('traded_at', { ascending: false }).limit(limit || 20);
         return data || [];
@@ -836,9 +905,13 @@ app.post('/agent/chat', requireAuth, async (req, res) => {
       saveMemory: async (item) => {
         try { await supabaseAdmin.from('agent_memory').upsert({ user_id: req.user.id, key: item.key, value: item.value, category: item.category || 'general' }, { onConflict: 'user_id,key' }); } catch (_) {}
       },
+      getOpenPositions: () => [..._openPositions],
       placeTrade: async (input) => {
         send({ type: 'trade_intent', data: input });
-        return { queued: true, message: 'Trade logged — execute via your Kraken keys on the client', input };
+        return _executeTrade(input, req.user.id);
+      },
+      closePosition: async (posId) => {
+        return _closePosition(posId, req.user.id);
       },
     };
 
@@ -914,24 +987,199 @@ app.get('/agent/learn-log', requireAuth, (_req, res) => {
 
 // POST /agent/learn-now — trigger an immediate learning cycle (owner only)
 app.post('/agent/learn-now', requireAuth, async (req, res) => {
-  if (!isOwner(req)) return res.status(403).json({ error: 'Owner only' });
+  if (!isOwner(req.user)) return res.status(403).json({ error: 'Owner only' });
   res.json({ status: 'started' });
   agent.runLearningCycle({ manual: true }).catch(e => console.error('[LearnCycle] manual error:', e));
+});
+
+// ─── Trade execution helpers ──────────────────────────────────────────────
+async function _executeTrade(input, userId) {
+  const { pair, side, size_usd, order_type = 'market', limit_price, stop_loss, take_profit, reasoning } = input;
+
+  // Get current price to calculate volume
+  let price = limit_price;
+  if (!price || order_type === 'market') {
+    try {
+      const sym = pair.toUpperCase().replace('XBT', 'BTC').replace(/USD$/, 'USDT');
+      const tickerRes = await new Promise((resolve) => {
+        https.get(`https://api.binance.com/api/v3/ticker/price?symbol=${sym}`, { headers: { 'User-Agent': 'NEXUS/4.1' } }, (res) => {
+          let raw = ''; res.on('data', d => raw += d);
+          res.on('end', () => { try { resolve(JSON.parse(raw)); } catch { resolve(null); } });
+        }).on('error', () => resolve(null));
+      });
+      if (tickerRes && tickerRes.price) price = +tickerRes.price;
+    } catch (_) {}
+  }
+
+  if (!price) return { ok: false, error: 'Could not determine current price' };
+
+  const volume = +(size_usd / price).toFixed(6);
+  const position = {
+    id: `pos_${Date.now()}`,
+    pair, side, size: volume, sizeUsd: size_usd,
+    entryPrice: price, stop: stop_loss, target: take_profit,
+    openedAt: new Date().toISOString(), reasoning,
+    status: 'open', krakenTxid: null,
+  };
+
+  // Try real Kraken execution
+  const krakenPair = pair.toUpperCase().replace('USD', 'ZUSD').replace('XRPZUSD', 'XXRPZUSD').replace('BTCZUSD', 'XXBTZUSD').replace('ETHZUSD', 'XETHZUSD');
+  const order = await _krakenPlaceOrder({ pair: krakenPair, side, ordertype: order_type, volume, price: order_type === 'limit' ? limit_price : undefined });
+
+  if (order.ok) {
+    position.krakenTxid = order.txid;
+    position.status = 'open';
+    console.log(`[Trade] ${side.toUpperCase()} ${volume} ${pair} @ ~$${price} | txid: ${order.txid}`);
+  } else {
+    position.status = 'sim';
+    position.simNote = order.error || 'Kraken unavailable — simulated';
+    console.log(`[Trade SIM] ${side.toUpperCase()} ${volume} ${pair} @ ~$${price} | reason: ${position.simNote}`);
+  }
+
+  _openPositions.push(position);
+
+  // Persist to Supabase
+  try {
+    await supabaseAdmin.from('trade_log').insert({
+      user_id: userId, pair, side, size: volume, size_usd,
+      entry_price: price, stop_loss, take_profit, reasoning,
+      kraken_txid: position.krakenTxid, status: position.status,
+      traded_at: position.openedAt,
+    });
+  } catch (_) {}
+
+  return { ok: true, position, krakenOk: order.ok, txid: order.txid };
+}
+
+async function _closePosition(posId, userId) {
+  const idx = _openPositions.findIndex(p => p.id === posId);
+  if (idx === -1) return { ok: false, error: 'Position not found' };
+  const pos = _openPositions[idx];
+
+  // Get current price
+  let closePrice = null;
+  try {
+    const sym = pos.pair.toUpperCase().replace('XBT', 'BTC').replace(/USD$/, 'USDT');
+    const tickerRes = await new Promise((resolve) => {
+      https.get(`https://api.binance.com/api/v3/ticker/price?symbol=${sym}`, { headers: { 'User-Agent': 'NEXUS/4.1' } }, (res) => {
+        let raw = ''; res.on('data', d => raw += d);
+        res.on('end', () => { try { resolve(JSON.parse(raw)); } catch { resolve(null); } });
+      }).on('error', () => resolve(null));
+    });
+    if (tickerRes && tickerRes.price) closePrice = +tickerRes.price;
+  } catch (_) {}
+
+  const closeSide = pos.side === 'buy' ? 'sell' : 'buy';
+  let closeOrder = { ok: false, error: 'Kraken unavailable' };
+  if (pos.krakenTxid) {
+    const krakenPair = pos.pair.toUpperCase().replace('USD', 'ZUSD').replace('XRPZUSD', 'XXRPZUSD').replace('BTCZUSD', 'XXBTZUSD').replace('ETHZUSD', 'XETHZUSD');
+    closeOrder = await _krakenPlaceOrder({ pair: krakenPair, side: closeSide, ordertype: 'market', volume: pos.size });
+  }
+
+  const pnl = closePrice ? (closeSide === 'sell' ? (closePrice - pos.entryPrice) * pos.size : (pos.entryPrice - closePrice) * pos.size) : null;
+  pos.status = 'closed';
+  pos.closePrice = closePrice;
+  pos.closedAt = new Date().toISOString();
+  pos.pnl = pnl;
+
+  _openPositions.splice(idx, 1);
+  _tradeLog.unshift({ ...pos });
+  if (_tradeLog.length > 200) _tradeLog.pop();
+
+  try {
+    await supabaseAdmin.from('trade_log').update({
+      status: 'closed', close_price: closePrice, closed_at: pos.closedAt, pnl,
+    }).eq('user_id', userId).eq('kraken_txid', pos.krakenTxid || pos.id);
+  } catch (_) {}
+
+  return { ok: true, pnl, closePrice, krakenOk: closeOrder.ok };
+}
+
+// ─── Autonomous trading cycle ──────────────────────────────────────────────
+async function _runTradingCycle() {
+  if (_tradingActive || !_tradingEnabled) return;
+  _tradingActive = true;
+  console.log('[AutoTrade] Cycle started');
+  try {
+    const context = {
+      pair: 'XRPUSD', canTrade: true,
+      getTradeHistory: async (limit) => _tradeLog.slice(0, limit || 20),
+      saveMemory: async (item) => {
+        try { await supabaseAdmin.from('agent_memory').upsert({ user_id: 'owner', key: item.key, value: item.value, category: item.category || 'general' }, { onConflict: 'user_id,key' }); } catch (_) {}
+      },
+      getOpenPositions: () => [..._openPositions],
+      placeTrade: (input) => _executeTrade(input, 'owner'),
+      closePosition: (posId) => _closePosition(posId, 'owner'),
+      autonomousTrading: true,
+    };
+    await agent.runTradingCycle(context);
+  } catch (e) {
+    console.error('[AutoTrade] Cycle error:', e.message);
+  } finally {
+    _tradingActive = false;
+  }
+}
+
+// ─── Trading control endpoints ────────────────────────────────────────────
+app.get('/agent/trading-status', requireAuth, (_req, res) => {
+  res.json({
+    enabled: _tradingEnabled,
+    openPositions: _openPositions,
+    recentTrades: _tradeLog.slice(0, 20),
+    krakenConfigured: !!(process.env.KRAKEN_API_KEY && process.env.KRAKEN_API_KEY !== 'paste_kraken_api_key_here'),
+  });
+});
+
+app.post('/agent/trading-enable', requireAuth, async (req, res) => {
+  if (!isOwner(req.user)) return res.status(403).json({ error: 'Owner only' });
+  _tradingEnabled = true;
+  console.log('[AutoTrade] ENABLED by owner');
+  res.json({ ok: true, enabled: true });
+});
+
+app.post('/agent/trading-disable', requireAuth, async (req, res) => {
+  if (!isOwner(req.user)) return res.status(403).json({ error: 'Owner only' });
+  _tradingEnabled = false;
+  console.log('[AutoTrade] DISABLED by owner');
+  res.json({ ok: true, enabled: false });
+});
+
+app.post('/agent/trading-close-all', requireAuth, async (req, res) => {
+  if (!isOwner(req.user)) return res.status(403).json({ error: 'Owner only' });
+  _tradingEnabled = false;
+  const results = [];
+  for (const pos of [..._openPositions]) {
+    results.push(await _closePosition(pos.id, req.user.id));
+  }
+  res.json({ ok: true, closed: results.length, results });
+});
+
+app.delete('/agent/position/:id', requireAuth, async (req, res) => {
+  if (!isOwner(req.user)) return res.status(403).json({ error: 'Owner only' });
+  const result = await _closePosition(req.params.id, req.user.id);
+  res.json(result);
+});
+
+app.get('/agent/balance', requireAuth, async (_req, res) => {
+  const balance = await _krakenBalance();
+  res.json({ ok: !!balance, balance });
 });
 
 // ─── Start ─────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`NEXUS proxy running on port ${PORT}`);
-  // Delay sim engine start so health check passes first
   setTimeout(() => simEngine.start(), 3000);
   startBackgroundRefresh();
 
-  // Autonomous learning — first cycle 5 min after boot, then every hour
+  // Autonomous learning — first run 5 min after boot, then every hour
   setTimeout(() => {
     agent.runLearningCycle().catch(e => console.error('[LearnCycle] error:', e));
     setInterval(() => {
       agent.runLearningCycle().catch(e => console.error('[LearnCycle] error:', e));
-    }, 60 * 60 * 1000); // every 60 minutes
+    }, 60 * 60 * 1000);
   }, 5 * 60 * 1000);
+
+  // Autonomous trading — every 5 minutes when enabled
+  setInterval(_runTradingCycle, 5 * 60 * 1000);
 });

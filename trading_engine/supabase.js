@@ -25,18 +25,33 @@ const supabaseAdmin = (SERVICE_KEY && _supabaseReady)
   ? createClient(SUPABASE_URL, SERVICE_KEY, { auth: { autoRefreshToken: false, persistSession: false } })
   : _supabaseStub;
 
+const OWNER_API_KEY = process.env.NEXUS_API_KEY || '';
+
 // ─── Verify JWT from Authorization header ─────────────────────────────────
 // Returns { user, error }
 async function verifyToken(req) {
   if (!_supabaseReady) return { user: { id: 'local', email: process.env.OWNER_EMAIL || 'local' }, error: null };
+
   const authHeader = req.headers['authorization'];
+
+  // Owner API key bypass — no Supabase needed
+  if (OWNER_API_KEY && authHeader === `Bearer ${OWNER_API_KEY}`) {
+    return { user: { id: 'owner', email: process.env.OWNER_EMAIL || 'owner' }, error: null };
+  }
+
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return { user: null, error: 'Missing token' };
   }
   const token = authHeader.slice(7);
-  const { data, error } = await supabase.auth.getUser(token);
-  if (error || !data?.user) return { user: null, error: error?.message || 'Invalid token' };
-  return { user: data.user, error: null };
+  if (!token) return { user: null, error: 'Empty token' };
+
+  try {
+    const { data, error } = await supabase.auth.getUser(token);
+    if (error || !data?.user) return { user: null, error: error?.message || 'Invalid token' };
+    return { user: data.user, error: null };
+  } catch (e) {
+    return { user: null, error: e.message };
+  }
 }
 
 // ─── Express middleware — attaches req.user or returns 401 ────────────────

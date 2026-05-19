@@ -196,20 +196,37 @@ const TOOLS = [
   },
   {
     name: 'place_trade',
-    description: 'Execute a trade. Only call this with strong conviction. Always define stop loss and take profit.',
+    description: 'Execute a real trade on Kraken. Only call with strong conviction (confidence 8+). ALWAYS define stop_loss and take_profit. Risk max 2% of balance per trade.',
     input_schema: {
       type: 'object',
       properties: {
-        pair:        { type: 'string' },
+        pair:        { type: 'string', description: 'e.g. XRPUSD, BTCUSD, ETHUSD' },
         side:        { type: 'string', enum: ['buy', 'sell'] },
-        size_usd:    { type: 'number' },
+        size_usd:    { type: 'number', description: 'Dollar value to trade' },
         order_type:  { type: 'string', enum: ['market', 'limit'] },
-        limit_price: { type: 'number' },
-        stop_loss:   { type: 'number' },
-        take_profit: { type: 'number' },
-        reasoning:   { type: 'string', description: 'Specific reasoning — be detailed' },
+        limit_price: { type: 'number', description: 'Required for limit orders' },
+        stop_loss:   { type: 'number', description: 'Stop loss price — REQUIRED' },
+        take_profit: { type: 'number', description: 'Take profit price — REQUIRED' },
+        reasoning:   { type: 'string', description: 'Detailed reasoning for the trade' },
       },
-      required: ['pair', 'side', 'size_usd', 'order_type', 'reasoning'],
+      required: ['pair', 'side', 'size_usd', 'order_type', 'stop_loss', 'take_profit', 'reasoning'],
+    },
+  },
+  {
+    name: 'get_open_positions',
+    description: 'Get all currently open positions — pair, side, size, entry price, stop/target, P&L.',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'close_position',
+    description: 'Close an open position by its ID. Use when stop/target is hit, setup invalidated, or better opportunity exists.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        position_id: { type: 'string', description: 'The position ID from get_open_positions' },
+        reason:      { type: 'string', description: 'Why you are closing' },
+      },
+      required: ['position_id', 'reason'],
     },
   },
 ];
@@ -398,8 +415,20 @@ async function executeTool(name, input, context = {}) {
     }
 
     case 'place_trade': {
+      if (!context.canTrade) return { error: 'Trading is disabled. Owner must enable autonomous trading from the NEXUS AI panel.' };
       if (context.placeTrade) return await context.placeTrade(input);
-      return { error: 'Trade execution not available in this context' };
+      return { error: 'Trade execution not wired in this context' };
+    }
+
+    case 'get_open_positions': {
+      const positions = context.getOpenPositions ? context.getOpenPositions() : [];
+      return { positions, count: positions.length };
+    }
+
+    case 'close_position': {
+      if (!context.canTrade) return { error: 'Trading is disabled' };
+      if (context.closePosition) return await context.closePosition(input.position_id);
+      return { error: 'Close position not available in this context' };
     }
 
     default:
@@ -610,6 +639,98 @@ Knowledge items: ${_knowledge.length}`;
   return { log, summary: _learnLog[0] };
 }
 
+// ─── Autonomous trading cycle ─────────────────────────────────────────────
+let _tradingCycleActive = false;
+const SCAN_PAIRS = ['XRPUSD', 'BTCUSD', 'ETHUSD', 'SOLUSD'];
+
+async function runTradingCycle(context = {}) {
+  if (_tradingCycleActive) return;
+  _tradingCycleActive = true;
+  const started = new Date().toISOString();
+  console.log('[TradingCycle] Started at', started);
+
+  try {
+    const systemPrompt = _buildSystemPrompt({ ...context, autonomousMode: true });
+    const openPositions = context.getOpenPositions ? context.getOpenPositions() : [];
+
+    const tradingPrompt = `You are NEXUS AI running a fully autonomous trading cycle. You have full authority to open and close positions.
+
+Current time: ${new Date().toUTCString()}
+Open positions: ${openPositions.length}
+${openPositions.length ? JSON.stringify(openPositions, null, 2) : '(none)'}
+Pairs to scan: ${SCAN_PAIRS.join(', ')}
+Knowledge items: ${_knowledge.length}
+Memory items: ${_memory.size}
+
+Your tasks for this cycle:
+1. CHECK open positions: get current prices and determine if any stops/targets have been hit. Close them if needed.
+2. SCAN all pairs across multiple timeframes for high-probability setups.
+3. CHECK funding rates, fear/greed, and order book before any entry.
+4. ENTER trades only when confidence is 8/10 or higher. Max 3 open positions at a time.
+5. REMEMBER key findings and lessons.
+6. Brief summary at end.
+
+Risk rules (non-negotiable):
+- Max 2% account risk per trade
+- Always define stop loss and take profit
+- Never add to losing positions
+- Never trade against extreme funding (>0.1% rate) unless clear reversal setup
+- If uncertainty > 40%, wait
+
+Execute the cycle now. Use your tools. Be the best trader in the room.`;
+
+    const messages = [{ role: 'user', content: tradingPrompt }];
+    let fullResponse = '';
+    let tradesExecuted = 0;
+
+    while (true) {
+      const response = await client.messages.create({
+        model: 'claude-sonnet-4-6', // Sonnet for cycle speed; Opus used for user chat
+        max_tokens: 8096,
+        system: systemPrompt,
+        tools: TOOLS,
+        messages,
+      });
+
+      const toolUseBlocks = [];
+      for (const block of response.content) {
+        if (block.type === 'text') fullResponse += block.text;
+        if (block.type === 'tool_use') toolUseBlocks.push(block);
+      }
+
+      messages.push({ role: 'assistant', content: response.content });
+      if (toolUseBlocks.length === 0 || response.stop_reason === 'end_turn') break;
+
+      const toolResults = [];
+      for (const tu of toolUseBlocks) {
+        console.log('[TradingCycle] Tool:', tu.name, JSON.stringify(tu.input).slice(0, 80));
+        const result = await executeTool(tu.name, tu.input, context);
+        if (tu.name === 'place_trade' && result.ok) tradesExecuted++;
+        toolResults.push({ type: 'tool_result', tool_use_id: tu.id, content: JSON.stringify(result) });
+      }
+      messages.push({ role: 'user', content: toolResults });
+    }
+
+    // Store summary
+    if (fullResponse && context.saveMemory) {
+      await context.saveMemory({
+        key: 'trading_cycle_' + Date.now(),
+        value: fullResponse.slice(0, 1500),
+        category: 'trading_cycle',
+      });
+    }
+
+    console.log(`[TradingCycle] Done — ${tradesExecuted} trade(s) executed. Summary: ${fullResponse.slice(0, 100)}...`);
+    return { ok: true, tradesExecuted, summary: fullResponse.slice(0, 500) };
+
+  } catch (e) {
+    console.error('[TradingCycle] Error:', e.message);
+    return { ok: false, error: e.message };
+  } finally {
+    _tradingCycleActive = false;
+  }
+}
+
 // ─── Quick scan (Sonnet, runs on cycle) ───────────────────────────────────
 async function quickScan({ pair, currentData, context = {} }) {
   const knowledge = _knowledge.slice(-10);
@@ -657,40 +778,48 @@ function _buildSystemPrompt(context) {
   const knowCount = _knowledge.length;
   const recentLessons = [..._memory.values()].filter(m => m.category === 'lesson').slice(-5).map(m => m.value).join('\n');
 
-  return `You are NEXUS AI — an elite autonomous trading agent and market analyst powering a live crypto trading platform.
+  const recentTrades = [..._memory.values()].filter(m => m.category === 'trading_cycle').slice(-3).map(m => m.value.slice(0, 200)).join('\n---\n');
 
-CAPABILITIES:
-- Fetch live market data, order books, funding rates, liquidations, news, fear/greed
-- Build and run custom indicators in JavaScript — you are NOT limited to built-ins
-- Backtest any strategy idea against real historical data before using it live
-- Execute trades when conditions are met and trading is enabled
-- Remember everything across sessions — your memory compounds over time
+  return `You are NEXUS AI — a fully autonomous elite crypto trading agent. You ARE the trader. You have complete authority to analyze markets, build strategies, place and manage trades, and learn from every outcome. You run autonomously while the owner sleeps and execute independently when auto-trading is enabled.
 
-RECENT LESSONS FROM PAST TRADES:
-${recentLessons || 'No trade lessons yet — will accumulate as you trade'}
+FULL CAPABILITIES:
+- Live market data: OHLC candles, order book, ticker for any pair
+- Market intelligence: funding rates, liquidations, fear/greed index, crypto news
+- Custom indicators: write and run any indicator in JavaScript
+- Backtesting: test strategies on historical data before committing capital
+- Trade execution: place real orders on Kraken (buy/sell/market/limit)
+- Position management: monitor open positions, hit stops/targets, close when needed
+- Memory: remember everything across sessions — your knowledge compounds forever
+- Scanner: scan multiple pairs simultaneously for the best setup
+
+RECENT TRADE ACTIVITY:
+${recentTrades || 'No recent trading cycle data yet'}
+
+RECENT LESSONS:
+${recentLessons || 'No lessons yet — will accumulate as trades complete'}
 
 CURRENT STATE:
 - Active pair: ${context.pair || 'XRPUSD'}
-- Memory items: ${memCount}
-- Knowledge base: ${knowCount} items
-- Trade execution: ${context.canTrade ? 'ENABLED — you can place real trades' : 'ANALYSIS ONLY'}
-- Mode: ${context.autonomousMode ? 'AUTONOMOUS LEARNING — trader is away' : 'INTERACTIVE'}
+- Memory: ${memCount} items | Knowledge base: ${knowCount} items
+- Trade execution: ${context.canTrade ? '✅ LIVE — place real trades on Kraken' : '🔒 ANALYSIS ONLY — owner must enable trading'}
+- Mode: ${context.autonomousTrading ? '🤖 AUTONOMOUS TRADING — full self-directed operation' : context.autonomousMode ? '📚 LEARNING CYCLE — studying while owner sleeps' : '💬 INTERACTIVE — talking with owner'}
 
-TRADING PRINCIPLES (always follow):
-1. Check knowledge base first — trader may have uploaded relevant zones/strategies
-2. Always get funding rates + fear/greed before a trade — they confirm or deny the setup
-3. Never trade against extreme funding without exceptional reason
-4. Define stop loss and take profit before every single trade
-5. If uncertain, say exactly why and what would change your mind
-6. A "wait" is always a valid call — bad trades destroy accounts
-7. Risk max 2% per trade unless explicitly told otherwise
+TRADING PRINCIPLES (non-negotiable):
+1. Scan knowledge base first — owner may have uploaded critical zones/strategies
+2. Check funding rates + fear/greed + order book before every entry
+3. Never skip stop loss and take profit — define both before placing any order
+4. Max 2% account risk per trade — calculate position size properly
+5. Max 3 concurrent open positions
+6. Confidence 8/10 minimum to enter — anything less is a wait
+7. If funding rate is extreme (>0.1%), requires exceptional setup to trade with trend
+8. After any loss, evaluate_trade and extract lesson before next entry
 
 COMMUNICATION STYLE:
-- Talk like a professional trader, not a chatbot
-- Be specific about numbers — say "$0.5234" not "around 52 cents"
-- When you use a tool, briefly mention what you found before analyzing it
-- If you're wrong about something, say so directly
-- In autonomous mode: be thorough and store everything worth knowing`;
+- Talk like a Wall Street professional, not a chatbot — direct, precise, confident
+- Use exact prices: "$0.5234" not "around 52 cents"
+- When using a tool, briefly state what you found before the analysis
+- Own your calls — say what you see and why. If wrong, say so and adapt
+- In autonomous mode: be thorough, store insights, make decisions like it's real money (it is)`;
 }
 
 // ─── HTTP/API helpers ─────────────────────────────────────────────────────
@@ -884,4 +1013,4 @@ function getLearnLog()  { return [..._learnLog]; }
 function loadMemory(items)    { items.forEach(i => _memory.set(i.key, i)); }
 function loadKnowledge(items) { items.forEach(i => _knowledge.push(i)); }
 
-module.exports = { agentChat, analyzeImages, quickScan, runLearningCycle, getMemory, getKnowledge, getLearnLog, loadMemory, loadKnowledge, TOOLS };
+module.exports = { agentChat, analyzeImages, quickScan, runLearningCycle, runTradingCycle, getMemory, getKnowledge, getLearnLog, loadMemory, loadKnowledge, TOOLS };

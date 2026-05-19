@@ -213,6 +213,10 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
       <div class="fl">PASSWORD</div>
       <input type="password" id="authPassword" class="fi" placeholder="&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;" maxlength="64" autocomplete="current-password">
       <button class="lbtn" onclick="doLogin()">&#x25BA; SIGN IN</button>
+      <div style="margin:10px 0;display:flex;align-items:center;gap:8px"><div style="flex:1;height:1px;background:var(--border)"></div><span style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);letter-spacing:2px">OWNER ACCESS</span><div style="flex:1;height:1px;background:var(--border)"></div></div>
+      <div class="fl">NEXUS OWNER KEY</div>
+      <input type="password" id="ownerKey" class="fi" placeholder="Set NEXUS_API_KEY in .env" maxlength="128" autocomplete="off">
+      <button class="lbtn" onclick="doOwnerLogin()" style="border-color:var(--cyan);color:var(--cyan)">&#x26A1; OWNER ACCESS</button>
     </div>
     <div id="authSignup" style="display:none">
       <div class="fl">EMAIL</div>
@@ -1113,8 +1117,46 @@ Content-Type: application/json
         </div>
       </div>
 
-      <!-- Right panel: knowledge base + memory -->
+      <!-- Right panel: trading controls + knowledge + memory -->
       <div style="display:flex;flex-direction:column;gap:8px;overflow-y:auto">
+
+        <!-- Autonomous Trading Master Switch -->
+        <div class="card" style="padding:10px;flex-shrink:0;border-color:rgba(0,255,136,0.3);background:rgba(0,255,136,0.03)">
+          <div style="font-family:Orbitron,monospace;font-size:8px;color:var(--green);letter-spacing:1px;margin-bottom:8px">⚡ AUTONOMOUS TRADING</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <div>
+              <div id="autoTradeStatusLabel" style="font-family:Share Tech Mono,monospace;font-size:9px;color:var(--t3);font-weight:700">DISABLED</div>
+              <div style="font-family:Share Tech Mono,monospace;font-size:6.5px;color:var(--t3);margin-top:2px">Scans every 5 min</div>
+            </div>
+            <button id="autoTradeToggle" onclick="_agentToggleTrading()" style="background:rgba(0,255,136,0.12);border:1px solid var(--green);color:var(--green);font-family:Share Tech Mono,monospace;font-size:8px;padding:6px 12px;cursor:pointer;border-radius:2px;letter-spacing:1px">ENABLE</button>
+          </div>
+          <div style="display:flex;gap:5px">
+            <div style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:2px;padding:5px;text-align:center">
+              <div id="autoTradePositionCount" style="font-family:Orbitron,monospace;font-size:12px;color:var(--cyan)">0</div>
+              <div style="font-family:Share Tech Mono,monospace;font-size:6px;color:var(--t3);margin-top:1px">OPEN</div>
+            </div>
+            <div style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:2px;padding:5px;text-align:center">
+              <div id="autoTradePnl" style="font-family:Orbitron,monospace;font-size:12px;color:var(--t2)">$0</div>
+              <div style="font-family:Share Tech Mono,monospace;font-size:6px;color:var(--t3);margin-top:1px">P&L</div>
+            </div>
+            <div style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:2px;padding:5px;text-align:center">
+              <div id="autoTradeKrakenStatus" style="font-family:Orbitron,monospace;font-size:9px;color:var(--red)">NO KEY</div>
+              <div style="font-family:Share Tech Mono,monospace;font-size:6px;color:var(--t3);margin-top:1px">KRAKEN</div>
+            </div>
+          </div>
+          <button onclick="_agentCloseAll()" style="width:100%;margin-top:7px;background:rgba(255,51,85,0.1);border:1px solid var(--red);color:var(--red);font-family:Share Tech Mono,monospace;font-size:7px;padding:5px;cursor:pointer;border-radius:2px;letter-spacing:1px">🛑 EMERGENCY STOP — CLOSE ALL</button>
+        </div>
+
+        <!-- Open Positions -->
+        <div class="card" style="padding:10px;flex-shrink:0">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div style="font-family:Orbitron,monospace;font-size:8px;color:var(--cyan);letter-spacing:1px">OPEN POSITIONS</div>
+            <button onclick="_agentLoadTradingStatus()" style="background:none;border:1px solid var(--border);color:var(--t3);font-family:Share Tech Mono,monospace;font-size:6px;padding:2px 6px;cursor:pointer;letter-spacing:1px">↺</button>
+          </div>
+          <div id="agentPositions" style="display:flex;flex-direction:column;gap:5px;max-height:160px;overflow-y:auto">
+            <div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);text-align:center;padding:12px 0">No open positions</div>
+          </div>
+        </div>
 
         <!-- Knowledge base -->
         <div class="card" style="padding:10px;flex-shrink:0">
@@ -2224,6 +2266,26 @@ async function doLogin(){
     _authUser=d.user;
     localStorage.setItem('nexus_token',_authToken);
     await _loadUserPlan();
+    document.getElementById("loginScreen").style.display="none";
+    document.getElementById("app").style.display="flex";
+    init();
+  }catch(e){errEl.style.color="var(--red)";errEl.textContent="CONNECTION ERROR";}
+}
+
+async function doOwnerLogin(){
+  var key=document.getElementById("ownerKey").value.trim();
+  var errEl=document.getElementById("loginErr");
+  errEl.textContent="";
+  if(!key){errEl.textContent="ENTER YOUR NEXUS OWNER KEY";return;}
+  errEl.textContent="VERIFYING...";errEl.style.color="var(--cyan)";
+  try{
+    // Test the key against a protected endpoint
+    var r=await fetch('/agent/trading-status',{headers:{'Authorization':'Bearer '+key}});
+    if(!r.ok){errEl.style.color="var(--red)";errEl.textContent="INVALID OWNER KEY";return;}
+    _authToken=key;
+    _authUser={email:'owner',plan:'elite'};
+    _userPlan='elite';
+    localStorage.setItem('nexus_token',key);
     document.getElementById("loginScreen").style.display="none";
     document.getElementById("app").style.display="flex";
     init();
@@ -8869,7 +8931,13 @@ else _sbInit();
     _agentInited = true;
     _agentLoadMemory();
     _agentLoadLearnLog();
+    _agentLoadTradingStatus();
     _agentWelcome();
+    // Refresh trading status every 30s while on agent tab
+    setInterval(function() {
+      var agentTab = document.getElementById('tab-agent');
+      if (agentTab && agentTab.style.display !== 'none') _agentLoadTradingStatus();
+    }, 30000);
   };
 
   function _agentWelcome() {
@@ -9123,6 +9191,120 @@ else _sbInit();
         '</div>';
     }).join('');
   }
+
+  // ── Trading controls ────────────────────────────────────────────────────
+  var _autoTradeEnabled = false;
+
+  window._agentLoadTradingStatus = async function() {
+    try {
+      var r = await fetch('/agent/trading-status', { headers: _authHeaders() });
+      var d = await r.json();
+      _autoTradeEnabled = d.enabled;
+      _agentRenderTradingStatus(d);
+    } catch(_) {}
+  };
+
+  function _agentRenderTradingStatus(d) {
+    var lbl = document.getElementById('autoTradeStatusLabel');
+    var btn = document.getElementById('autoTradeToggle');
+    var cntEl = document.getElementById('autoTradePositionCount');
+    var pnlEl = document.getElementById('autoTradePnl');
+    var krakenEl = document.getElementById('autoTradeKrakenStatus');
+
+    if (lbl) {
+      lbl.textContent = d.enabled ? 'ACTIVE — SCANNING' : 'DISABLED';
+      lbl.style.color = d.enabled ? 'var(--green)' : 'var(--t3)';
+    }
+    if (btn) {
+      btn.textContent = d.enabled ? 'DISABLE' : 'ENABLE';
+      btn.style.background = d.enabled ? 'rgba(255,51,85,0.12)' : 'rgba(0,255,136,0.12)';
+      btn.style.borderColor = d.enabled ? 'var(--red)' : 'var(--green)';
+      btn.style.color = d.enabled ? 'var(--red)' : 'var(--green)';
+    }
+    if (cntEl) cntEl.textContent = (d.openPositions || []).length;
+    if (krakenEl) {
+      krakenEl.textContent = d.krakenConfigured ? 'LIVE' : 'NO KEY';
+      krakenEl.style.color = d.krakenConfigured ? 'var(--green)' : 'var(--red)';
+    }
+
+    // Compute total P&L from open positions
+    if (pnlEl && d.openPositions) {
+      var totalPnl = d.openPositions.reduce(function(s, p) { return s + (p.pnl || 0); }, 0);
+      pnlEl.textContent = (totalPnl >= 0 ? '+' : '') + '$' + totalPnl.toFixed(2);
+      pnlEl.style.color = totalPnl >= 0 ? 'var(--green)' : 'var(--red)';
+    }
+
+    _agentRenderPositions(d.openPositions || []);
+  }
+
+  function _agentRenderPositions(positions) {
+    var el = document.getElementById('agentPositions');
+    if (!el) return;
+    if (!positions.length) {
+      el.innerHTML = '<div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--t3);text-align:center;padding:12px 0">No open positions</div>';
+      return;
+    }
+    el.innerHTML = positions.map(function(p) {
+      var pnlColor = (p.pnl || 0) >= 0 ? 'var(--green)' : 'var(--red)';
+      var sideColor = p.side === 'buy' ? 'var(--green)' : 'var(--red)';
+      var simBadge = p.status === 'sim' ? '<span style="font-family:Share Tech Mono,monospace;font-size:6px;color:var(--amber);margin-left:4px">SIM</span>' : '';
+      return '<div style="background:rgba(0,212,255,0.04);border:1px solid var(--border);border-radius:3px;padding:6px 8px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">' +
+          '<span style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--t1);font-weight:700">' + p.pair + simBadge + '</span>' +
+          '<span style="font-family:Share Tech Mono,monospace;font-size:7.5px;color:' + sideColor + ';letter-spacing:1px">' + p.side.toUpperCase() + '</span>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;font-family:Share Tech Mono,monospace;font-size:6.5px;color:var(--t3);margin-bottom:4px">' +
+          '<span>Entry $' + (p.entryPrice || 0).toFixed(4) + '</span>' +
+          '<span>SL $' + (p.stop || 0).toFixed(4) + '</span>' +
+          '<span>TP $' + (p.target || 0).toFixed(4) + '</span>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center">' +
+          '<span style="font-family:Share Tech Mono,monospace;font-size:7px;color:' + pnlColor + '">' + ((p.pnl || 0) >= 0 ? '+' : '') + '$' + (p.pnl || 0).toFixed(2) + ' P&L</span>' +
+          '<button onclick="_agentClosePosition(\'' + p.id + '\')" style="background:rgba(255,51,85,0.1);border:1px solid var(--red);color:var(--red);font-family:Share Tech Mono,monospace;font-size:6px;padding:2px 6px;cursor:pointer;border-radius:2px">CLOSE</button>' +
+        '</div>' +
+        '</div>';
+    }).join('');
+  }
+
+  window._agentToggleTrading = async function() {
+    var endpoint = _autoTradeEnabled ? '/agent/trading-disable' : '/agent/trading-enable';
+    try {
+      var r = await fetch(endpoint, { method: 'POST', headers: _authHeaders() });
+      var d = await r.json();
+      if (d.ok) {
+        _autoTradeEnabled = d.enabled;
+        await _agentLoadTradingStatus();
+        _agentAppendMsg('agent', _autoTradeEnabled
+          ? '✅ **Autonomous trading ENABLED.** I will scan markets every 5 minutes and execute trades when confidence reaches 8/10 or higher. I\'ll manage all open positions including stops and targets. You can sleep — I\'ve got this.'
+          : '🔒 **Autonomous trading DISABLED.** I\'m back to analysis-only mode. All positions remain open until you manually close them.', []);
+      }
+    } catch(e) {
+      _agentAppendMsg('agent', 'Error toggling trading: ' + e.message, []);
+    }
+  };
+
+  window._agentCloseAll = async function() {
+    if (!confirm('Close ALL open positions and disable autonomous trading?')) return;
+    try {
+      var r = await fetch('/agent/trading-close-all', { method: 'POST', headers: _authHeaders() });
+      var d = await r.json();
+      _agentAppendMsg('agent', '🛑 **Emergency stop executed.** Closed ' + d.closed + ' position(s). Trading disabled.', []);
+      await _agentLoadTradingStatus();
+    } catch(e) {
+      _agentAppendMsg('agent', 'Error: ' + e.message, []);
+    }
+  };
+
+  window._agentClosePosition = async function(posId) {
+    try {
+      var r = await fetch('/agent/position/' + posId, { method: 'DELETE', headers: _authHeaders() });
+      var d = await r.json();
+      if (d.ok) {
+        _agentAppendMsg('agent', 'Position closed. P&L: ' + (d.pnl >= 0 ? '+' : '') + '$' + (d.pnl || 0).toFixed(2), []);
+        await _agentLoadTradingStatus();
+      }
+    } catch(e) {}
+  };
 
   window._agentLoadLearnLog = async function() {
     var el = document.getElementById('agentLearnLog');
