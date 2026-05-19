@@ -1,13 +1,25 @@
 ﻿'use strict';
 
 require('dotenv').config({ override: true });
-delete process.env.ANTHROPIC_BASE_URL; // Remove Claude Code proxy interference
 const Anthropic = require('@anthropic-ai/sdk');
 const https = require('https');
 const http  = require('http');
+const fs    = require('fs');
+const path  = require('path');
 
+// Read key directly from .env to bypass any runtime env var interference
+function _readEnvKey(name) {
+  try {
+    const envPath = path.join(__dirname, '..', '.env');
+    const raw = fs.readFileSync(envPath, 'utf8');
+    const match = raw.match(new RegExp(`^${name}=(.+)$`, 'm'));
+    return match ? match[1].trim() : process.env[name];
+  } catch { return process.env[name]; }
+}
+
+const _anthropicKey = _readEnvKey('ANTHROPIC_API_KEY');
 const client = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
+  apiKey: _anthropicKey,
   baseURL: 'https://api.anthropic.com',
 });
 
