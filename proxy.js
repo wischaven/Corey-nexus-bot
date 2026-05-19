@@ -1,6 +1,6 @@
 ﻿'use strict';
 
-require('dotenv').config();
+require('dotenv').config({ override: true });
 
 const express = require('express');
 const https   = require('https');
@@ -1183,3 +1183,4 @@ app.listen(PORT, '0.0.0.0', () => {
   // Autonomous trading â€” every 5 minutes when enabled
   setInterval(_runTradingCycle, 5 * 60 * 1000);
 });
+

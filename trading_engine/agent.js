@@ -1,19 +1,19 @@
-'use strict';
+﻿'use strict';
 
-require('dotenv').config();
+require('dotenv').config({ override: true });
 const Anthropic = require('@anthropic-ai/sdk');
 const https = require('https');
 const http  = require('http');
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-// ─── In-memory stores ─────────────────────────────────────────────────────
+// â”€â”€â”€ In-memory stores â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const _memory    = new Map();
 const _knowledge = [];
 const _convHist  = new Map();
 const _learnLog  = []; // overnight learning activity log
 
-// ─── Tool definitions ─────────────────────────────────────────────────────
+// â”€â”€â”€ Tool definitions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const TOOLS = [
   {
     name: 'get_market_data',
@@ -104,7 +104,7 @@ const TOOLS = [
   },
   {
     name: 'calculate',
-    description: 'Run any custom calculation on market data. Write JavaScript with access to a `candles` array (t,o,h,l,c,v). Use this to build ANY indicator or analysis you need — not limited to built-ins.',
+    description: 'Run any custom calculation on market data. Write JavaScript with access to a `candles` array (t,o,h,l,c,v). Use this to build ANY indicator or analysis you need â€” not limited to built-ins.',
     input_schema: {
       type: 'object',
       properties: {
@@ -135,7 +135,7 @@ const TOOLS = [
   },
   {
     name: 'evaluate_trade',
-    description: 'Review a completed trade — compare what was expected vs what happened, extract lessons, update strategy confidence. Call this after every trade closes.',
+    description: 'Review a completed trade â€” compare what was expected vs what happened, extract lessons, update strategy confidence. Call this after every trade closes.',
     input_schema: {
       type: 'object',
       properties: {
@@ -186,7 +186,7 @@ const TOOLS = [
   },
   {
     name: 'get_knowledge',
-    description: 'Retrieve uploaded knowledge — chart images, trading strategies, zone maps, and rules.',
+    description: 'Retrieve uploaded knowledge â€” chart images, trading strategies, zone maps, and rules.',
     input_schema: {
       type: 'object',
       properties: {
@@ -205,8 +205,8 @@ const TOOLS = [
         size_usd:    { type: 'number', description: 'Dollar value to trade' },
         order_type:  { type: 'string', enum: ['market', 'limit'] },
         limit_price: { type: 'number', description: 'Required for limit orders' },
-        stop_loss:   { type: 'number', description: 'Stop loss price — REQUIRED' },
-        take_profit: { type: 'number', description: 'Take profit price — REQUIRED' },
+        stop_loss:   { type: 'number', description: 'Stop loss price â€” REQUIRED' },
+        take_profit: { type: 'number', description: 'Take profit price â€” REQUIRED' },
         reasoning:   { type: 'string', description: 'Detailed reasoning for the trade' },
       },
       required: ['pair', 'side', 'size_usd', 'order_type', 'stop_loss', 'take_profit', 'reasoning'],
@@ -214,7 +214,7 @@ const TOOLS = [
   },
   {
     name: 'get_open_positions',
-    description: 'Get all currently open positions — pair, side, size, entry price, stop/target, P&L.',
+    description: 'Get all currently open positions â€” pair, side, size, entry price, stop/target, P&L.',
     input_schema: { type: 'object', properties: {} },
   },
   {
@@ -231,7 +231,7 @@ const TOOLS = [
   },
 ];
 
-// ─── Tool execution ───────────────────────────────────────────────────────
+// â”€â”€â”€ Tool execution â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function executeTool(name, input, context = {}) {
   switch (name) {
 
@@ -436,7 +436,7 @@ async function executeTool(name, input, context = {}) {
   }
 }
 
-// ─── Main agent chat (streaming) ──────────────────────────────────────────
+// â”€â”€â”€ Main agent chat (streaming) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function agentChat({ sessionId, userMessage, images = [], context = {}, model = 'claude-opus-4-7', onToken }) {
   if (!_convHist.has(sessionId)) _convHist.set(sessionId, []);
   const messages = _convHist.get(sessionId);
@@ -490,7 +490,7 @@ async function agentChat({ sessionId, userMessage, images = [], context = {}, mo
   return { text: finalText, toolCalls, sessionId };
 }
 
-// ─── Image analysis ───────────────────────────────────────────────────────
+// â”€â”€â”€ Image analysis â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function analyzeImages({ images, userContext = '', model = 'claude-opus-4-7' }) {
   const content = [];
   for (const img of images) {
@@ -535,7 +535,7 @@ ${userContext ? 'User context: ' + userContext : ''}`,
   }
 }
 
-// ─── Autonomous learning loop ─────────────────────────────────────────────
+// â”€â”€â”€ Autonomous learning loop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Runs hourly in the background. Scans markets, tests ideas, reviews history.
 let _learningActive = false;
 
@@ -639,7 +639,7 @@ Knowledge items: ${_knowledge.length}`;
   return { log, summary: _learnLog[0] };
 }
 
-// ─── Autonomous trading cycle ─────────────────────────────────────────────
+// â”€â”€â”€ Autonomous trading cycle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let _tradingCycleActive = false;
 const SCAN_PAIRS = ['XRPUSD', 'BTCUSD', 'ETHUSD', 'SOLUSD'];
 
@@ -720,7 +720,7 @@ Execute the cycle now. Use your tools. Be the best trader in the room.`;
       });
     }
 
-    console.log(`[TradingCycle] Done — ${tradesExecuted} trade(s) executed. Summary: ${fullResponse.slice(0, 100)}...`);
+    console.log(`[TradingCycle] Done â€” ${tradesExecuted} trade(s) executed. Summary: ${fullResponse.slice(0, 100)}...`);
     return { ok: true, tradesExecuted, summary: fullResponse.slice(0, 500) };
 
   } catch (e) {
@@ -731,7 +731,7 @@ Execute the cycle now. Use your tools. Be the best trader in the room.`;
   }
 }
 
-// ─── Quick scan (Sonnet, runs on cycle) ───────────────────────────────────
+// â”€â”€â”€ Quick scan (Sonnet, runs on cycle) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function quickScan({ pair, currentData, context = {} }) {
   const knowledge = _knowledge.slice(-10);
   const memories  = [..._memory.values()].slice(-20);
@@ -772,7 +772,7 @@ Respond with JSON only:
   }
 }
 
-// ─── System prompt ────────────────────────────────────────────────────────
+// â”€â”€â”€ System prompt â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function _buildSystemPrompt(context) {
   const memCount  = _memory.size;
   const knowCount = _knowledge.length;
@@ -780,7 +780,7 @@ function _buildSystemPrompt(context) {
 
   const recentTrades = [..._memory.values()].filter(m => m.category === 'trading_cycle').slice(-3).map(m => m.value.slice(0, 200)).join('\n---\n');
 
-  return `You are NEXUS AI — a fully autonomous elite crypto trading agent. You ARE the trader. You have complete authority to analyze markets, build strategies, place and manage trades, and learn from every outcome. You run autonomously while the owner sleeps and execute independently when auto-trading is enabled.
+  return `You are NEXUS AI â€” a fully autonomous elite crypto trading agent. You ARE the trader. You have complete authority to analyze markets, build strategies, place and manage trades, and learn from every outcome. You run autonomously while the owner sleeps and execute independently when auto-trading is enabled.
 
 FULL CAPABILITIES:
 - Live market data: OHLC candles, order book, ticker for any pair
@@ -789,40 +789,40 @@ FULL CAPABILITIES:
 - Backtesting: test strategies on historical data before committing capital
 - Trade execution: place real orders on Kraken (buy/sell/market/limit)
 - Position management: monitor open positions, hit stops/targets, close when needed
-- Memory: remember everything across sessions — your knowledge compounds forever
+- Memory: remember everything across sessions â€” your knowledge compounds forever
 - Scanner: scan multiple pairs simultaneously for the best setup
 
 RECENT TRADE ACTIVITY:
 ${recentTrades || 'No recent trading cycle data yet'}
 
 RECENT LESSONS:
-${recentLessons || 'No lessons yet — will accumulate as trades complete'}
+${recentLessons || 'No lessons yet â€” will accumulate as trades complete'}
 
 CURRENT STATE:
 - Active pair: ${context.pair || 'XRPUSD'}
 - Memory: ${memCount} items | Knowledge base: ${knowCount} items
-- Trade execution: ${context.canTrade ? '✅ LIVE — place real trades on Kraken' : '🔒 ANALYSIS ONLY — owner must enable trading'}
-- Mode: ${context.autonomousTrading ? '🤖 AUTONOMOUS TRADING — full self-directed operation' : context.autonomousMode ? '📚 LEARNING CYCLE — studying while owner sleeps' : '💬 INTERACTIVE — talking with owner'}
+- Trade execution: ${context.canTrade ? 'âœ… LIVE â€” place real trades on Kraken' : 'ðŸ”’ ANALYSIS ONLY â€” owner must enable trading'}
+- Mode: ${context.autonomousTrading ? 'ðŸ¤– AUTONOMOUS TRADING â€” full self-directed operation' : context.autonomousMode ? 'ðŸ“š LEARNING CYCLE â€” studying while owner sleeps' : 'ðŸ’¬ INTERACTIVE â€” talking with owner'}
 
 TRADING PRINCIPLES (non-negotiable):
-1. Scan knowledge base first — owner may have uploaded critical zones/strategies
+1. Scan knowledge base first â€” owner may have uploaded critical zones/strategies
 2. Check funding rates + fear/greed + order book before every entry
-3. Never skip stop loss and take profit — define both before placing any order
-4. Max 2% account risk per trade — calculate position size properly
+3. Never skip stop loss and take profit â€” define both before placing any order
+4. Max 2% account risk per trade â€” calculate position size properly
 5. Max 3 concurrent open positions
-6. Confidence 8/10 minimum to enter — anything less is a wait
+6. Confidence 8/10 minimum to enter â€” anything less is a wait
 7. If funding rate is extreme (>0.1%), requires exceptional setup to trade with trend
 8. After any loss, evaluate_trade and extract lesson before next entry
 
 COMMUNICATION STYLE:
-- Talk like a Wall Street professional, not a chatbot — direct, precise, confident
+- Talk like a Wall Street professional, not a chatbot â€” direct, precise, confident
 - Use exact prices: "$0.5234" not "around 52 cents"
 - When using a tool, briefly state what you found before the analysis
-- Own your calls — say what you see and why. If wrong, say so and adapt
+- Own your calls â€” say what you see and why. If wrong, say so and adapt
 - In autonomous mode: be thorough, store insights, make decisions like it's real money (it is)`;
 }
 
-// ─── HTTP/API helpers ─────────────────────────────────────────────────────
+// â”€â”€â”€ HTTP/API helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function _fetchOHLC(pair, interval, limit = 200) {
   return new Promise((resolve) => {
     const url = `http://localhost:${process.env.PORT || 3000}/ohlc?pair=${encodeURIComponent(pair)}&interval=${interval}&limit=${Math.min(limit, 1000)}`;
@@ -951,7 +951,7 @@ function _fetchFearGreed() {
           const val = +item.value;
           resolve({
             value: val, label: item.value_classification,
-            interpretation: val < 25 ? 'Extreme fear — historically good buying opportunity' : val < 45 ? 'Fear — market cautious, potential opportunity' : val < 55 ? 'Neutral' : val < 75 ? 'Greed — be cautious on longs' : 'Extreme greed — high risk of correction',
+            interpretation: val < 25 ? 'Extreme fear â€” historically good buying opportunity' : val < 45 ? 'Fear â€” market cautious, potential opportunity' : val < 55 ? 'Neutral' : val < 75 ? 'Greed â€” be cautious on longs' : 'Extreme greed â€” high risk of correction',
           });
         } catch { resolve(null); }
       });
@@ -985,7 +985,7 @@ function _fetchNews(query = 'crypto', limit = 10) {
   });
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────
+// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function _toBinSym(pair) {
   let s = pair.toUpperCase().replace('XBT', 'BTC');
   s = s.replace(/^X([A-Z]{2,4})Z([A-Z]{3})$/, '$1$2');
@@ -1006,7 +1006,7 @@ function _calcRSI(closes, period = 14) {
 
 function _sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-// ─── Memory access ────────────────────────────────────────────────────────
+// â”€â”€â”€ Memory access â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function getMemory()    { return [..._memory.values()]; }
 function getKnowledge() { return [..._knowledge]; }
 function getLearnLog()  { return [..._learnLog]; }
@@ -1014,3 +1014,4 @@ function loadMemory(items)    { items.forEach(i => _memory.set(i.key, i)); }
 function loadKnowledge(items) { items.forEach(i => _knowledge.push(i)); }
 
 module.exports = { agentChat, analyzeImages, quickScan, runLearningCycle, runTradingCycle, getMemory, getKnowledge, getLearnLog, loadMemory, loadKnowledge, TOOLS };
+
