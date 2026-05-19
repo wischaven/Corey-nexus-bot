@@ -57,7 +57,7 @@ async function requireAuth(req, res, next) {
 // ─── Get user plan from user_settings ─────────────────────────────────────
 async function getUserPlan(userId) {
   if (!_supabaseReady) return { plan: 'elite', ticker: 'XRPUSD' };
-  const { data } = await supabase
+  const { data } = await supabaseAdmin
     .from('user_settings')
     .select('plan, ticker')
     .eq('user_id', userId)

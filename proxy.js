@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 require('dotenv').config();
 
@@ -9,13 +9,13 @@ const path    = require('path');
 const fs      = require('fs');
 const app     = express();
 
-// ─── Autonomous trading state ─────────────────────────────────────────────
+// â”€â”€â”€ Autonomous trading state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let _tradingEnabled  = false;
 let _tradingActive   = false; // guard: one cycle at a time
 const _openPositions = []; // { id, pair, side, size, entryPrice, stop, target, openedAt, krakenTxid }
 const _tradeLog      = []; // last 200 completed trades
 
-// ─── Kraken private API ───────────────────────────────────────────────────
+// â”€â”€â”€ Kraken private API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function _krakenSign(path, nonce, postData) {
   const hash = crypto.createHash('sha256').update(nonce + postData).digest();
   const secret = Buffer.from(process.env.KRAKEN_API_SECRET || '', 'base64');
@@ -76,10 +76,10 @@ async function _krakenCancelOrder(txid) {
   return _krakenPrivate('/0/private/CancelOrder', { txid });
 }
 
-// ─── Supabase auth + DB ────────────────────────────────────────────────────
+// â”€â”€â”€ Supabase auth + DB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const { supabase, supabaseAdmin, requireAuth, getUserPlan, isOwner } = require('./trading_engine/supabase');
 
-// ─── Trading Engine ────────────────────────────────────────────────────────
+// â”€â”€â”€ Trading Engine â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const RiskManager = require('./trading_engine/risk_management');
 const OrderTypes  = require('./trading_engine/order_types');
 const MarketData  = require('./trading_engine/market_data');
@@ -144,7 +144,7 @@ function tradingDataHandler(data) {
 }
 marketData.subscribe(tradingDataHandler);
 
-// ─── CORS ──────────────────────────────────────────────────────────────────
+// â”€â”€â”€ CORS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
@@ -156,13 +156,13 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ─── Static files + health check ──────────────────────────────────────────
+// â”€â”€â”€ Static files + health check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.get('/health', (_req, res) => res.json({ ok: true, ts: Date.now() }));
 app.use(express.static(path.join(__dirname), { index: 'landing.html' }));
 app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'landing.html')));
 app.get('/app', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
-// ─── Auth endpoints ────────────────────────────────────────────────────────
+// â”€â”€â”€ Auth endpoints â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 // Sign up
 app.post('/auth/signup', async (req, res) => {
@@ -193,11 +193,11 @@ app.get('/auth/me', requireAuth, async (req, res) => {
 app.post('/auth/ticker', requireAuth, async (req, res) => {
   const { ticker } = req.body;
   if (!ticker || !isValidPair(ticker)) return res.status(400).json({ error: 'Invalid ticker' });
-  await supabase.from('user_settings').upsert({ user_id: req.user.id, ticker }, { onConflict: 'user_id' });
+  await supabaseAdmin.from('user_settings').upsert({ user_id: req.user.id, ticker }, { onConflict: 'user_id' });
   res.json({ ok: true, ticker });
 });
 
-// ─── Legacy trading endpoints ──────────────────────────────────────────────
+// â”€â”€â”€ Legacy trading endpoints â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.get('/trading/status', (req, res) => {
   res.json({
     live: lastStatus,
@@ -213,7 +213,7 @@ app.post('/trading/tick', (req, res) => {
   res.json({ status: 'tick processed', lastStatus });
 });
 
-// ─── Sim engine endpoints ──────────────────────────────────────────────────
+// â”€â”€â”€ Sim engine endpoints â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.get('/sim/status', (_req, res) => res.json(simEngine.getStatus()));
 
 app.get('/sim/orderbook', (_req, res) => {
@@ -245,19 +245,19 @@ app.post('/sim/learn', (_req, res) => {
   res.json({ ready: true, currentParams: s.currentParams, winRate: s.winRate, avgPnlBps: s.avgPnlBps });
 });
 
-// ─── Bot state — Supabase-backed, auth required ────────────────────────────
+// â”€â”€â”€ Bot state â€” Supabase-backed, auth required â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 app.post('/bot/push', requireAuth, async (req, res) => {
   const settings = await getUserPlan(req.user.id);
   const plan = isOwner(req.user) ? 'elite' : settings.plan;
   if (plan === 'free') return res.status(403).json({ error: 'Live bot requires Pro or Elite plan' });
   const state = { ...req.body, user_id: req.user.id, updated_at: new Date().toISOString() };
-  await supabase.from('bot_state').upsert(state, { onConflict: 'user_id' });
+  await supabaseAdmin.from('bot_state').upsert(state, { onConflict: 'user_id' });
   res.json({ ok: true });
 });
 
 app.get('/bot/status', requireAuth, async (req, res) => {
-  const { data } = await supabase.from('bot_state').select('*').eq('user_id', req.user.id).single();
+  const { data } = await supabaseAdmin.from('bot_state').select('*').eq('user_id', req.user.id).single();
   res.json(data || {});
 });
 
@@ -276,14 +276,14 @@ app.post('/bot/trade', requireAuth, async (req, res) => {
   const plan = isOwner(req.user) ? 'elite' : settings.plan;
   if (plan === 'free') return res.status(403).json({ error: 'Live bot requires Pro or Elite plan' });
   const trade = { ...req.body, user_id: req.user.id, traded_at: new Date().toISOString() };
-  await supabase.from('trade_log').insert(trade);
+  await supabaseAdmin.from('trade_log').insert(trade);
   res.json({ ok: true });
 });
 
-// ─── Stripe billing endpoints ─────────────────────────────────────────────
+// â”€â”€â”€ Stripe billing endpoints â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const { createCheckoutSession, createPortalSession, verifyWebhookSignature } = require('./trading_engine/stripe_billing');
 
-// Start a checkout session — redirects user to Stripe hosted page
+// Start a checkout session â€” redirects user to Stripe hosted page
 app.post('/billing/checkout', requireAuth, async (req, res) => {
   const { plan } = req.body;
   if (!['pro', 'elite'].includes(plan)) return res.status(400).json({ error: 'Invalid plan' });
@@ -317,7 +317,7 @@ app.post('/billing/portal', requireAuth, async (req, res) => {
   }
 });
 
-// Stripe webhook — updates user plan in Supabase after payment
+// Stripe webhook â€” updates user plan in Supabase after payment
 app.post('/billing/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   const sig   = req.headers['stripe-signature'];
   const event = verifyWebhookSignature(req.body.toString(), sig);
@@ -351,7 +351,7 @@ app.post('/billing/webhook', express.raw({ type: 'application/json' }), async (r
   res.json({ received: true });
 });
 
-// ─── Push notification endpoints ─────────────────────────────────────────
+// â”€â”€â”€ Push notification endpoints â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const { saveSubscription, deleteSubscription, notify } = require('./trading_engine/push_notifications');
 
 // Save browser push subscription
@@ -395,7 +395,7 @@ app.post('/push/test', requireAuth, async (req, res) => {
   res.json({ ok: true });
 });
 
-// ─── Multi-ticker scanner (Elite — live) ─────────────────────────────────
+// â”€â”€â”€ Multi-ticker scanner (Elite â€” live) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.get('/scanner/results', requireAuth, async (req, res) => {
   const settings = await getUserPlan(req.user.id);
   const plan = isOwner(req.user) ? 'elite' : settings.plan;
@@ -409,7 +409,7 @@ app.get('/scanner/results', requireAuth, async (req, res) => {
   }
 });
 
-// ─── Public signal feed (no auth — 15-min delayed cache) ─────────────────
+// â”€â”€â”€ Public signal feed (no auth â€” 15-min delayed cache) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const PUBLIC_DELAY_MS = 15 * 60 * 1000;
 let _publicCache = null;
 let _publicCacheTime = 0;
@@ -423,7 +423,7 @@ app.get('/scanner/public', async (req, res) => {
   try {
     const data = await runScan();
     if (!data) return res.json({ scanning: true, results: [], top3: [], delayed: true, delayMinutes: 15 });
-    // Only expose data that is at least 15 minutes old — if the scan itself
+    // Only expose data that is at least 15 minutes old â€” if the scan itself
     // is fresher than that, we hold back the top signals and redact scores.
     const ageMs = now - data.scannedAt;
     const isDelayed = ageMs >= PUBLIC_DELAY_MS;
@@ -455,18 +455,18 @@ app.get('/scanner/public', async (req, res) => {
   }
 });
 
-// ─── Indicator engine — fetch candles + compute full indicator bundle ─────────
+// â”€â”€â”€ Indicator engine â€” fetch candles + compute full indicator bundle â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // GET /indicators/calc?pair=XRPUSD&interval=60&limit=500
-// Returns: { candles, indicators } — used by chart and strategy builder
+// Returns: { candles, indicators } â€” used by chart and strategy builder
 const BINANCE_INTERVAL_MAP = {
   1:'1m',3:'3m',5:'5m',15:'15m',30:'30m',60:'1h',120:'2h',
   240:'4h',360:'6h',480:'8h',720:'12h',1440:'1d',4320:'3d',10080:'1w',43200:'1M'
 };
 
-// Convert NEXUS/Kraken pair → Binance symbol (e.g. XRPUSD → XRPUSDT, XXRPZUSD → XRPUSDT)
+// Convert NEXUS/Kraken pair â†’ Binance symbol (e.g. XRPUSD â†’ XRPUSDT, XXRPZUSD â†’ XRPUSDT)
 function _toBinanceSymbol(symbol) {
   let s = symbol.toUpperCase().replace('XBT', 'BTC');
-  // Strip Kraken full-format double prefixes only (XXRPZUSD → XRPUSD)
+  // Strip Kraken full-format double prefixes only (XXRPZUSD â†’ XRPUSD)
   s = s.replace(/^X([A-Z]{2,4})Z([A-Z]{3})$/, '$1$2');
   // Ensure USDT suffix
   if (s.endsWith('USD') && !s.endsWith('USDT')) s += 'T';
@@ -498,7 +498,7 @@ function fetchBinanceCandles(symbol, interval, limit=500) {
   });
 }
 
-// Server-side Kraken OHLC fetch — fallback when Binance is unavailable
+// Server-side Kraken OHLC fetch â€” fallback when Binance is unavailable
 // Kraken supports intervals (min): 1, 5, 15, 30, 60, 240, 1440, 10080
 const KRAKEN_OHLC_INTERVALS = new Set([1, 5, 15, 30, 60, 240, 1440, 10080]);
 function fetchKrakenCandles(pair, intervalMin, limit=720) {
@@ -552,7 +552,7 @@ app.get('/indicators/calc', async (req, res) => {
   }
 });
 
-// GET /indicators/htf?pair=XRPUSD&timeframes=60,240,1440 — multi-timeframe bundle
+// GET /indicators/htf?pair=XRPUSD&timeframes=60,240,1440 â€” multi-timeframe bundle
 app.get('/indicators/htf', async (req, res) => {
   const { pair = 'XRPUSD', timeframes = '60,240,1440' } = req.query;
   const tfs = timeframes.split(',').map(Number).filter(Boolean).slice(0, 5); // max 5 TFs
@@ -574,13 +574,13 @@ app.get('/indicators/htf', async (req, res) => {
   }
 });
 
-// ─── Tickers list (public) ────────────────────────────────────────────────
+// â”€â”€â”€ Tickers list (public) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.get('/tickers', (_req, res) => {
   const { TICKERS, ALL_PAIRS } = require('./trading_engine/tickers');
   res.json({ groups: TICKERS, all: ALL_PAIRS });
 });
 
-// ─── Kraken proxy (public — market data is not sensitive) ──────────────────
+// â”€â”€â”€ Kraken proxy (public â€” market data is not sensitive) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.all(/^\/api\/(.*)/, (req, res) => {
   const apiPath = req.params[0];
   const qs = Object.keys(req.query).length ? '?' + new URLSearchParams(req.query).toString() : '';
@@ -599,7 +599,7 @@ app.all(/^\/api\/(.*)/, (req, res) => {
   proxyReq.end();
 });
 
-// ─── Backtester endpoints (Pro/Elite) ────────────────────────────────────────
+// â”€â”€â”€ Backtester endpoints (Pro/Elite) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 let _backtestEngine = null;
 function getBacktestEngine() {
@@ -656,9 +656,9 @@ app.post('/backtest/optimize', requireAuth, async (req, res) => {
   }
 });
 
-// ─── Webhook signal endpoints ─────────────────────────────────────────────
+// â”€â”€â”€ Webhook signal endpoints â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-// External POST /signal — authenticated with user's webhook token
+// External POST /signal â€” authenticated with user's webhook token
 app.post('/signal', async (req, res) => {
   const auth = req.headers['authorization'] || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
@@ -687,7 +687,7 @@ app.post('/signal', async (req, res) => {
     created_at: new Date().toISOString(),
   };
 
-  const { error: insertErr } = await supabase.from('webhook_signals').insert(signal);
+  const { error: insertErr } = await supabaseAdmin.from('webhook_signals').insert(signal);
   if (insertErr) return res.status(500).json({ error: insertErr.message });
 
   res.json({ ok: true, queued: true });
@@ -708,7 +708,7 @@ app.get('/signal/pending', requireAuth, async (req, res) => {
   // Mark all returned signals as consumed
   if (data && data.length > 0) {
     const ids = data.map(s => s.id);
-    await supabase.from('webhook_signals').update({ consumed: true }).in('id', ids);
+    await supabaseAdmin.from('webhook_signals').update({ consumed: true }).in('id', ids);
   }
 
   res.json({ signals: data || [] });
@@ -718,25 +718,25 @@ app.get('/signal/pending', requireAuth, async (req, res) => {
 app.post('/signal/token', requireAuth, async (req, res) => {
   const crypto = require('crypto');
   const token = crypto.randomBytes(32).toString('hex');
-  await supabase.from('user_settings').upsert(
+  await supabaseAdmin.from('user_settings').upsert(
     { user_id: req.user.id, webhook_token: token },
     { onConflict: 'user_id' }
   );
   res.json({ ok: true, token });
 });
 
-// ─── OHLC Cache + server-side candle proxy ────────────────────────────────
+// â”€â”€â”€ OHLC Cache + server-side candle proxy â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 // Cache TTL per interval: shorter intervals need fresher data
 function _ohlcTtlMs(intervalMin) {
-  if (intervalMin <= 5)    return 15_000;    // 1m/5m   → 15s
-  if (intervalMin <= 60)   return 60_000;    // 15m–1H  → 60s
-  if (intervalMin <= 240)  return 5 * 60_000; // 2H–4H  → 5 min
-  if (intervalMin <= 1440) return 30 * 60_000; // 6H–1D → 30 min
-  return 60 * 60_000;                         // 1W+    → 1 hr
+  if (intervalMin <= 5)    return 15_000;    // 1m/5m   â†’ 15s
+  if (intervalMin <= 60)   return 60_000;    // 15mâ€“1H  â†’ 60s
+  if (intervalMin <= 240)  return 5 * 60_000; // 2Hâ€“4H  â†’ 5 min
+  if (intervalMin <= 1440) return 30 * 60_000; // 6Hâ€“1D â†’ 30 min
+  return 60 * 60_000;                         // 1W+    â†’ 1 hr
 }
 
-// key: `${pair}:${intervalMin}` → { candles, fetchedAt }
+// key: `${pair}:${intervalMin}` â†’ { candles, fetchedAt }
 const _ohlcCache = new Map();
 
 async function fetchOHLCCached(pair, intervalMin, limit) {
@@ -745,7 +745,7 @@ async function fetchOHLCCached(pair, intervalMin, limit) {
   const cached = _ohlcCache.get(key);
   if (cached && (Date.now() - cached.fetchedAt) < ttl) return cached.candles;
 
-  // Try Binance — retry once after 1.5s on failure
+  // Try Binance â€” retry once after 1.5s on failure
   let candles = await fetchBinanceCandles(pair, intervalMin, limit);
   if (!candles || !candles.length) {
     await new Promise(r => setTimeout(r, 1500));
@@ -780,7 +780,7 @@ app.get('/ohlc', async (req, res) => {
   }
 });
 
-// ─── SSE live kline streaming ─────────────────────────────────────────────
+// â”€â”€â”€ SSE live kline streaming â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Browser connects to GET /stream/kline?pair=XRPUSDT&interval=5
 // Server polls Binance price every 2s and pushes ticks; also updates the cache
 
@@ -867,7 +867,7 @@ app.get('/stream/kline', (req, res) => {
   });
 });
 
-// ─── NEXUS AI Agent endpoints ─────────────────────────────────────────────
+// â”€â”€â”€ NEXUS AI Agent endpoints â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const agent = require('./trading_engine/agent');
 
 // Load persisted memory + knowledge from Supabase on startup
@@ -880,7 +880,7 @@ const agent = require('./trading_engine/agent');
   } catch (e) { console.log('[Agent] Supabase memory load skipped (tables may not exist yet):', e.message); }
 })();
 
-// POST /agent/chat — main conversational endpoint with SSE streaming
+// POST /agent/chat â€” main conversational endpoint with SSE streaming
 app.post('/agent/chat', requireAuth, async (req, res) => {
   const { message, images = [], sessionId, model = 'claude-opus-4-7', pair = 'XRPUSD', canTrade = false } = req.body;
   if (!message && !images.length) return res.status(400).json({ error: 'message or images required' });
@@ -940,7 +940,7 @@ app.post('/agent/chat', requireAuth, async (req, res) => {
   res.end();
 });
 
-// POST /agent/image — analyze uploaded images, extract trading knowledge
+// POST /agent/image â€” analyze uploaded images, extract trading knowledge
 app.post('/agent/image', requireAuth, async (req, res) => {
   const { images, context: userContext = '', model = 'claude-opus-4-7' } = req.body;
   if (!images || !images.length) return res.status(400).json({ error: 'images required (base64 array)' });
@@ -959,18 +959,18 @@ app.post('/agent/image', requireAuth, async (req, res) => {
   }
 });
 
-// GET /agent/memory — retrieve all memory + knowledge
+// GET /agent/memory â€” retrieve all memory + knowledge
 app.get('/agent/memory', requireAuth, async (_req, res) => {
   res.json({ memory: agent.getMemory(), knowledge: agent.getKnowledge() });
 });
 
-// DELETE /agent/memory/:key — forget a specific memory item
+// DELETE /agent/memory/:key â€” forget a specific memory item
 app.delete('/agent/memory/:key', requireAuth, async (req, res) => {
   try { await supabaseAdmin.from('agent_memory').delete().eq('user_id', req.user.id).eq('key', req.params.key); } catch (_) {}
   res.json({ ok: true });
 });
 
-// GET /agent/conversations — retrieve conversation history
+// GET /agent/conversations â€” retrieve conversation history
 app.get('/agent/conversations', requireAuth, async (req, res) => {
   try {
     const { data } = await supabaseAdmin.from('agent_conversations').select('*').eq('user_id', req.user.id).order('created_at', { ascending: false }).limit(100);
@@ -980,19 +980,19 @@ app.get('/agent/conversations', requireAuth, async (req, res) => {
   }
 });
 
-// GET /agent/learn-log — return autonomous learning activity log
+// GET /agent/learn-log â€” return autonomous learning activity log
 app.get('/agent/learn-log', requireAuth, (_req, res) => {
   res.json({ log: agent.getLearnLog() });
 });
 
-// POST /agent/learn-now — trigger an immediate learning cycle (owner only)
+// POST /agent/learn-now â€” trigger an immediate learning cycle (owner only)
 app.post('/agent/learn-now', requireAuth, async (req, res) => {
   if (!isOwner(req.user)) return res.status(403).json({ error: 'Owner only' });
   res.json({ status: 'started' });
   agent.runLearningCycle({ manual: true }).catch(e => console.error('[LearnCycle] manual error:', e));
 });
 
-// ─── Trade execution helpers ──────────────────────────────────────────────
+// â”€â”€â”€ Trade execution helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function _executeTrade(input, userId) {
   const { pair, side, size_usd, order_type = 'market', limit_price, stop_loss, take_profit, reasoning } = input;
 
@@ -1032,7 +1032,7 @@ async function _executeTrade(input, userId) {
     console.log(`[Trade] ${side.toUpperCase()} ${volume} ${pair} @ ~$${price} | txid: ${order.txid}`);
   } else {
     position.status = 'sim';
-    position.simNote = order.error || 'Kraken unavailable — simulated';
+    position.simNote = order.error || 'Kraken unavailable â€” simulated';
     console.log(`[Trade SIM] ${side.toUpperCase()} ${volume} ${pair} @ ~$${price} | reason: ${position.simNote}`);
   }
 
@@ -1095,7 +1095,7 @@ async function _closePosition(posId, userId) {
   return { ok: true, pnl, closePrice, krakenOk: closeOrder.ok };
 }
 
-// ─── Autonomous trading cycle ──────────────────────────────────────────────
+// â”€â”€â”€ Autonomous trading cycle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function _runTradingCycle() {
   if (_tradingActive || !_tradingEnabled) return;
   _tradingActive = true;
@@ -1120,7 +1120,7 @@ async function _runTradingCycle() {
   }
 }
 
-// ─── Trading control endpoints ────────────────────────────────────────────
+// â”€â”€â”€ Trading control endpoints â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.get('/agent/trading-status', requireAuth, (_req, res) => {
   res.json({
     enabled: _tradingEnabled,
@@ -1165,14 +1165,14 @@ app.get('/agent/balance', requireAuth, async (_req, res) => {
   res.json({ ok: !!balance, balance });
 });
 
-// ─── Start ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Start â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`NEXUS proxy running on port ${PORT}`);
   setTimeout(() => simEngine.start(), 3000);
   startBackgroundRefresh();
 
-  // Autonomous learning — first run 5 min after boot, then every hour
+  // Autonomous learning â€” first run 5 min after boot, then every hour
   setTimeout(() => {
     agent.runLearningCycle().catch(e => console.error('[LearnCycle] error:', e));
     setInterval(() => {
@@ -1180,6 +1180,6 @@ app.listen(PORT, '0.0.0.0', () => {
     }, 60 * 60 * 1000);
   }, 5 * 60 * 1000);
 
-  // Autonomous trading — every 5 minutes when enabled
+  // Autonomous trading â€” every 5 minutes when enabled
   setInterval(_runTradingCycle, 5 * 60 * 1000);
 });
